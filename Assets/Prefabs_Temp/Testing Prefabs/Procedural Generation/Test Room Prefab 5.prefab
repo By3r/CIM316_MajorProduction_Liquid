@@ -5553,6 +5553,67 @@ MonoBehaviour:
   m_ObsoleteUseShadowQualitySettings: 0
   m_ObsoleteCustomShadowResolution: 512
   m_ObsoleteContactShadows: 0
+--- !u!1 &2253761541812152601
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7433845645226546411}
+  - component: {fileID: 5656265594598511072}
+  m_Layer: 0
+  m_Name: ItemSpawnPoint (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7433845645226546411
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2253761541812152601}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 3.52, y: 1.57316, z: 1.06}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2972281981673690497}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5656265594598511072
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2253761541812152601}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe27fd55fe284d9c8dab54b767bb7007, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.ProceduralGeneration.Items.ItemSpawnPoint
+  _spawnableItems:
+  - itemPrefab: {fileID: 7530650875717680049, guid: 49064cc34d3dfd642b81ba1df9a04e4e, type: 3}
+    spawnChance: 15
+  - itemPrefab: {fileID: 5333549429777282362, guid: 02ec34fcc660b014b97dc84df06c297e, type: 3}
+    spawnChance: 5
+  - itemPrefab: {fileID: 5725912407974990886, guid: 2e20fe3f0d4cc8340959434f13ddeabf, type: 3}
+    spawnChance: 40
+  _guaranteedSpawn: 0
+  _useFallbackItem: 0
+  _fallbackItemPrefab: {fileID: 0}
+  _snapToGround: 1
+  _maxGroundCheckDistance: 10
+  _groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _spawnOffset: {x: 0, y: 0, z: 0}
+  _showDebugLogs: 0
 --- !u!1 &5586937885596359907
 GameObject:
   m_ObjectHideFlags: 0
@@ -5680,7 +5741,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2
   m_IsActive: 1
 --- !u!4 &8114353112139888495
 Transform:
@@ -17675,6 +17736,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2972281981673690497}
   - component: {fileID: 3204005921674846911}
+  - component: {fileID: 8200525419604734559}
   m_Layer: 0
   m_Name: Test Room Prefab 5
   m_TagString: Untagged
@@ -17695,6 +17757,8 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 5584112720282983772}
+  - {fileID: 7433845645226546411}
   - {fileID: 8114353112139888495}
   - {fileID: 8035239940556754174}
   - {fileID: 6933806398248457928}
@@ -17740,6 +17804,82 @@ MonoBehaviour:
   - {x: -5.024344, y: -0.7345839, z: 0.086830415}
   - {x: 0, y: -0.7929008, z: 4.007206}
   - {x: 0, y: -0.79288673, z: -4.0069637}
+--- !u!114 &8200525419604734559
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8589230654753735102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e795c9f8ec594a03912de101d2a5e6b3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.ProceduralGeneration.Items.RoomItemSpawner
+  _spawnOnAwake: 1
+  _spawnDelay: 0
+  _showDebugLogs: 0
+--- !u!1 &9166087079807603452
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5584112720282983772}
+  - component: {fileID: 4179484848734280669}
+  m_Layer: 0
+  m_Name: ItemSpawnPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5584112720282983772
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9166087079807603452}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -2.84, y: 1.57316, z: 1.06}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2972281981673690497}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4179484848734280669
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9166087079807603452}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe27fd55fe284d9c8dab54b767bb7007, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.ProceduralGeneration.Items.ItemSpawnPoint
+  _spawnableItems:
+  - itemPrefab: {fileID: 7530650875717680049, guid: 49064cc34d3dfd642b81ba1df9a04e4e, type: 3}
+    spawnChance: 15
+  - itemPrefab: {fileID: 5333549429777282362, guid: 02ec34fcc660b014b97dc84df06c297e, type: 3}
+    spawnChance: 5
+  - itemPrefab: {fileID: 5725912407974990886, guid: 2e20fe3f0d4cc8340959434f13ddeabf, type: 3}
+    spawnChance: 40
+  _guaranteedSpawn: 0
+  _useFallbackItem: 0
+  _fallbackItemPrefab: {fileID: 0}
+  _snapToGround: 1
+  _maxGroundCheckDistance: 10
+  _groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _spawnOffset: {x: 0, y: 0, z: 0}
+  _showDebugLogs: 0
 --- !u!1001 &1574033576487285112
 PrefabInstance:
   m_ObjectHideFlags: 0

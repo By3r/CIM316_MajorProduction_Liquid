@@ -1,0 +1,280 @@
+using UnityEngine;
+using UnityEditor;
+using System.Collections.Generic;
+
+namespace _Scripts.UI.Interaction.Editor
+{
+    [CustomEditor(typeof(ObjectHighlightingSystem))]
+    public class ObjectHighlightingSystemEditor : UnityEditor.Editor
+    {
+        private SerializedProperty _raycastDistance;
+        private SerializedProperty _playerCamera;
+        private SerializedProperty _layerConfigs;
+        private SerializedProperty _animationSpeed;
+        private SerializedProperty _fadeSpeed;
+        private SerializedProperty _minFrameSize;
+        private SerializedProperty _framePadding;
+        private SerializedProperty _highlightCanvas;
+        private SerializedProperty _highlightFrame;
+        private SerializedProperty _highlightText;
+        private SerializedProperty _cornerBrackets;
+        private SerializedProperty _showDebugLogs;
+
+        private void OnEnable()
+        {
+            _raycastDistance = serializedObject.FindProperty("_raycastDistance");
+            _playerCamera = serializedObject.FindProperty("_playerCamera");
+            _layerConfigs = serializedObject.FindProperty("_layerConfigs");
+            _animationSpeed = serializedObject.FindProperty("_animationSpeed");
+            _fadeSpeed = serializedObject.FindProperty("_fadeSpeed");
+            _minFrameSize = serializedObject.FindProperty("_minFrameSize");
+            _framePadding = serializedObject.FindProperty("_framePadding");
+            _highlightCanvas = serializedObject.FindProperty("_highlightCanvas");
+            _highlightFrame = serializedObject.FindProperty("_highlightFrame");
+            _highlightText = serializedObject.FindProperty("_highlightText");
+            _cornerBrackets = serializedObject.FindProperty("_cornerBrackets");
+            _showDebugLogs = serializedObject.FindProperty("_showDebugLogs");
+        }
+
+        public override void OnInspectorGUI()
+        {
+            serializedObject.Update();
+
+            ObjectHighlightingSystem highlightSystem = (ObjectHighlightingSystem)target;
+
+            EditorGUILayout.Space();
+            EditorGUILayout.LabelField("Layer-Based Object Highlighting", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(
+                "Configure different highlight styles for different object types using layers.\n" +
+                "Add layer configs below to customize brackets, colors, and text per layer.",
+                MessageType.Info);
+
+            EditorGUILayout.Space(10);
+
+            // === RAYCAST SETTINGS ===
+            DrawRaycastSettings();
+            EditorGUILayout.Space(10);
+
+            // === LAYER CONFIGURATIONS ===
+            DrawLayerConfigurations();
+            EditorGUILayout.Space(10);
+
+            // === ANIMATION SETTINGS ===
+            DrawAnimationSettings();
+            EditorGUILayout.Space(10);
+
+            // === FRAME SETTINGS ===
+            DrawFrameSettings();
+            EditorGUILayout.Space(10);
+
+            // === UI REFERENCES ===
+            DrawUIReferences();
+            EditorGUILayout.Space(10);
+
+            // === DEBUG ===
+            EditorGUILayout.LabelField("Debug", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(_showDebugLogs, new GUIContent("Show Debug Logs"));
+
+            serializedObject.ApplyModifiedProperties();
+        }
+
+        private void DrawRaycastSettings()
+        {
+            EditorGUILayout.LabelField("Raycast Settings", EditorStyles.boldLabel);
+            
+            EditorGUILayout.PropertyField(_raycastDistance, new GUIContent("Raycast Distance"));
+            EditorGUILayout.PropertyField(_playerCamera, new GUIContent("Player Camera"));
+
+            if (_playerCamera.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("Camera will auto-find Main Camera at runtime.", MessageType.None);
+            }
+        }
+
+        private void DrawLayerConfigurations()
+        {
+            EditorGUILayout.LabelField("Layer Configurations", EditorStyles.boldLabel);
+            
+            EditorGUILayout.HelpBox(
+                "Add a config for each object type you want to highlight.\n" +
+                "Example: 'Pickupable' layer with green brackets, 'Door' layer with cyan brackets.",
+                MessageType.None);
+
+            EditorGUILayout.Space(5);
+
+            // Add new config button
+            GUI.backgroundColor = Color.green;
+            if (GUILayout.Button("+ Add Layer Config", GUILayout.Height(25)))
+            {
+                _layerConfigs.arraySize++;
+                SerializedProperty newConfig = _layerConfigs.GetArrayElementAtIndex(_layerConfigs.arraySize - 1);
+                
+                // Set defaults for new config
+                newConfig.FindPropertyRelative("configName").stringValue = "New Config";
+                newConfig.FindPropertyRelative("enabled").boolValue = true;
+                newConfig.FindPropertyRelative("layer").intValue = 0;
+                newConfig.FindPropertyRelative("showBrackets").boolValue = true;
+                newConfig.FindPropertyRelative("showText").boolValue = true;
+                newConfig.FindPropertyRelative("displayText").stringValue = "Interact";
+                newConfig.FindPropertyRelative("bracketColor").colorValue = new Color(0.2f, 0.8f, 1f, 1f);
+                newConfig.FindPropertyRelative("bracketSize").floatValue = 20f;
+                newConfig.FindPropertyRelative("textColor").colorValue = Color.white;
+                newConfig.FindPropertyRelative("textFontSize").intValue = 16;
+            }
+            GUI.backgroundColor = Color.white;
+
+            EditorGUILayout.Space(5);
+
+            // Draw each config
+            for (int i = 0; i < _layerConfigs.arraySize; i++)
+            {
+                DrawLayerConfig(_layerConfigs.GetArrayElementAtIndex(i), i);
+                EditorGUILayout.Space(5);
+            }
+
+            if (_layerConfigs.arraySize == 0)
+            {
+                EditorGUILayout.HelpBox("No layer configs. Click '+ Add Layer Config' to get started.", MessageType.Warning);
+            }
+        }
+
+        private void DrawLayerConfig(SerializedProperty config, int index)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+
+            // Header with enable toggle and delete button
+            EditorGUILayout.BeginHorizontal();
+            
+            SerializedProperty enabled = config.FindPropertyRelative("enabled");
+            SerializedProperty configName = config.FindPropertyRelative("configName");
+            
+            enabled.boolValue = EditorGUILayout.Toggle(enabled.boolValue, GUILayout.Width(20));
+            
+            GUIStyle headerStyle = new GUIStyle(EditorStyles.boldLabel);
+            headerStyle.normal.textColor = enabled.boolValue ? Color.white : Color.gray;
+            EditorGUILayout.LabelField($"Config {index + 1}: {configName.stringValue}", headerStyle);
+            
+            GUILayout.FlexibleSpace();
+            
+            GUI.backgroundColor = Color.red;
+            if (GUILayout.Button("Delete", GUILayout.Width(60)))
+            {
+                if (EditorUtility.DisplayDialog("Delete Config?", 
+                    $"Remove '{configName.stringValue}' configuration?", "Delete", "Cancel"))
+                {
+                    _layerConfigs.DeleteArrayElementAtIndex(index);
+                    GUI.backgroundColor = Color.white;
+                    EditorGUILayout.EndHorizontal();
+                    EditorGUILayout.EndVertical();
+                    return;
+                }
+            }
+            GUI.backgroundColor = Color.white;
+            
+            EditorGUILayout.EndHorizontal();
+
+            if (!enabled.boolValue)
+            {
+                EditorGUILayout.HelpBox("Config disabled", MessageType.None);
+                EditorGUILayout.EndVertical();
+                return;
+            }
+
+            EditorGUI.indentLevel++;
+
+            // Basic settings
+            EditorGUILayout.PropertyField(configName, new GUIContent("Config Name"));
+            
+            SerializedProperty layer = config.FindPropertyRelative("layer");
+            layer.intValue = EditorGUILayout.LayerField("Layer", layer.intValue);
+            
+            EditorGUILayout.Space(3);
+
+            // Visual toggles
+            SerializedProperty showBrackets = config.FindPropertyRelative("showBrackets");
+            SerializedProperty showText = config.FindPropertyRelative("showText");
+            
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.PropertyField(showBrackets, new GUIContent("Show Brackets"));
+            EditorGUILayout.PropertyField(showText, new GUIContent("Show Text"));
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.Space(3);
+
+            // Bracket settings
+            if (showBrackets.boolValue)
+            {
+                EditorGUILayout.LabelField("Bracket Settings", EditorStyles.miniLabel);
+                EditorGUI.indentLevel++;
+                
+                SerializedProperty bracketColor = config.FindPropertyRelative("bracketColor");
+                SerializedProperty bracketSize = config.FindPropertyRelative("bracketSize");
+                SerializedProperty bracketSprite = config.FindPropertyRelative("bracketSprite");
+                
+                EditorGUILayout.PropertyField(bracketColor, new GUIContent("Color"));
+                EditorGUILayout.PropertyField(bracketSize, new GUIContent("Size"));
+                EditorGUILayout.PropertyField(bracketSprite, new GUIContent("Custom Sprite (Optional)"));
+                
+                EditorGUI.indentLevel--;
+                EditorGUILayout.Space(3);
+            }
+
+            // Text settings
+            if (showText.boolValue)
+            {
+                EditorGUILayout.LabelField("Text Settings", EditorStyles.miniLabel);
+                EditorGUI.indentLevel++;
+                
+                SerializedProperty displayText = config.FindPropertyRelative("displayText");
+                SerializedProperty textColor = config.FindPropertyRelative("textColor");
+                SerializedProperty textFontSize = config.FindPropertyRelative("textFontSize");
+                
+                EditorGUILayout.PropertyField(displayText, new GUIContent("Display Text"));
+                EditorGUILayout.PropertyField(textColor, new GUIContent("Color"));
+                EditorGUILayout.PropertyField(textFontSize, new GUIContent("Font Size"));
+                
+                EditorGUI.indentLevel--;
+            }
+
+            EditorGUI.indentLevel--;
+            EditorGUILayout.EndVertical();
+        }
+
+        private void DrawAnimationSettings()
+        {
+            EditorGUILayout.LabelField("Animation Settings", EditorStyles.boldLabel);
+            
+            EditorGUILayout.PropertyField(_animationSpeed, new GUIContent("Animation Speed"));
+            EditorGUILayout.PropertyField(_fadeSpeed, new GUIContent("Fade Speed"));
+            
+            EditorGUILayout.HelpBox(
+                "Higher values = snappier, less floaty.\n" +
+                "Animation Speed: 12+ recommended for responsive feel\n" +
+                "Fade Speed: 15+ recommended for quick transitions",
+                MessageType.None);
+        }
+
+        private void DrawFrameSettings()
+        {
+            EditorGUILayout.LabelField("Frame Settings", EditorStyles.boldLabel);
+            
+            EditorGUILayout.PropertyField(_minFrameSize, new GUIContent("Min Frame Size"));
+            EditorGUILayout.PropertyField(_framePadding, new GUIContent("Frame Padding"));
+        }
+
+        private void DrawUIReferences()
+        {
+            EditorGUILayout.LabelField("UI References (Auto-created)", EditorStyles.boldLabel);
+            
+            EditorGUILayout.PropertyField(_highlightCanvas, new GUIContent("Canvas"));
+            EditorGUILayout.PropertyField(_highlightFrame, new GUIContent("Frame"));
+            EditorGUILayout.PropertyField(_highlightText, new GUIContent("Text"));
+            EditorGUILayout.PropertyField(_cornerBrackets, new GUIContent("Brackets"), true);
+
+            if (_highlightCanvas.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("UI will be auto-created at runtime.", MessageType.None);
+            }
+        }
+    }
+}

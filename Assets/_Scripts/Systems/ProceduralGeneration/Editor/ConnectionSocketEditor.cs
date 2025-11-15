@@ -1,9 +1,8 @@
-using _Scripts.Systems.ProceduralGeneration;
 using _Scripts.Systems.ProceduralGeneration.Doors;
 using UnityEditor;
 using UnityEngine;
 
-namespace _Scripts.ProceduralGeneration.Editor
+namespace _Scripts.Systems.ProceduralGeneration.Editor
 {
     [CustomEditor(typeof(ConnectionSocket))]
     public class ConnectionSocketEditor : UnityEditor.Editor
