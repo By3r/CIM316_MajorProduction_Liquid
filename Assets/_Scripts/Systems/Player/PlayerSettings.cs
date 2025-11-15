@@ -32,22 +32,6 @@ namespace _Scripts.Systems.Player
 
         #endregion
 
-        #region Input Keys
-
-        [Tooltip("Key code for the sprint action.")]
-        public KeyCode SprintKey = KeyCode.LeftShift;
-
-        [Tooltip("Key code for the crouch action.")]
-        public KeyCode CrouchKey = KeyCode.LeftControl;
-
-        [Tooltip("Key code for the jump action.")]
-        public KeyCode JumpKey = KeyCode.Space;
-
-        [Tooltip("Key code for the interact action.")]
-        public KeyCode InteractKey = KeyCode.E;
-
-        #endregion
-
         #region Public Methods
 
         /// <summary>
@@ -57,10 +41,10 @@ namespace _Scripts.Systems.Player
         /// <param name="other">The PlayerSettings instance to copy from.</param>
         public void CopyFrom(PlayerSettings other)
         {
-            this.MouseSensitivity = other.MouseSensitivity;
-            this.FieldOfView = other.FieldOfView;
-            this.InvertYAxis = other.InvertYAxis;
-            this.EnableCameraBob = other.EnableCameraBob;
+            MouseSensitivity = other.MouseSensitivity;
+            FieldOfView = other.FieldOfView;
+            InvertYAxis = other.InvertYAxis;
+            EnableCameraBob = other.EnableCameraBob;
         }
 
         /// <summary>

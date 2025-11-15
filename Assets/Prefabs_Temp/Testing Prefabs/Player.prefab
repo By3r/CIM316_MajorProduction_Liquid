@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 2382627757121533751}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.5, z: 0}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -170,7 +170,7 @@ MonoBehaviour:
   _interactionDistance: 3
   _interactionLayerMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   _showDebugRays: 1
   _showInteractionPrompt: 1
   _openDoorPromptText: Press [E] to Open

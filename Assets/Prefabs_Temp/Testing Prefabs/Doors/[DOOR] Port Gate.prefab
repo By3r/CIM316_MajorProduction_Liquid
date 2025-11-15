@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 3225805041347401999}
   - component: {fileID: 2186795736761279774}
   - component: {fileID: 2028714840544218724}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: '[DOOR] Port Gate'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -193,7 +193,7 @@ GameObject:
   - component: {fileID: 3668016690057729991}
   - component: {fileID: 6165690782904333888}
   - component: {fileID: 345251986130558443}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: DOOR
   m_TagString: Untagged
   m_Icon: {fileID: 0}

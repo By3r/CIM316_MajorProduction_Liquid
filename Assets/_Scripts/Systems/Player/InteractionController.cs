@@ -22,20 +22,6 @@ namespace _Scripts.Systems.Player
 
         [Tooltip("Should we show debug raycasts in the scene view?")]
         [SerializeField] private bool _showDebugRays;
-
-        [Header("UI Feedback")]
-        [Tooltip("Enable UI prompt when looking at interactable objects?")]
-        [SerializeField] private bool _showInteractionPrompt = true;
-
-        [Tooltip("Text to display when looking at a closed door.")]
-        [SerializeField] private string _openDoorPromptText = "Press [E] to Open";
-
-        [Tooltip("Text to display when looking at an open door that can be closed.")]
-        [SerializeField] private string _closeDoorPromptText = "Press [E] to Close";
-
-        [Tooltip("Text to display when looking at an open door that cannot be closed.")]
-        [SerializeField] private string _cannotClosePromptText = "Cannot Close";
-
         #endregion
 
         #region Private Fields
@@ -56,34 +42,7 @@ namespace _Scripts.Systems.Player
         /// <summary>
         /// Gets whether the player is currently looking at an interactable door.
         /// </summary>
-        public bool IsLookingAtDoor => _isLookingAtDoor;
-
-        /// <summary>
-        /// Gets the interaction prompt text based on what the player is looking at.
-        /// </summary>
-        public string InteractionPromptText
-        {
-            get
-            {
-                if (!_isLookingAtDoor || _currentDoor == null)
-                    return string.Empty;
-
-                if (_currentDoor.IsOpen)
-                {
-                    return _currentDoor.AllowManualClose ? _closeDoorPromptText : _cannotClosePromptText;
-                }
-                else
-                {
-                    return _openDoorPromptText;
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets whether an interaction prompt should be displayed.
-        /// </summary>
-        public bool ShouldShowPrompt => _showInteractionPrompt && _isLookingAtDoor;
-
+        public bool IsLookingAtDoor => _isLookingAtDoor;        
         #endregion
 
         #region Initialization
@@ -307,15 +266,6 @@ namespace _Scripts.Systems.Player
         {
             _interactionDistance = Mathf.Max(0.5f, distance);
         }
-
-        /// <summary>
-        /// Enables or disables the interaction prompt UI.
-        /// </summary>
-        public void SetShowInteractionPrompt(bool show)
-        {
-            _showInteractionPrompt = show;
-        }
-
         #endregion
 
         #region Debug

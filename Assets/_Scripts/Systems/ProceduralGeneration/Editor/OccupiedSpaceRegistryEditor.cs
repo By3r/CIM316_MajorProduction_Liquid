@@ -1,9 +1,8 @@
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
-using System.Linq;
-using _Scripts.Systems.ProceduralGeneration;
 
-namespace _Scripts.ProceduralGeneration.Editor
+namespace _Scripts.Systems.ProceduralGeneration.Editor
 {
     [CustomEditor(typeof(OccupiedSpaceRegistry))]
     public class OccupiedSpaceRegistryEditor : UnityEditor.Editor
@@ -41,13 +40,6 @@ namespace _Scripts.ProceduralGeneration.Editor
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Occupied Space Registry", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(
-                "Central registry that tracks all occupied spaces in the procedurally generated level.\n" +
-                "• Automatic room tracking\n" +
-                "• Fast collision detection\n" +
-                "• Prevents room overlaps during generation\n" +
-                "• Integrates with BoundsChecker and DoorConnectionSystem",
-                MessageType.Info);
 
             EditorGUILayout.Space();
 
@@ -88,11 +80,6 @@ namespace _Scripts.ProceduralGeneration.Editor
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_moveCheckInterval, new GUIContent("Move Check Interval (s)"));
                 EditorGUI.indentLevel--;
-                
-                EditorGUILayout.HelpBox(
-                    "Automatically detects when rooms move and updates their bounds in the registry. " +
-                    "Useful during level editing or dynamic room adjustments.",
-                    MessageType.None);
             }
         }
 
@@ -108,11 +95,6 @@ namespace _Scripts.ProceduralGeneration.Editor
                 EditorGUI.indentLevel++;
                 EditorGUILayout.PropertyField(_occupiedSpaceColor, new GUIContent("Occupied Space Color"));
                 EditorGUI.indentLevel--;
-                
-                EditorGUILayout.HelpBox(
-                    "Gizmos show all registered room bounds in the Scene view. " +
-                    "Red wireframe cubes indicate occupied spaces.",
-                    MessageType.None);
             }
         }
 
@@ -180,7 +162,7 @@ namespace _Scripts.ProceduralGeneration.Editor
                         
                         // Room name and status
                         bool isValid = space.boundsChecker != null && space.roomTransform != null;
-                        string statusIcon = isValid ? "✓" : "✗";
+                        string statusIcon = isValid ? "âœ“" : "âœ—";
                         Color statusColor = isValid ? Color.green : Color.red;
                         
                         GUIStyle labelStyle = new GUIStyle(EditorStyles.boldLabel);
@@ -211,7 +193,7 @@ namespace _Scripts.ProceduralGeneration.Editor
                             // Movement check
                             if (space.HasMoved())
                             {
-                                EditorGUILayout.HelpBox("⚠ Room has moved since registration!", MessageType.Warning);
+                                EditorGUILayout.HelpBox("âš  Room has moved since registration!", MessageType.Warning);
                                 
                                 if (GUILayout.Button("Update Bounds", GUILayout.Height(20)))
                                 {
@@ -305,9 +287,9 @@ namespace _Scripts.ProceduralGeneration.Editor
             GUI.backgroundColor = Color.white;
             
             EditorGUILayout.HelpBox(
-                "• Clean Up: Removes destroyed or invalid room entries\n" +
-                "• Clear All: Resets the entire registry (use when regenerating floors)\n" +
-                "• Refresh All Bounds: Updates all room bounds (useful after moving rooms)",
+                "â€¢ Clean Up: Removes destroyed or invalid room entries\n" +
+                "â€¢ Clear All: Resets the entire registry (use when regenerating floors)\n" +
+                "â€¢ Refresh All Bounds: Updates all room bounds (useful after moving rooms)",
                 MessageType.None);
         }
     }

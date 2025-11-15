@@ -209,8 +209,7 @@ namespace _Scripts.UI
         {
             if (_interactionController == null) return;
 
-            bool shouldShowInteraction = _interactionController.ShouldShowPrompt && 
-                                        _interactionController.IsLookingAtDoor;
+            bool shouldShowInteraction = _interactionController.IsLookingAtDoor;
 
             if (shouldShowInteraction != _isShowingInteraction)
             {
@@ -309,8 +308,7 @@ namespace _Scripts.UI
         {
             if (_interactionController == null || !_enableInteractionRotation) return;
 
-            bool isLookingAtInteractable = _interactionController.ShouldShowPrompt && 
-                                          _interactionController.IsLookingAtDoor;
+            bool isLookingAtInteractable = _interactionController.IsLookingAtDoor;
 
             if (isLookingAtInteractable && 
                 InputManager.Instance != null && 

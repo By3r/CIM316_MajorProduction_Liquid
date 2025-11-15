@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using _Scripts.ProceduralGeneration;
 using UnityEngine;
 
 namespace _Scripts.Systems.ProceduralGeneration

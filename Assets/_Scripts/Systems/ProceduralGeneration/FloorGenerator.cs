@@ -1,12 +1,11 @@
 using System.Collections.Generic;
-using _Scripts.Systems.ProceduralGeneration;
 using _Scripts.Systems.ProceduralGeneration.Doors;
 using UnityEngine;
 
-namespace _Scripts.ProceduralGeneration
+namespace _Scripts.Systems.ProceduralGeneration
 {
     /// <summary>
-    /// Enhanced floor generator with TWO-PHASE collision detection, random socket selection, and blockade system.
+    /// Enhanced     floor generator with TWO-PHASE collision detection, random socket selection, and blockade system.
     /// PHASE 1 (BROAD): Registry checks PADDED bounds before instantiation
     /// PHASE 2 (NARROW): DoorConnectionSystem checks TIGHT bounds during connection
     /// </summary>
@@ -470,6 +469,18 @@ namespace _Scripts.ProceduralGeneration
                         Destroy(room);
                     else
                         DestroyImmediate(room);
+                }
+            }
+
+            // Destroy all blockades
+            foreach (GameObject blockade in _spawnedBlockades)
+            {
+                if (blockade != null)
+                {
+                    if (Application.isPlaying)
+                        Destroy(blockade);
+                    else
+                        DestroyImmediate(blockade);
                 }
             }
 
