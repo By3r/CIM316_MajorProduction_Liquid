@@ -1,5 +1,6 @@
 using _Scripts.Core;
-using _Scripts.Player;
+using _Scripts.Core.Managers;
+using _Scripts.Systems.Player;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -176,7 +177,7 @@ namespace _Scripts.UI
 
             if (_interactionController == null)
             {
-                _interactionController = FindObjectOfType<InteractionController>();
+                _interactionController = FindFirstObjectByType<InteractionController>();
             }
 
             if (_interactionController == null)

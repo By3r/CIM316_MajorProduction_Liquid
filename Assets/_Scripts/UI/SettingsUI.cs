@@ -1,5 +1,6 @@
 using _Scripts.Core;
-using _Scripts.Player;
+using _Scripts.Core.Managers;
+using _Scripts.Systems.Player;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
