@@ -18,6 +18,9 @@ namespace _Scripts.UI.Interaction.Editor
         private SerializedProperty _highlightFrame;
         private SerializedProperty _highlightText;
         private SerializedProperty _cornerBrackets;
+        private SerializedProperty _crosshairManager;
+        private SerializedProperty _fadeCrosshairOnHighlight;
+        private SerializedProperty _animateBracketsFromCenter;
         private SerializedProperty _showDebugLogs;
 
         private void OnEnable()
@@ -34,6 +37,9 @@ namespace _Scripts.UI.Interaction.Editor
             _highlightText = serializedObject.FindProperty("_highlightText");
             _cornerBrackets = serializedObject.FindProperty("_cornerBrackets");
             _showDebugLogs = serializedObject.FindProperty("_showDebugLogs");
+            _crosshairManager = serializedObject.FindProperty("_crosshairManager");
+            _fadeCrosshairOnHighlight = serializedObject.FindProperty("_fadeCrosshairOnHighlight");
+            _animateBracketsFromCenter = serializedObject.FindProperty("_animateBracketsFromCenter");
         }
 
         public override void OnInspectorGUI()
@@ -69,6 +75,10 @@ namespace _Scripts.UI.Interaction.Editor
 
             // === UI REFERENCES ===
             DrawUIReferences();
+            EditorGUILayout.Space(10);
+            
+            // === CROSSHAIR INTEGRATION ===
+            DrawCrosshairIntegration();
             EditorGUILayout.Space(10);
 
             // === DEBUG ===
@@ -274,6 +284,28 @@ namespace _Scripts.UI.Interaction.Editor
             if (_highlightCanvas.objectReferenceValue == null)
             {
                 EditorGUILayout.HelpBox("UI will be auto-created at runtime.", MessageType.None);
+            }
+        }
+
+        private void DrawCrosshairIntegration()
+        {
+            EditorGUILayout.LabelField("Crosshair Integration", EditorStyles.boldLabel);
+            
+            EditorGUILayout.PropertyField(_crosshairManager, new GUIContent("Crosshair Manager"));
+            EditorGUILayout.PropertyField(_fadeCrosshairOnHighlight, new GUIContent("Fade Crosshair on Highlight"));
+            EditorGUILayout.PropertyField(_animateBracketsFromCenter, new GUIContent("Animate from Center"));
+            
+            EditorGUILayout.HelpBox(
+                "Crosshair Morphing Effect:\n" +
+                "• Crosshair fades out when highlighting\n" +
+                "• Brackets start at screen center\n" +
+                "• Brackets animate to corners\n" +
+                "• Crosshair fades back in when highlight ends",
+                MessageType.Info);
+            
+            if (_crosshairManager.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("Assign CrosshairManager for morphing effect.", MessageType.Warning);
             }
         }
     }
