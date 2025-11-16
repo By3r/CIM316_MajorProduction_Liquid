@@ -57,6 +57,7 @@ namespace _Scripts.Systems.ProceduralGeneration
         [SerializeField] private int _creditsRemaining;
         [SerializeField] private int _blockadeSpawnCount;
         [SerializeField] private int _currentRegenerationAttempt;
+        [SerializeField] private bool _exitRoomSpawned;
 
         private DoorConnectionSystem _connectionSystem;
 
@@ -101,7 +102,22 @@ namespace _Scripts.Systems.ProceduralGeneration
                 float budgetUsagePercentage = 1f - ((float)_creditsRemaining / _doorCreditBudget);
                 bool budgetSufficient = budgetUsagePercentage >= _minBudgetUsageThreshold;
 
-                // Success: budget threshold met
+                // CRITICAL: Exit room must ALWAYS spawn
+                if (!_exitRoomSpawned)
+                {
+                    if (_showDebugLogs)
+                        Debug.LogWarning($"[FloorGenerator] Exit room failed to spawn! Retrying generation...");
+                    
+                    _currentRegenerationAttempt++;
+                    if (_currentRegenerationAttempt >= _maxGenerationAttempts)
+                    {
+                        Debug.LogError($"[FloorGenerator] === GENERATION FAILED === Exit room could not spawn after {_maxGenerationAttempts} attempts!");
+                        break;
+                    }
+                    continue;
+                }
+
+                // Success: budget threshold met AND exit room spawned
                 if (budgetSufficient || _creditsRemaining == 0)
                 {
                     if (_showDebugLogs && _currentRegenerationAttempt > 0)
@@ -169,6 +185,7 @@ namespace _Scripts.Systems.ProceduralGeneration
             _creditsRemaining = _doorCreditBudget;
             _availableSockets.Clear();
             _blockadeSpawnCount = 0;
+            _exitRoomSpawned = false;
 
             GameObject startRoom = SpawnStartingRoom();
             if (startRoom == null)
@@ -179,7 +196,8 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             AddRoomSocketsToList(startRoom);
 
-            while (_creditsRemaining > 0 && _availableSockets.Count > 0)
+            // Reserve 1 credit for exit room - stop at 1 remaining
+            while (_creditsRemaining > 1 && _availableSockets.Count > 0)
             {
                 int randomIndex = Random.Range(0, _availableSockets.Count);
                 ConnectionSocket sourceSocket = _availableSockets[randomIndex];
@@ -197,6 +215,7 @@ namespace _Scripts.Systems.ProceduralGeneration
                 }
             }
 
+            SpawnExitRoomAtTerminus();
             SpawnBlockadesOnUnconnectedSockets();
 
             if (_showDebugLogs)
@@ -228,6 +247,204 @@ namespace _Scripts.Systems.ProceduralGeneration
                 Debug.Log($"[FloorGenerator] Spawned starting room: {startRoomEntry.displayName}");
 
             return startRoom;
+        }
+
+        /// <summary>
+        /// Spawns the exit elevator room at one of the unconnected sockets.
+        /// GUARANTEES at least one exit room is always present in the floor.
+        /// Uses the reserved credit and proper socket alignment via DoorConnectionSystem.
+        /// </summary>
+        private void SpawnExitRoomAtTerminus()
+        {
+            RoomPrefabDatabase.RoomEntry exitRoomEntry = _roomDatabase.ExitElevatorRoom;
+
+            if (exitRoomEntry == null || exitRoomEntry.prefab == null)
+            {
+                Debug.LogError("[FloorGenerator] Exit elevator room not set in database. Cannot guarantee exit room!");
+                return;
+            }
+
+            // Collect all unconnected sockets from spawned rooms
+            List<ConnectionSocket> candidateSockets = new List<ConnectionSocket>();
+            foreach (GameObject room in _spawnedRooms)
+            {
+                if (room == null) continue;
+
+                ConnectionSocket[] sockets = room.GetComponentsInChildren<ConnectionSocket>();
+                foreach (ConnectionSocket socket in sockets)
+                {
+                    if (socket != null && !socket.IsConnected && socket.ConnectedSocket == null)
+                    {
+                        // Check if exit room has compatible socket type
+                        ConnectionSocket exitSocket = FindCompatibleSocketInPrefab(exitRoomEntry.prefab, socket.SocketType);
+                        if (exitSocket != null)
+                        {
+                            candidateSockets.Add(socket);
+                        }
+                    }
+                }
+            }
+
+            // If no unconnected sockets, try ANY compatible socket (will use credit to spawn new room)
+            if (candidateSockets.Count == 0)
+            {
+                if (_showDebugLogs)
+                    Debug.LogWarning("[FloorGenerator] No unconnected sockets available for exit room. Will use any compatible socket.");
+
+                foreach (GameObject room in _spawnedRooms)
+                {
+                    if (room == null) continue;
+
+                    ConnectionSocket[] sockets = room.GetComponentsInChildren<ConnectionSocket>();
+                    foreach (ConnectionSocket socket in sockets)
+                    {
+                        if (socket != null)
+                        {
+                            ConnectionSocket exitSocket = FindCompatibleSocketInPrefab(exitRoomEntry.prefab, socket.SocketType);
+                            if (exitSocket != null)
+                            {
+                                candidateSockets.Add(socket);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (candidateSockets.Count == 0)
+            {
+                Debug.LogError("[FloorGenerator] CRITICAL: No compatible sockets found for exit room! Floor generation incomplete.");
+                return;
+            }
+
+            // Shuffle the list to try sockets in random order
+            for (int i = candidateSockets.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                ConnectionSocket temp = candidateSockets[i];
+                candidateSockets[i] = candidateSockets[j];
+                candidateSockets[j] = temp;
+            }
+
+            // Try each socket until one works
+            foreach (ConnectionSocket selectedSocket in candidateSockets)
+            {
+                // Find the compatible socket in the exit room prefab
+                ConnectionSocket exitSocketPrefab = FindCompatibleSocketInPrefab(exitRoomEntry.prefab, selectedSocket.SocketType);
+
+                if (exitSocketPrefab == null)
+                    continue;
+
+                // Store prefab's original transform state
+                Vector3 prefabOriginalPos = exitRoomEntry.prefab.transform.position;
+                Quaternion prefabOriginalRot = exitRoomEntry.prefab.transform.rotation;
+                
+                // Temporarily reset prefab to identity for clean calculation
+                exitRoomEntry.prefab.transform.position = Vector3.zero;
+                exitRoomEntry.prefab.transform.rotation = Quaternion.identity;
+
+                // Calculate alignment using DoorConnectionSystem
+                var (roomPosition, roomRotation) = _connectionSystem.CalculateTargetRoomTransform(
+                    selectedSocket, 
+                    exitSocketPrefab, 
+                    exitRoomEntry.prefab.transform
+                );
+                
+                // Restore prefab's original transform
+                exitRoomEntry.prefab.transform.position = prefabOriginalPos;
+                exitRoomEntry.prefab.transform.rotation = prefabOriginalRot;
+
+                // Check broad-phase collision before spawning
+                BoundsChecker exitBoundsChecker = exitRoomEntry.prefab.GetComponent<BoundsChecker>();
+                if (exitBoundsChecker != null)
+                {
+                    // Transform bounds to world space using calculated position/rotation
+                    exitRoomEntry.prefab.transform.position = roomPosition;
+                    exitRoomEntry.prefab.transform.rotation = roomRotation;
+                    
+                    Bounds worldBounds = exitBoundsChecker.GetPaddedBounds();
+                    
+                    // Restore prefab transform
+                    exitRoomEntry.prefab.transform.position = prefabOriginalPos;
+                    exitRoomEntry.prefab.transform.rotation = prefabOriginalRot;
+
+                    if (OccupiedSpaceRegistry.Instance.IsSpaceOccupied(worldBounds, (BoundsChecker)null))
+                    {
+                        if (_showDebugLogs)
+                            Debug.Log($"[FloorGenerator] Exit room would collide at socket '{selectedSocket.name}', trying next socket...");
+                        continue;
+                    }
+                }
+
+                // Spawn the exit room
+                GameObject exitRoom = SpawnRoom(
+                    exitRoomEntry.prefab,
+                    roomPosition,
+                    roomRotation,
+                    "ExitRoom",
+                    registerNow: true
+                );
+
+                if (exitRoom == null)
+                {
+                    Debug.LogWarning("[FloorGenerator] Failed to instantiate exit room, trying next socket...");
+                    continue;
+                }
+
+                _spawnedRooms.Add(exitRoom);
+
+                // Find the matching socket in the spawned exit room
+                ConnectionSocket spawnedExitSocket = FindMatchingSocketInInstance(exitRoom, exitSocketPrefab);
+
+                if (spawnedExitSocket == null)
+                {
+                    Debug.LogWarning("[FloorGenerator] Could not find exit socket in spawned exit room, trying next socket...");
+                    
+                    // Clean up failed spawn
+                    _spawnedRooms.Remove(exitRoom);
+                    if (Application.isPlaying)
+                        Destroy(exitRoom);
+                    else
+                        DestroyImmediate(exitRoom);
+                    
+                    continue;
+                }
+
+                // Connect the sockets using DoorConnectionSystem (performs narrow-phase check)
+                bool connectionSuccess = _connectionSystem.ConnectRooms(selectedSocket, spawnedExitSocket, exitRoom.transform, _doorPrefab);
+
+                if (connectionSuccess)
+                {
+                    // Success! Deduct the reserved credit
+                    _creditsRemaining--;
+                    _connectionsMade++;
+                    _exitRoomSpawned = true;
+                    
+                    if (_showDebugLogs)
+                        Debug.Log($"[FloorGenerator] ✓ Exit room spawned at '{selectedSocket.name}' (1 credit used)");
+                    
+                    return; // Exit room placed successfully
+                }
+                else
+                {
+                    // Narrow-phase collision detected, clean up and try next socket
+                    if (_showDebugLogs)
+                        Debug.Log($"[FloorGenerator] Narrow-phase collision for exit room at socket '{selectedSocket.name}', trying next socket...");
+                    
+                    _spawnedRooms.Remove(exitRoom);
+                    
+                    BoundsChecker boundsChecker = exitRoom.GetComponent<BoundsChecker>();
+                    if (boundsChecker != null)
+                        boundsChecker.UnregisterFromRegistry();
+                    
+                    if (Application.isPlaying)
+                        Destroy(exitRoom);
+                    else
+                        DestroyImmediate(exitRoom);
+                }
+            }
+
+            // If we get here, no socket worked
+            Debug.LogError("[FloorGenerator] CRITICAL: Failed to place exit room at any compatible socket! Floor generation incomplete.");
         }
 
         /// <summary>

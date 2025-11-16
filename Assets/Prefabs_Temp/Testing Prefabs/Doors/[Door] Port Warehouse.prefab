@@ -57,7 +57,7 @@ MonoBehaviour:
   _backRotationAngle: -90
   _openingDuration: 1
   _closingDuration: 1
-  _autoClose: 0
+  _autoClose: 1
   _autoCloseDelay: 3
   _allowManualClose: 1
   _openSound: {fileID: 0}
