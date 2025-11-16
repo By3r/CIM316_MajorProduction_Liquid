@@ -21,6 +21,17 @@ namespace _Scripts.Systems.ProceduralGeneration
         [Tooltip("Door prefab to instantiate at connections")]
         [SerializeField] private GameObject _doorPrefab;
 
+        [Header("Retry Settings")]
+        [Tooltip("Enable automatic regeneration if budget not fully used")]
+        [SerializeField] private bool _enableRetryOnIncompleteGeneration = true;
+
+        [Tooltip("Maximum generation attempts before giving up")]
+        [SerializeField] private int _maxGenerationAttempts = 3;
+
+        [Tooltip("Minimum credits that must be used (percentage of budget)")]
+        [Range(0f, 1f)]
+        [SerializeField] private float _minBudgetUsageThreshold = 0.8f;
+
         [Header("Generation Options")]
         [SerializeField] private bool _generateOnStart;
         [SerializeField] private bool _showDebugLogs = true;
@@ -45,6 +56,7 @@ namespace _Scripts.Systems.ProceduralGeneration
         [SerializeField] private int _connectionsMade;
         [SerializeField] private int _creditsRemaining;
         [SerializeField] private int _blockadeSpawnCount;
+        [SerializeField] private int _currentRegenerationAttempt;
 
         private DoorConnectionSystem _connectionSystem;
 
@@ -75,8 +87,58 @@ namespace _Scripts.Systems.ProceduralGeneration
 
         /// <summary>
         /// Generates a procedural floor using the room database with two-phase collision detection.
+        /// Automatically regenerates if the budget wasn't fully utilized.
         /// </summary>
         public void GenerateFloor()
+        {
+            _currentRegenerationAttempt = 0;
+
+            // Loop-based retry instead of recursion to avoid stack overflow
+            while (true)
+            {
+                GenerateFloorInternal();
+
+                float budgetUsagePercentage = 1f - ((float)_creditsRemaining / _doorCreditBudget);
+                bool budgetSufficient = budgetUsagePercentage >= _minBudgetUsageThreshold;
+
+                // Success: budget threshold met
+                if (budgetSufficient || _creditsRemaining == 0)
+                {
+                    if (_showDebugLogs && _currentRegenerationAttempt > 0)
+                    {
+                        Debug.Log($"[FloorGenerator] === GENERATION SUCCESSFUL on attempt {_currentRegenerationAttempt + 1} === " +
+                                  $"Budget usage: {budgetUsagePercentage:P1}");
+                    }
+                    break;
+                }
+
+                // Failure: max attempts reached
+                if (!_enableRetryOnIncompleteGeneration || _currentRegenerationAttempt >= _maxGenerationAttempts - 1)
+                {
+                    if (_showDebugLogs)
+                    {
+                        Debug.LogWarning($"[FloorGenerator] === GENERATION INCOMPLETE === " +
+                                       $"Final attempt ({_currentRegenerationAttempt + 1}/{_maxGenerationAttempts}) " +
+                                       $"used {budgetUsagePercentage:P1} of budget " +
+                                       $"({_doorCreditBudget - _creditsRemaining}/{_doorCreditBudget} credits)");
+                    }
+                    break;
+                }
+
+                // Retry
+                _currentRegenerationAttempt++;
+                if (_showDebugLogs)
+                {
+                    Debug.LogWarning($"[FloorGenerator] Budget usage {budgetUsagePercentage:P1} below threshold {_minBudgetUsageThreshold:P0}. " +
+                                   $"Retrying... (attempt {_currentRegenerationAttempt + 1}/{_maxGenerationAttempts})");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Internal generation method that performs a single generation pass.
+        /// </summary>
+        private void GenerateFloorInternal()
         {
             EnsureConnectionSystemExists();
 
@@ -97,7 +159,12 @@ namespace _Scripts.Systems.ProceduralGeneration
             OccupiedSpaceRegistry.Instance.ClearRegistry();
 
             if (_showDebugLogs)
-                Debug.Log($"[FloorGenerator] === STARTING FLOOR GENERATION === Budget: {_doorCreditBudget} credits");
+            {
+                string attemptInfo = _currentRegenerationAttempt > 0 
+                    ? $" (Regeneration Attempt {_currentRegenerationAttempt}/{_maxGenerationAttempts})" 
+                    : "";
+                Debug.Log($"[FloorGenerator] === STARTING FLOOR GENERATION{attemptInfo} === Budget: {_doorCreditBudget} credits");
+            }
 
             _creditsRemaining = _doorCreditBudget;
             _availableSockets.Clear();
@@ -134,7 +201,10 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorGenerator] === GENERATION COMPLETE === " +
+                string attemptInfo = _currentRegenerationAttempt > 0 
+                    ? $" (Attempt {_currentRegenerationAttempt + 1}/{_maxGenerationAttempts})" 
+                    : "";
+                Debug.Log($"[FloorGenerator] === GENERATION PASS COMPLETE{attemptInfo} === " +
                           $"Spawned {_spawnedRooms.Count} rooms, {_connectionsMade} connections, " +
                           $"{_blockadeSpawnCount} blockades, {_creditsRemaining} credits remaining");
                 Debug.Log($"[FloorGenerator] {OccupiedSpaceRegistry.Instance.GetRegistryStats()}");
@@ -490,6 +560,8 @@ namespace _Scripts.Systems.ProceduralGeneration
             _connectionsMade = 0;
             _creditsRemaining = 0;
             _blockadeSpawnCount = 0;
+            // Note: _currentRegenerationAttempt is NOT reset here
+            // It's only reset in GenerateFloor() to track across regeneration cycles
 
             if (OccupiedSpaceRegistry.Instance != null)
             {
