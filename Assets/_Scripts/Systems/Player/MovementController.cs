@@ -8,6 +8,7 @@ namespace _Scripts.Systems.Player
     /// Handles player movement including walking, sprinting, crouching, jumping, and gravity.
     /// Manages the CharacterController and calculates movement based on input and player settings.
     /// Exposes movement state properties for other systems (camera effects, animations, etc.).
+    /// Integrates with Neutronic Boots for ceiling walking physics override.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class MovementController : MonoBehaviour
@@ -98,55 +99,70 @@ namespace _Scripts.Systems.Player
         public float MaxSpeed => _currentTargetSpeed;
         
         /// <summary>
-        /// Gets whether the player has toggled walk mode (reduced speed mode).
+        /// Gets whether the player has walk toggle enabled.
         /// </summary>
         public bool IsWalkingToggled { get; private set; }
+
+        /// <summary>
+        /// Gets the base walk speed for use by other systems (like Neutronic Boots).
+        /// </summary>
+        public float WalkSpeed => _walkSpeed;
+        
+        /// <summary>
+        /// **FIX**: Public getter for the gravity value.
+        /// </summary>
+        public float Gravity => _gravity;
 
         #endregion
 
         #region Initialization
 
-        private void Awake()
-        {
-            _characterController = GetComponent<CharacterController>();
-            _originalHeight = _characterController.height;
-            _originalCenter = _characterController.center;
-            
-            if (_groundCheck == null)
-            {
-                GameObject groundCheckObj = new GameObject("GroundCheck");
-                groundCheckObj.transform.SetParent(transform);
-                groundCheckObj.transform.localPosition = new Vector3(0, -_characterController.height / 2, 0);
-                _groundCheck = groundCheckObj.transform;
-            }
-            
-            // Get Neutronic Boots reference for jump prevention
-            _neutronicBoots = GetComponent<Liquid.Player.Equipment.NeutronicBoots>();
-        }
-
         /// <summary>
-        /// Initializes the movement controller with player settings.
-        /// Must be called before HandleMovement() is used.
+        /// Initializes the movement controller with player settings and caches references.
+        /// Should be called once during player setup.
         /// </summary>
-        /// <param name="settings">The player settings containing movement speeds and jump parameters.</param>
+        /// <param name="settings">The player settings configuration.</param>
         public void Initialize(PlayerSettings settings)
         {
             _settings = settings;
+            _characterController = GetComponent<CharacterController>();
+
+            if (_characterController == null)
+            {
+                Debug.LogError("[MovementController] CharacterController component not found!");
+                return;
+            }
+
+            _originalHeight = _characterController.height;
+            _originalCenter = _characterController.center;
+
+            // Get reference to Neutronic Boots if present
+            _neutronicBoots = GetComponent<Liquid.Player.Equipment.NeutronicBoots>();
         }
 
         #endregion
 
-        #region Movement
+        #region Movement Handling
 
         /// <summary>
         /// Updates player movement for the current frame.
         /// Handles ground detection, input reading, speed calculation, jumping, and gravity.
+        /// Skips normal movement when Neutronic Boots are handling ceiling physics.
         /// Should be called every frame from PlayerController.Update().
         /// </summary>
         public void HandleMovement()
         {
             if (_settings == null || InputManager.Instance == null) return;
 
+            // CEILING PHYSICS OVERRIDE - Skip normal movement if boots are handling ceiling
+            if (_neutronicBoots != null && _neutronicBoots.ShouldOverrideMovement)
+            {
+                // This remains correct: it stops velocity accumulation and cedes control.
+                _velocity.y = 0f;
+                return;
+            }
+
+            // NORMAL GROUND MOVEMENT
             bool wasGrounded = _isGrounded;
             _isGrounded = Physics.CheckSphere(_groundCheck.position, _groundDistance, _groundMask);
 
@@ -219,78 +235,52 @@ namespace _Scripts.Systems.Player
         /// Sets the gravity multiplier for special movement states like ceiling walking.
         /// Called by Neutronic Boots component to reverse gravity.
         /// </summary>
-        /// <param name="multiplier">1 for normal gravity, -1 for ceiling walk</param>
+        /// <param name="multiplier">The gravity multiplier (-1 for ceiling, 1 for normal).</param>
         public void SetGravityMultiplier(float multiplier)
         {
             _gravityMultiplier = multiplier;
-            Debug.Log($"[MovementController] Gravity multiplier set to: {multiplier}");
+            // This is no longer the primary mechanism for sticking, but is kept for state consistency.
+            Debug.Log($"[MovementController] Gravity multiplier set to: {_gravityMultiplier}");
         }
 
         #endregion
 
-        #region Crouch Mechanics
+        #region Crouch Handling
 
         private void HandleCrouchToggle()
         {
-            if (_isCrouching)
+            if (_crouchRoutine != null)
             {
-                if (CanStandUp())
-                {
-                    _isCrouching = false;
-                    if (_crouchRoutine != null) StopCoroutine(_crouchRoutine);
-                    _crouchRoutine = StartCoroutine(DoCrouchTransition(_originalHeight, _originalCenter));
-                }
+                StopCoroutine(_crouchRoutine);
             }
-            else
-            {
-                _isCrouching = true;
-                if (_crouchRoutine != null) StopCoroutine(_crouchRoutine);
-                float crouchHeight = _originalHeight * _crouchHeightMultiplier;
-                Vector3 crouchCenter = _originalCenter * _crouchHeightMultiplier;
-                _crouchRoutine = StartCoroutine(DoCrouchTransition(crouchHeight, crouchCenter));
-            }
+
+            _isCrouching = !_isCrouching;
+            _crouchRoutine = StartCoroutine(TransitionCrouch(_isCrouching));
         }
 
-        private IEnumerator DoCrouchTransition(float targetHeight, Vector3 targetCenter)
+        private IEnumerator TransitionCrouch(bool crouch)
         {
-            float currentHeight = _characterController.height;
-            Vector3 currentCenter = _characterController.center;
-            float elapsedTime = 0f;
+            float targetHeight = crouch ? _originalHeight * _crouchHeightMultiplier : _originalHeight;
+            Vector3 targetCenter = crouch ? new Vector3(_originalCenter.x, _originalCenter.y * _crouchHeightMultiplier, _originalCenter.z) : _originalCenter;
+            
+            float startHeight = _characterController.height;
+            Vector3 startCenter = _characterController.center;
+            
+            float elapsed = 0f;
 
-            while (elapsedTime < _crouchTransitionDuration)
+            while (elapsed < _crouchTransitionDuration)
             {
-                elapsedTime += Time.deltaTime;
-                float t = Mathf.Clamp01(elapsedTime / _crouchTransitionDuration);
+                elapsed += Time.deltaTime;
+                float t = elapsed / _crouchTransitionDuration;
 
-                _characterController.height = Mathf.Lerp(currentHeight, targetHeight, t);
-                _characterController.center = Vector3.Lerp(currentCenter, targetCenter, t);
+                _characterController.height = Mathf.Lerp(startHeight, targetHeight, t);
+                _characterController.center = Vector3.Lerp(startCenter, targetCenter, t);
 
                 yield return null;
             }
 
             _characterController.height = targetHeight;
             _characterController.center = targetCenter;
-        }
-
-        private bool CanStandUp()
-        {
-            Vector3 start = transform.position + _originalCenter * _crouchHeightMultiplier;
-            Vector3 end = transform.position + new Vector3(_originalCenter.x, _originalHeight - _characterController.radius, _originalCenter.z);
-            
-            return !Physics.CheckCapsule(start, end, _characterController.radius, _groundMask, QueryTriggerInteraction.Ignore);
-        }
-
-        #endregion
-
-        #region Debug
-
-        private void OnDrawGizmosSelected()
-        {
-            if (_groundCheck != null)
-            {
-                Gizmos.color = _isGrounded ? Color.green : Color.red;
-                Gizmos.DrawWireSphere(_groundCheck.position, _groundDistance);
-            }
         }
 
         #endregion

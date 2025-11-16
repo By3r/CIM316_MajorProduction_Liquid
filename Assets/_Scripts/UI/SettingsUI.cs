@@ -22,7 +22,8 @@ namespace _Scripts.UI
         [SerializeField] private Slider _fovSlider;
         [SerializeField] private TextMeshProUGUI _fovText;
         [SerializeField] private Toggle _invertYToggle;
-        [SerializeField] private Toggle _cameraBobToggle;
+        // **FIX**: Renamed the toggle for clarity. This should be linked to your UI toggle in the Inspector.
+        [SerializeField] private Toggle _antiMotionSicknessModeToggle; 
 
         [Header("Buttons")]
         [SerializeField] private Button _applyButton;
@@ -50,7 +51,8 @@ namespace _Scripts.UI
             if (_sensitivitySlider != null) _sensitivitySlider.onValueChanged.AddListener(OnSensitivityChanged);
             if (_fovSlider != null) _fovSlider.onValueChanged.AddListener(OnFOVChanged);
             if (_invertYToggle != null) _invertYToggle.onValueChanged.AddListener(OnInvertYChanged);
-            if (_cameraBobToggle != null) _cameraBobToggle.onValueChanged.AddListener(OnCameraBobChanged);
+            // **FIX**: Updated listener to use the new toggle and its corresponding handler.
+            if (_antiMotionSicknessModeToggle != null) _antiMotionSicknessModeToggle.onValueChanged.AddListener(OnAntiMotionSicknessChanged);
             
             if (_applyButton != null) _applyButton.onClick.AddListener(OnApplyClicked);
             if (_resetButton != null) _resetButton.onClick.AddListener(OnResetClicked);
@@ -98,9 +100,9 @@ namespace _Scripts.UI
                 _invertYToggle.isOn = _temporarySettings.InvertYAxis;
             }
             
-            if (_cameraBobToggle != null)
+            if (_antiMotionSicknessModeToggle != null)
             {
-                _cameraBobToggle.isOn = _temporarySettings.EnableCameraBob;
+                _antiMotionSicknessModeToggle.isOn = !_temporarySettings.EnableCameraBob;
             }
         }
 
@@ -170,9 +172,10 @@ namespace _Scripts.UI
             _temporarySettings.InvertYAxis = value;
         }
 
-        private void OnCameraBobChanged(bool value)
+        // When the toggle is checked (value = true), we DISABLE camera bob.
+        private void OnAntiMotionSicknessChanged(bool value)
         {
-            _temporarySettings.EnableCameraBob = value;
+            _temporarySettings.EnableCameraBob = !value;
         }
 
         #endregion

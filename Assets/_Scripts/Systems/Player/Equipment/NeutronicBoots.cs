@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using _Scripts.Core.Managers;
+using _Scripts.Systems.Player;
 using UnityEngine;
 
 namespace Liquid.Player.Equipment
@@ -7,7 +8,7 @@ namespace Liquid.Player.Equipment
     /// <summary>
     /// Manages the Neutronic Boots equipment system for ceiling walking.
     /// Handles activation via hold-to-activate, player/camera rotation transitions,
-    /// gravity reversal, and dismount mechanics.
+    /// gravity reversal, custom ceiling physics, and dismount mechanics.
     /// </summary>
     public class NeutronicBoots : MonoBehaviour
     {
@@ -35,46 +36,28 @@ namespace Liquid.Player.Equipment
         private bool _isTransitioning;
         private float _activationHoldTimer;
         private bool _isHoldingActivation;
-        private float _ceilingGraceTimer; // Timer to prevent immediate fall after activation
+        private float _ceilingGraceTimer;
+        private float _dismountCooldownTimer; 
+        private bool _isDismounting;
         
-        // Transition tracking
-        private Quaternion _targetPlayerRotation;
-        private Quaternion _targetCameraRotation;
-        private Vector3 _targetPosition;
-        
-        // Original values (for reverting)
-        private float _originalGravity;
-        private Quaternion _originalPlayerRotation;
-        private Quaternion _originalCameraRotation;
-
         // Component references
         private _Scripts.Systems.Player.MovementController _movementController;
         private _Scripts.Systems.Player.CameraController _cameraController;
+
+        // Ceiling physics state
+        private Vector3 _ceilingVelocity;
+        private float _baseMovementSpeed;
+        private float _gravityValue;
 
         #endregion
 
         #region Public Properties
 
-        /// <summary>
-        /// Gets whether the player is currently walking on the ceiling.
-        /// </summary>
         public bool IsOnCeiling => _isOnCeiling;
-
-        /// <summary>
-        /// Gets whether the player is currently transitioning to/from ceiling.
-        /// </summary>
         public bool IsTransitioning => _isTransitioning;
-
-        /// <summary>
-        /// Gets the current activation progress (0 to 1) for UI display.
-        /// </summary>
         public float ActivationProgress => _settings != null ? Mathf.Clamp01(_activationHoldTimer / _settings.ActivationHoldTime) : 0f;
-
-        /// <summary>
-        /// Gets whether boots should prevent jumping (holding for activation or on ceiling).
-        /// MovementController should check this before allowing jumps.
-        /// </summary>
         public bool ShouldPreventJump => _isHoldingActivation || _isOnCeiling || _isTransitioning;
+        public bool ShouldOverrideMovement => (_isOnCeiling || _isTransitioning) && !_isDismounting;
 
         #endregion
 
@@ -82,10 +65,7 @@ namespace Liquid.Player.Equipment
 
         private void Awake()
         {
-            // Add ceiling detector component
             _ceilingDetector = gameObject.AddComponent<CeilingDetector>();
-            
-            // Get component references
             _characterController = GetComponent<CharacterController>();
             _movementController = GetComponent<_Scripts.Systems.Player.MovementController>();
             
@@ -106,27 +86,19 @@ namespace Liquid.Player.Equipment
 
             _ceilingDetector.Initialize(_settings, _playerBody != null ? _playerBody : transform);
             
-            // Store original values
-            _originalPlayerRotation = _playerBody != null ? _playerBody.rotation : transform.rotation;
-            if (_cameraTransform != null)
-            {
-                _originalCameraRotation = _cameraTransform.localRotation;
-            }
+            if (_activationSlider != null) _activationSlider.value = 0f;
+            if (_activationSliderCanvasGroup != null) _activationSliderCanvasGroup.alpha = 0f;
+            if (_ceilingAvailableIcon != null) _ceilingAvailableIcon.alpha = 0f;
 
-            // Initialize UI
-            if (_activationSlider != null)
+            if (_movementController != null)
             {
-                _activationSlider.value = 0f;
+                _baseMovementSpeed = _movementController.WalkSpeed;
+                _gravityValue = _movementController.Gravity;
             }
-            
-            if (_activationSliderCanvasGroup != null)
+            else
             {
-                _activationSliderCanvasGroup.alpha = 0f;
-            }
-
-            if (_ceilingAvailableIcon != null)
-            {
-                _ceilingAvailableIcon.alpha = 0f;
+                _gravityValue = Physics.gravity.y;
+                Debug.LogWarning("[NeutronicBoots] MovementController not found. Using system gravity.");
             }
         }
 
@@ -138,32 +110,23 @@ namespace Liquid.Player.Equipment
         {
             if (_settings == null) return;
 
-            // Continuous ceiling detection
             _ceilingDetector.DetectCeiling();
-
-            // Handle UI visibility
             UpdateUI();
 
-            // Handle activation input
-            if (!_isOnCeiling && !_isTransitioning)
+            if (_ceilingGraceTimer > 0f) _ceilingGraceTimer -= Time.deltaTime;
+            if (_dismountCooldownTimer > 0f) _dismountCooldownTimer -= Time.deltaTime;
+            
+            if (!_isOnCeiling && !_isTransitioning && _dismountCooldownTimer <= 0f)
             {
                 HandleActivationInput();
             }
 
-            // Count down grace timer
-            if (_ceilingGraceTimer > 0f)
+            if (_isOnCeiling && !_isTransitioning && !_isDismounting)
             {
-                _ceilingGraceTimer -= Time.deltaTime;
+                HandleCeilingPhysics();
             }
 
-            // Validate ceiling surface while on ceiling (after grace period)
-            if (_isOnCeiling && !_isTransitioning && _ceilingGraceTimer <= 0f)
-            {
-                ValidateCeilingContact();
-            }
-
-            // Handle dismount input
-            if (_isOnCeiling && InputManager.Instance.JumpPressed)
+            if (_isOnCeiling && !_isTransitioning && InputManager.Instance.JumpPressed)
             {
                 StartCoroutine(DismountFromCeiling());
             }
@@ -175,7 +138,6 @@ namespace Liquid.Player.Equipment
 
         private void HandleActivationInput()
         {
-            // Check if jump is being held
             bool jumpHeld = InputManager.Instance != null && InputManager.Instance.IsJumpHeld;
 
             if (jumpHeld && _ceilingDetector.IsCeilingAvailable && _movementController != null && _movementController.IsGrounded)
@@ -183,13 +145,8 @@ namespace Liquid.Player.Equipment
                 _isHoldingActivation = true;
                 _activationHoldTimer += Time.deltaTime;
 
-                // Update slider
-                if (_activationSlider != null)
-                {
-                    _activationSlider.value = ActivationProgress;
-                }
+                if (_activationSlider != null) _activationSlider.value = ActivationProgress;
 
-                // Check if activation complete
                 if (_activationHoldTimer >= _settings.ActivationHoldTime)
                 {
                     StartCoroutine(ActivateCeilingWalk());
@@ -199,16 +156,11 @@ namespace Liquid.Player.Equipment
             }
             else
             {
-                // Reset if released early
                 if (_isHoldingActivation)
                 {
                     _activationHoldTimer = 0f;
                     _isHoldingActivation = false;
-                    
-                    if (_activationSlider != null)
-                    {
-                        _activationSlider.value = 0f;
-                    }
+                    if (_activationSlider != null) _activationSlider.value = 0f;
                 }
             }
         }
@@ -219,182 +171,173 @@ namespace Liquid.Player.Equipment
 
         private IEnumerator ActivateCeilingWalk()
         {
+            if (_isTransitioning) yield break;
+
             _isTransitioning = true;
+            transform.position = _ceilingDetector.LastCeilingHit.point - (Vector3.up * (_characterController.height / 2f));
+            if (_movementController != null) _movementController.SetGravityMultiplier(-1f);
 
-            // Calculate target rotations
-            Transform targetTransform = _playerBody != null ? _playerBody : transform;
-            Quaternion startPlayerRotation = targetTransform.rotation;
-            Quaternion targetPlayerRotation = startPlayerRotation * Quaternion.Euler(180f, 0f, 0f);
-
-            // Calculate target position (move to ceiling)
-            Vector3 startPosition = transform.position;
-            Vector3 targetPosition = _ceilingDetector.LastCeilingHit.point - (Vector3.up * (_characterController.height / 2f));
-
-            // Camera rotation setup
-            Quaternion startCameraRotation = Quaternion.identity;
-            Quaternion targetCameraRotation = Quaternion.identity;
+            Transform playerTransform = _playerBody != null ? _playerBody : transform;
+            Quaternion startPlayerRotation = playerTransform.rotation;
+            Quaternion targetPlayerRotation = startPlayerRotation * Quaternion.Euler(0f, 0f, 180f);
             
-            if (_settings.RotateCameraWithPlayer && _cameraTransform != null)
+            // **FIX**: Check anti-motion sickness setting before playing animation
+            if (PlayerSettingsManager.Instance.CurrentSettings.EnableCameraBob)
             {
-                startCameraRotation = _cameraTransform.localRotation;
-                targetCameraRotation = startCameraRotation * Quaternion.Euler(180f, 0f, 0f);
-            }
-
-            float transitionProgress = 0f;
-
-            while (transitionProgress < 1f)
-            {
-                transitionProgress += Time.deltaTime * _settings.RotationTransitionSpeed;
-                float t = Mathf.SmoothStep(0f, 1f, transitionProgress);
-
-                // Rotate player
-                targetTransform.rotation = Quaternion.Slerp(startPlayerRotation, targetPlayerRotation, t);
-
-                // Move toward ceiling
-                transform.position = Vector3.Lerp(startPosition, targetPosition, t);
-
-                // Rotate camera if enabled
-                if (_settings.RotateCameraWithPlayer && _cameraTransform != null)
+                // Animated rotation
+                float elapsed = 0f;
+                while (elapsed < _settings.RotationTransitionDuration)
                 {
-                    _cameraTransform.localRotation = Quaternion.Slerp(startCameraRotation, targetCameraRotation, t);
+                    elapsed += Time.deltaTime;
+                    float t = Mathf.Clamp01(elapsed / _settings.RotationTransitionDuration);
+
+                    playerTransform.rotation = Quaternion.Slerp(startPlayerRotation, targetPlayerRotation, t);
+                    
+                    // Apply anti-gravity during the transition to prevent falling
+                    Vector3 antiGravityForce = Vector3.up * -_gravityValue;
+                    _characterController.Move(antiGravityForce * Time.deltaTime);
+                
+                    yield return null;
                 }
-
-                yield return null;
             }
-
-            // Finalize
-            targetTransform.rotation = targetPlayerRotation;
-            transform.position = targetPosition;
             
-            if (_settings.RotateCameraWithPlayer && _cameraTransform != null)
-            {
-                _cameraTransform.localRotation = targetCameraRotation;
-            }
+            // **FIX**: Set final rotation instantly (for both animated and non-animated modes)
+            playerTransform.rotation = targetPlayerRotation;
 
+            // Finalize state
             _isOnCeiling = true;
-            _isTransitioning = false;
-            
-            // Set grace period to prevent immediate fall detection
             _ceilingGraceTimer = _settings.CeilingContactGracePeriod;
-
-            // Reverse gravity so player sticks to ceiling
-            if (_movementController != null)
-            {
-                _movementController.SetGravityMultiplier(-1f);
-            }
+            _ceilingVelocity = Vector3.zero;
+            _isTransitioning = false;
             
             Debug.Log("[NeutronicBoots] Ceiling walk activated!");
         }
 
         #endregion
 
-        #region Ceiling Validation
+        #region Ceiling Physics
 
-        private void ValidateCeilingContact()
+        private void HandleCeilingPhysics()
         {
-            // Check if player is still on valid ceiling surface
-            // When upside-down, we need to check in the player's "up" direction (which points toward ceiling)
-            Transform checkTransform = _playerBody != null ? _playerBody : transform;
-            Vector3 checkPosition = transform.position;
-            Vector3 checkDirection = checkTransform.up; // This will point toward ceiling when upside-down
-            
-            float checkDistance = _characterController.height * 0.6f; // Check slightly more than half the height
-            
-            // Raycast in the "up" direction (toward ceiling when inverted)
-            bool stillOnCeiling = Physics.Raycast(
-                checkPosition,
-                checkDirection,
+            if (_isDismounting) return;
+
+            Vector2 input = InputManager.Instance.MoveInput;
+            Transform playerTransform = _playerBody != null ? _playerBody : transform;
+            Vector3 playerPosition = transform.position;
+            Vector3 rayDirection = Vector3.up;
+
+            if (Physics.Raycast(
+                playerPosition,
+                rayDirection,
                 out RaycastHit hit,
-                checkDistance,
+                _settings.CeilingDetectionDistance,
                 _settings.CeilingWalkableLayer,
-                QueryTriggerInteraction.Ignore);
-            
-            // Debug visualization
-            if (_settings.ShowDebugGizmos)
+                QueryTriggerInteraction.Ignore))
             {
-                Debug.DrawRay(checkPosition, checkDirection * checkDistance, stillOnCeiling ? Color.green : Color.red);
+                Vector3 antiGravityForce = Vector3.up * -_gravityValue;
+                Vector3 stickyForce = CalculateStickyForce(hit, rayDirection);
+                Vector3 ceilingMovement = CalculateCeilingMovement(input, hit.normal, playerTransform);
+                ceilingMovement = ApplyFriction(ceilingMovement);
+
+                Vector3 finalMovement = antiGravityForce + stickyForce + ceilingMovement;
+                _characterController.Move(finalMovement * Time.deltaTime);
             }
-            
-            if (!stillOnCeiling)
+            else
             {
-                // Surface ended - dismount immediately
-                Debug.Log("[NeutronicBoots] Lost ceiling contact - falling!");
-                StartCoroutine(DismountFromCeiling(true));
+                if (_ceilingGraceTimer > 0f) return;
+                if (_isDismounting || _isTransitioning) return;
+                StartCoroutine(DismountFromCeiling());
             }
+        }
+
+        private Vector3 CalculateStickyForce(RaycastHit hit, Vector3 rayDirection)
+        {
+            float targetDistance = _characterController.height * 0.5f;
+            float currentDistance = hit.distance;
+            float distanceError = currentDistance - targetDistance;
+
+            float forceStrength = distanceError * _settings.StickyForceStrength;
+            forceStrength = Mathf.Clamp(forceStrength, -_settings.MaxStickyForce, _settings.MaxStickyForce);
+
+            return rayDirection * forceStrength;
+        }
+
+        private Vector3 CalculateCeilingMovement(Vector2 input, Vector3 surfaceNormal, Transform playerTransform)
+        {
+            if (input.magnitude < 0.01f) return Vector3.zero;
+
+            Vector3 forward = playerTransform.forward;
+            Vector3 right = playerTransform.right;
+            Vector3 desiredMoveDirection = (right * input.x + forward * input.y).normalized;
+            Vector3 projectedMovement = Vector3.ProjectOnPlane(desiredMoveDirection, surfaceNormal);
+
+            float speed = _baseMovementSpeed * _settings.CeilingMovementSpeedMultiplier;
+            if (_settings.AllowSprintOnCeiling && InputManager.Instance.IsSprinting)
+            {
+                speed *= 1.5f;
+            }
+
+            return projectedMovement * speed;
+        }
+
+        private Vector3 ApplyFriction(Vector3 movement)
+        {
+            Vector2 input = InputManager.Instance.MoveInput;
+            
+            if (input.magnitude < 0.01f)
+            {
+                _ceilingVelocity = Vector3.Lerp(_ceilingVelocity, Vector3.zero, _settings.CeilingFriction * Time.deltaTime);
+                return _ceilingVelocity;
+            }
+
+            _ceilingVelocity = Vector3.Lerp(_ceilingVelocity, movement, _settings.CeilingAcceleration * Time.deltaTime);
+            return _ceilingVelocity * _settings.CeilingFrictionCoefficient;
         }
 
         #endregion
 
         #region Dismount Logic
 
-        private IEnumerator DismountFromCeiling(bool immediatefall = false)
+        private IEnumerator DismountFromCeiling()
         {
-            if (_isTransitioning) yield break;
-
-            // Restore normal gravity FIRST before any transitions
-            if (_movementController != null)
-            {
-                _movementController.SetGravityMultiplier(1f);
-            }
-
+            if (_isTransitioning || _isDismounting) yield break;
+            
+            _isDismounting = true;
             _isTransitioning = true;
             _isOnCeiling = false;
+            _ceilingVelocity = Vector3.zero;
+            _dismountCooldownTimer = 1.5f;
+            
+            if (_movementController != null) _movementController.SetGravityMultiplier(1f);
 
-            if (immediatefall)
-            {
-                // Just fall - no fancy transition
-                Transform targetTransform = _playerBody != null ? _playerBody : transform;
-                targetTransform.rotation = _originalPlayerRotation;
-                
-                if (_settings.RotateCameraWithPlayer && _cameraTransform != null)
-                {
-                    _cameraTransform.localRotation = _originalCameraRotation;
-                }
-
-                _isTransitioning = false;
-                Debug.Log("[NeutronicBoots] Dismounted from ceiling (immediate fall)");
-                yield break;
-            }
-
-            // Smooth transition back to normal
             Transform playerTransform = _playerBody != null ? _playerBody : transform;
             Quaternion startPlayerRotation = playerTransform.rotation;
+            Quaternion targetPlayerRotation = startPlayerRotation * Quaternion.Euler(0f, 0f, 180f);
             
-            Quaternion startCameraRotation = Quaternion.identity;
-            if (_settings.RotateCameraWithPlayer && _cameraTransform != null)
+            // **FIX**: Check anti-motion sickness setting before playing animation
+            if (PlayerSettingsManager.Instance.CurrentSettings.EnableCameraBob)
             {
-                startCameraRotation = _cameraTransform.localRotation;
-            }
-
-            float transitionProgress = 0f;
-
-            while (transitionProgress < 1f)
-            {
-                transitionProgress += Time.deltaTime * _settings.RotationTransitionSpeed;
-                float t = Mathf.SmoothStep(0f, 1f, transitionProgress);
-
-                // Rotate player back
-                playerTransform.rotation = Quaternion.Slerp(startPlayerRotation, _originalPlayerRotation, t);
-
-                // Rotate camera back if enabled
-                if (_settings.RotateCameraWithPlayer && _cameraTransform != null)
+                // Animated rotation
+                float elapsed = 0f;
+                while (elapsed < _settings.RotationTransitionDuration)
                 {
-                    _cameraTransform.localRotation = Quaternion.Slerp(startCameraRotation, _originalCameraRotation, t);
+                    elapsed += Time.deltaTime;
+                    float t = Mathf.Clamp01(elapsed / _settings.RotationTransitionDuration);
+
+                    playerTransform.rotation = Quaternion.Slerp(startPlayerRotation, targetPlayerRotation, t);
+                
+                    yield return null;
                 }
-
-                yield return null;
             }
-
-            // Finalize
-            playerTransform.rotation = _originalPlayerRotation;
             
-            if (_settings.RotateCameraWithPlayer && _cameraTransform != null)
-            {
-                _cameraTransform.localRotation = _originalCameraRotation;
-            }
-
+            // **FIX**: Set final rotation instantly (for both animated and non-animated modes)
+            playerTransform.rotation = targetPlayerRotation;
+            
+            // Finalize state
             _isTransitioning = false;
-            Debug.Log("[NeutronicBoots] Dismounted from ceiling");
+            _isDismounting = false;
+            
+            Debug.Log("[NeutronicBoots] Dismounted from ceiling.");
         }
 
         #endregion
@@ -403,26 +346,16 @@ namespace Liquid.Player.Equipment
 
         private void UpdateUI()
         {
-            // Fade ceiling available icon
             if (_ceilingAvailableIcon != null)
             {
                 float targetAlpha = (_ceilingDetector.IsCeilingAvailable && !_isOnCeiling) ? 1f : 0f;
-                _ceilingAvailableIcon.alpha = Mathf.Lerp(
-                    _ceilingAvailableIcon.alpha,
-                    targetAlpha,
-                    Time.deltaTime * _settings.UIFadeSpeed
-                );
+                _ceilingAvailableIcon.alpha = Mathf.Lerp(_ceilingAvailableIcon.alpha, targetAlpha, Time.deltaTime * _settings.UIFadeSpeed);
             }
 
-            // Fade activation slider
             if (_activationSliderCanvasGroup != null)
             {
                 float targetAlpha = _isHoldingActivation ? 1f : 0f;
-                _activationSliderCanvasGroup.alpha = Mathf.Lerp(
-                    _activationSliderCanvasGroup.alpha,
-                    targetAlpha,
-                    Time.deltaTime * _settings.UIFadeSpeed
-                );
+                _activationSliderCanvasGroup.alpha = Mathf.Lerp(_activationSliderCanvasGroup.alpha, targetAlpha, Time.deltaTime * _settings.UIFadeSpeed);
             }
         }
 

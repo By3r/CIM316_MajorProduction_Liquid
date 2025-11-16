@@ -13,19 +13,23 @@ MonoBehaviour:
   m_Name: Lv1_NeutronicBootsSettings
   m_EditorClassIdentifier: Assembly-CSharp::Liquid.Player.Equipment.NeutronicBootsSettings
   _maxCeilingDetectionDistance: 3
+  _ceilingDetectionDistance: 2.5
   _ceilingWalkableLayer:
     serializedVersion: 2
     m_Bits: 256
   _detectionRadius: 0.3
-  _activationHoldTime: 1.5
-  _rotationTransitionSpeed: 3
-  _ceilingApproachSpeed: 2
+  _activationHoldTime: 1
+  _rotationTransitionDuration: 0.25
+  _stickyForceStrength: 15
+  _maxStickyForce: 20
+  _ceilingFriction: 15
+  _ceilingFrictionCoefficient: 0.85
+  _ceilingAcceleration: 10
   _rotateCameraWithPlayer: 1
-  _cameraRotationSpeed: 3
   _invertCameraControls: 0
   _ceilingMovementSpeedMultiplier: 0.8
   _allowSprintOnCeiling: 0
-  _dismountFallSpeed: 2
+  _ceilingContactGracePeriod: 2
   _uiFadeSpeed: 5
   _showDebugGizmos: 1
   _debugRayColor: {r: 0, g: 1, b: 1, a: 1}
