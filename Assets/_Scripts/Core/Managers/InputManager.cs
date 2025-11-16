@@ -69,6 +69,11 @@ namespace _Scripts.Core.Managers
         public bool JumpPressed => _isInitialized && _jumpAction != null && _jumpAction.WasPressedThisFrame();
         
         /// <summary>
+        /// Returns true while the jump key/button is held down (for hold-to-activate mechanics).
+        /// </summary>
+        public bool IsJumpHeld => _isInitialized && _jumpAction != null && _jumpAction.IsPressed();
+        
+        /// <summary>
         /// Returns true only on the frame the interact key/button is pressed.
         /// </summary>
         public bool InteractPressed => _isInitialized && _interactAction != null && _interactAction.WasPressedThisFrame();

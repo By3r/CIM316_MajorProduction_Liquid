@@ -30,6 +30,10 @@ namespace _Scripts.Systems.Player
         private float _currentTargetSpeed;
 
         private Coroutine _crouchRoutine;
+        
+        // Neutronic Boots integration
+        private float _gravityMultiplier = 1f;
+        private Liquid.Player.Equipment.NeutronicBoots _neutronicBoots;
 
         #endregion
 
@@ -115,6 +119,9 @@ namespace _Scripts.Systems.Player
                 groundCheckObj.transform.localPosition = new Vector3(0, -_characterController.height / 2, 0);
                 _groundCheck = groundCheckObj.transform;
             }
+            
+            // Get Neutronic Boots reference for jump prevention
+            _neutronicBoots = GetComponent<Liquid.Player.Equipment.NeutronicBoots>();
         }
 
         /// <summary>
@@ -191,14 +198,32 @@ namespace _Scripts.Systems.Player
             horizontalVelocity.y = 0f;
             _currentSpeed = horizontalVelocity.magnitude;
 
-            if (InputManager.Instance.JumpPressed && _isGrounded && !_isCrouching)
+            // Check if boots should prevent jumping
+            bool bootsPreventJump = _neutronicBoots != null && _neutronicBoots.ShouldPreventJump;
+
+            if (InputManager.Instance.JumpPressed && _isGrounded && !_isCrouching && !bootsPreventJump)
             {
                 _velocity.y = Mathf.Sqrt(_jumpForce * -2f * _gravity);
                 _isJumping = true;
             }
 
-            _velocity.y += _gravity * Time.deltaTime;
+            _velocity.y += _gravity * _gravityMultiplier * Time.deltaTime;
             _characterController.Move(_velocity * Time.deltaTime);
+        }
+
+        #endregion
+        
+        #region Neutronic Boots Integration
+
+        /// <summary>
+        /// Sets the gravity multiplier for special movement states like ceiling walking.
+        /// Called by Neutronic Boots component to reverse gravity.
+        /// </summary>
+        /// <param name="multiplier">1 for normal gravity, -1 for ceiling walk</param>
+        public void SetGravityMultiplier(float multiplier)
+        {
+            _gravityMultiplier = multiplier;
+            Debug.Log($"[MovementController] Gravity multiplier set to: {multiplier}");
         }
 
         #endregion
