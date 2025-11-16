@@ -31,6 +31,13 @@ namespace _Scripts.Systems.Player
         [SerializeField] private float _sprintBobFrequencyMultiplier = 1.5f;
         [SerializeField] private float _sprintBobAmplitudeMultiplier = 1.2f;
         
+        [Header("Ceiling Limp Effect")]
+        [SerializeField] private bool _enableCeilingLimp = true;
+        [SerializeField] private float _limpFrequency = 1.5f;
+        [SerializeField] private float _limpVerticalAmplitude = 0.08f;
+        [SerializeField] private float _limpRollAmplitude = 1.5f; // In degrees
+        [SerializeField] private float _limpSmoothness = 8f;
+        
         [Header("Sprint FOV Settings")]
         [SerializeField] private bool _enableSprintFOV = true;
         [SerializeField] private float _sprintFOVIncrease = 10f;
@@ -53,6 +60,11 @@ namespace _Scripts.Systems.Player
         private Vector3 _bobOffset;
         private Vector3 _targetBobOffset;
         
+        private Vector3 _limpPositionOffset;
+        private Quaternion _limpRotationOffset;
+        private Vector3 _targetLimpPositionOffset;
+        private Quaternion _targetLimpRotationOffset;
+        
         private float _baseFOV;
         private float _targetFOV;
         private float _currentFOV;
@@ -65,10 +77,13 @@ namespace _Scripts.Systems.Player
         private bool _isJumping;
         private bool _isWalking;
         private bool _cameraBobEnabled = true;
+        private bool _isOnCeiling;
         
         private Vector3 _positionOffset = Vector3.zero;
         private Quaternion _rotationOffset = Quaternion.identity;
         private float _fovOffset = 0f;
+        
+        public Quaternion RotationOffset => _rotationOffset;
 
         private void Awake()
         {
@@ -89,24 +104,17 @@ namespace _Scripts.Systems.Player
         /// Should be called every frame from PlayerController.Update().
         /// Calculates head bob and FOV modifiers based on the provided movement parameters.
         /// </summary>
-        /// <param name="currentSpeed">The current movement speed of the player.</param>
-        /// <param name="maxSpeed">The maximum possible speed, used to normalize bob intensity.</param>
-        /// <param name="isGrounded">Whether the player is currently on the ground.</param>
-        /// <param name="isSprinting">Whether the player is currently sprinting.</param>
-        /// <param name="isCrouching">Whether the player is currently crouching.</param>
-        /// <param name="isJumping">Whether the player is currently jumping.</param>
-        /// <param name="isWalking">Whether the player is in walk toggle mode.</param>
-        /// <param name="cameraBobEnabled">Whether head bob effects should be applied.</param>
-        public void UpdateEffects(float currentSpeed, float maxSpeed, bool isGrounded, bool isSprinting, bool isCrouching, bool isJumping, bool isWalking, bool cameraBobEnabled)
+        public void UpdateEffects(float currentSpeed, float maxSpeed, bool isGrounded, bool isSprinting, bool isCrouching, bool isJumping, bool isWalking, bool cameraBobEnabled, bool isOnCeiling)
         {
             _currentSpeed = currentSpeed;
-            _maxSpeed = maxSpeed;
+            _maxSpeed = maxSpeed > 0 ? maxSpeed : 1f;
             _isGrounded = isGrounded;
             _isSprinting = isSprinting;
             _isCrouching = isCrouching;
             _isJumping = isJumping;
             _isWalking = isWalking;
             _cameraBobEnabled = cameraBobEnabled;
+            _isOnCeiling = isOnCeiling;
             
             _positionOffset = Vector3.zero;
             _rotationOffset = Quaternion.identity;
@@ -114,7 +122,15 @@ namespace _Scripts.Systems.Player
             
             if (_cameraBobEnabled)
             {
-                CalculateCameraBob();
+                if (_isGrounded && !_isOnCeiling)
+                {
+                    CalculateCameraBob();
+                }
+
+                if (_isOnCeiling)
+                {
+                    CalculateCeilingLimp();
+                }
             }
             
             if (_enableSprintFOV || _enableJumpFOV || _enableCrouchFOV)
@@ -127,7 +143,7 @@ namespace _Scripts.Systems.Player
 
         private void CalculateCameraBob()
         {
-            if (!_isGrounded || _currentSpeed < _bobSpeedThreshold)
+            if (_currentSpeed < _bobSpeedThreshold)
             {
                 _bobTimer = 0f;
                 _targetBobOffset = Vector3.zero;
@@ -160,6 +176,32 @@ namespace _Scripts.Systems.Player
             
             _bobOffset = Vector3.Lerp(_bobOffset, _targetBobOffset, Time.deltaTime * _bobSmoothness);
             _positionOffset += _bobOffset;
+        }
+
+        private void CalculateCeilingLimp()
+        {
+            if (!_enableCeilingLimp || _currentSpeed < _bobSpeedThreshold)
+            {
+                _bobTimer = 0f;
+                _targetLimpPositionOffset = Vector3.zero;
+                _targetLimpRotationOffset = Quaternion.identity;
+            }
+            else
+            {
+                _bobTimer += Time.deltaTime * _limpFrequency;
+                
+                float verticalDip = -Mathf.Abs(Mathf.Sin(_bobTimer)) * _limpVerticalAmplitude;
+                float rollAngle = Mathf.Sin(_bobTimer) * _limpRollAmplitude;
+
+                _targetLimpPositionOffset = new Vector3(0, verticalDip, 0);
+                _targetLimpRotationOffset = Quaternion.Euler(0, 0, rollAngle);
+            }
+
+            _limpPositionOffset = Vector3.Lerp(_limpPositionOffset, _targetLimpPositionOffset, Time.deltaTime * _limpSmoothness);
+            _limpRotationOffset = Quaternion.Slerp(_limpRotationOffset, _targetLimpRotationOffset, Time.deltaTime * _limpSmoothness);
+
+            _positionOffset += _limpPositionOffset;
+            _rotationOffset *= _limpRotationOffset;
         }
 
         private void CalculateFOVEffects()
@@ -202,49 +244,26 @@ namespace _Scripts.Systems.Player
             }
         }
 
-        /// <summary>
-        /// Sets the base local position offset for the camera within the player.
-        /// </summary>
-        /// <param name="position">The new base local position.</param>
         public void SetBasePosition(Vector3 position)
         {
             _baseLocalPosition = position;
         }
 
-        /// <summary>
-        /// Adds an additional position offset to the camera for this frame.
-        /// Useful for recoil, knockback, or other temporary position effects.
-        /// </summary>
-        /// <param name="offset">The position offset to add.</param>
         public void AddPositionOffset(Vector3 offset)
         {
             _positionOffset += offset;
         }
 
-        /// <summary>
-        /// Adds a rotation offset to the camera for this frame.
-        /// Useful for recoil, screen shake, or other rotational effects.
-        /// </summary>
-        /// <param name="offset">The rotation offset to apply.</param>
         public void AddRotationOffset(Quaternion offset)
         {
             _rotationOffset *= offset;
         }
 
-        /// <summary>
-        /// Adds a field of view offset to the camera for this frame.
-        /// Useful for temporary FOV changes independent of movement state.
-        /// </summary>
-        /// <param name="offset">The FOV offset to add.</param>
         public void AddFOVOffset(float offset)
         {
             _fovOffset += offset;
         }
 
-        /// <summary>
-        /// Resets all camera effects to their base state.
-        /// Clears head bob, FOV changes, position and rotation offsets, and returns to base position.
-        /// </summary>
         public void ResetEffects()
         {
             _bobTimer = 0f;

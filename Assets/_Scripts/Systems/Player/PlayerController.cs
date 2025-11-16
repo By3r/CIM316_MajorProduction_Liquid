@@ -1,5 +1,7 @@
 using _Scripts.Core.Managers;
 using UnityEngine;
+// **FIX**: Add the namespace for NeutronicBoots
+using Liquid.Player.Equipment;
 
 namespace _Scripts.Systems.Player
 {
@@ -19,6 +21,8 @@ namespace _Scripts.Systems.Player
         private CameraController _cameraController;
         private CameraEffectsController _cameraEffectsController;
         private InteractionController _interactionController;
+        // **FIX**: Add a reference for the Neutronic Boots component.
+        private NeutronicBoots _neutronicBoots;
 
         [SerializeField] private Transform _cameraTransform;
 
@@ -68,6 +72,10 @@ namespace _Scripts.Systems.Player
             _movementController = GetComponent<MovementController>();
             if (_movementController == null) _movementController = gameObject.AddComponent<MovementController>();
 
+            // **FIX**: Get the Neutronic Boots component.
+            _neutronicBoots = GetComponent<NeutronicBoots>();
+            if (_neutronicBoots == null) _neutronicBoots = gameObject.AddComponent<NeutronicBoots>();
+
             // Camera Setup
             if (_cameraTransform == null)
             {
@@ -111,22 +119,43 @@ namespace _Scripts.Systems.Player
             _cameraController.HandleCameraRotation();
             _movementController.HandleMovement();
 
-            if (_cameraEffectsController != null && _movementController != null)
+            // **FIX**: This entire block is updated to handle both ground and ceiling states.
+            if (_cameraEffectsController != null)
             {
-                _cameraEffectsController.UpdateEffects(
-                    _movementController.CurrentSpeed,
-                    _movementController.MaxSpeed,
-                    _movementController.IsGrounded,
-                    _movementController.IsSprinting,
-                    _movementController.IsCrouching,
-                    _movementController.IsJumping,
-                    _movementController.IsWalkingToggled,
-                    _mySettings.EnableCameraBob
-                );
-            }
+                bool cameraBobEnabled = _mySettings.EnableCameraBob;
+                bool isOnCeiling = _neutronicBoots != null && _neutronicBoots.IsOnCeiling;
 
-            // Note: InteractionController updates itself in its own Update()
-            // No need to call anything here, but  can access its state via the property
+                if (isOnCeiling)
+                {
+                    // If on the ceiling, use speed values from the Neutronic Boots
+                    _cameraEffectsController.UpdateEffects(
+                        currentSpeed: _neutronicBoots.CeilingSpeed,
+                        maxSpeed: _neutronicBoots.MaxCeilingSpeed,
+                        isGrounded: false, // Not on the ground
+                        isSprinting: false, // Can't sprint on ceiling by default
+                        isCrouching: false,
+                        isJumping: false,
+                        isWalking: false,
+                        cameraBobEnabled: cameraBobEnabled,
+                        isOnCeiling: true // The new, required parameter
+                    );
+                }
+                else if (_movementController != null)
+                {
+                    // Otherwise, use the normal movement controller values
+                    _cameraEffectsController.UpdateEffects(
+                        currentSpeed: _movementController.CurrentSpeed,
+                        maxSpeed: _movementController.MaxSpeed,
+                        isGrounded: _movementController.IsGrounded,
+                        isSprinting: _movementController.IsSprinting,
+                        isCrouching: _movementController.IsCrouching,
+                        isJumping: _movementController.IsJumping,
+                        isWalking: _movementController.IsWalkingToggled,
+                        cameraBobEnabled: cameraBobEnabled,
+                        isOnCeiling: false // The new, required parameter
+                    );
+                }
+            }
         }
 
         #endregion

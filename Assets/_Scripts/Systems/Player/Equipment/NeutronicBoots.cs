@@ -58,6 +58,17 @@ namespace Liquid.Player.Equipment
         public float ActivationProgress => _settings != null ? Mathf.Clamp01(_activationHoldTimer / _settings.ActivationHoldTime) : 0f;
         public bool ShouldPreventJump => _isHoldingActivation || _isOnCeiling || _isTransitioning;
         public bool ShouldOverrideMovement => (_isOnCeiling || _isTransitioning) && !_isDismounting;
+        
+        /// <summary>
+        /// Gets the current movement speed while on the ceiling.
+        /// </summary>
+        public float CeilingSpeed => _ceilingVelocity.magnitude;
+        
+        /// <summary>
+        /// Gets the maximum possible movement speed while on the ceiling.
+        /// </summary>
+        public float MaxCeilingSpeed => _baseMovementSpeed * (_settings != null ? _settings.CeilingMovementSpeedMultiplier : 1f);
+
 
         #endregion
 
@@ -181,19 +192,15 @@ namespace Liquid.Player.Equipment
             Quaternion startPlayerRotation = playerTransform.rotation;
             Quaternion targetPlayerRotation = startPlayerRotation * Quaternion.Euler(0f, 0f, 180f);
             
-            // **FIX**: Check anti-motion sickness setting before playing animation
             if (PlayerSettingsManager.Instance.CurrentSettings.EnableCameraBob)
             {
-                // Animated rotation
                 float elapsed = 0f;
                 while (elapsed < _settings.RotationTransitionDuration)
                 {
                     elapsed += Time.deltaTime;
                     float t = Mathf.Clamp01(elapsed / _settings.RotationTransitionDuration);
-
                     playerTransform.rotation = Quaternion.Slerp(startPlayerRotation, targetPlayerRotation, t);
                     
-                    // Apply anti-gravity during the transition to prevent falling
                     Vector3 antiGravityForce = Vector3.up * -_gravityValue;
                     _characterController.Move(antiGravityForce * Time.deltaTime);
                 
@@ -201,10 +208,8 @@ namespace Liquid.Player.Equipment
                 }
             }
             
-            // **FIX**: Set final rotation instantly (for both animated and non-animated modes)
             playerTransform.rotation = targetPlayerRotation;
 
-            // Finalize state
             _isOnCeiling = true;
             _ceilingGraceTimer = _settings.CeilingContactGracePeriod;
             _ceilingVelocity = Vector3.zero;
@@ -314,26 +319,20 @@ namespace Liquid.Player.Equipment
             Quaternion startPlayerRotation = playerTransform.rotation;
             Quaternion targetPlayerRotation = startPlayerRotation * Quaternion.Euler(0f, 0f, 180f);
             
-            // **FIX**: Check anti-motion sickness setting before playing animation
             if (PlayerSettingsManager.Instance.CurrentSettings.EnableCameraBob)
             {
-                // Animated rotation
                 float elapsed = 0f;
                 while (elapsed < _settings.RotationTransitionDuration)
                 {
                     elapsed += Time.deltaTime;
                     float t = Mathf.Clamp01(elapsed / _settings.RotationTransitionDuration);
-
                     playerTransform.rotation = Quaternion.Slerp(startPlayerRotation, targetPlayerRotation, t);
-                
                     yield return null;
                 }
             }
             
-            // **FIX**: Set final rotation instantly (for both animated and non-animated modes)
             playerTransform.rotation = targetPlayerRotation;
             
-            // Finalize state
             _isTransitioning = false;
             _isDismounting = false;
             

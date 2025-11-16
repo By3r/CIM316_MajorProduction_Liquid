@@ -13,6 +13,7 @@ namespace _Scripts.Systems.Player
     {
         [SerializeField] private Transform _playerBody;
         private Camera _camera;
+        private CameraEffectsController _cameraEffects;
 
         private PlayerSettings _settings;
 
@@ -22,6 +23,7 @@ namespace _Scripts.Systems.Player
         private void Awake()
         {
             _camera = GetComponent<Camera>();
+            _cameraEffects = GetComponent<CameraEffectsController>();
         }
 
         /// <summary>
@@ -82,7 +84,9 @@ namespace _Scripts.Systems.Player
 
             _xRotation = Mathf.Clamp(_xRotation, -_settings.MaxLookUpAngle, _settings.MaxLookDownAngle);
 
-            transform.localRotation = Quaternion.Euler(_xRotation, 0f, 0f);
+            Quaternion lookRotation = Quaternion.Euler(_xRotation, 0f, 0f);
+            Quaternion effectsRotation = _cameraEffects != null ? _cameraEffects.RotationOffset : Quaternion.identity;
+            transform.localRotation = lookRotation * effectsRotation;
 
             if (_playerBody != null)
             {

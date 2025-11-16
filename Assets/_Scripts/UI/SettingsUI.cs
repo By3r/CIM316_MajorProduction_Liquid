@@ -100,6 +100,7 @@ namespace _Scripts.UI
                 _invertYToggle.isOn = _temporarySettings.InvertYAxis;
             }
             
+            // **FIX**: Inverted the logic. The toggle is ON when camera bob is DISABLED.
             if (_antiMotionSicknessModeToggle != null)
             {
                 _antiMotionSicknessModeToggle.isOn = !_temporarySettings.EnableCameraBob;
