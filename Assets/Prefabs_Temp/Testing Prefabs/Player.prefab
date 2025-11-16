@@ -45,6 +45,7 @@ GameObject:
   - component: {fileID: 1600061754921377103}
   - component: {fileID: 8691089088543014231}
   - component: {fileID: 7762665856642071411}
+  - component: {fileID: 8125904396595397737}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -152,7 +153,7 @@ MonoBehaviour:
   _crouchHeightMultiplier: 0.4
   _crouchTransitionDuration: 0.25
   _groundCheck: {fileID: 6550235668929848934}
-  _groundDistance: 0.4
+  _groundDistance: 0.2
   _groundMask:
     serializedVersion: 2
     m_Bits: 8
@@ -173,6 +174,25 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   _showDebugRays: 1
+--- !u!114 &8125904396595397737
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2485080036070626534}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23961a2f0e0444eaa4ae28838d049544, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Liquid.Player.Equipment.NeutronicBoots
+  _settings: {fileID: 11400000, guid: 0dc6cc5c8a562d049bc03b0f58f70e71, type: 2}
+  _playerBody: {fileID: 3588519887378791136}
+  _cameraTransform: {fileID: 7237218669705918831}
+  _characterController: {fileID: 6795549707533279591}
+  _activationSlider: {fileID: 0}
+  _activationSliderCanvasGroup: {fileID: 0}
+  _ceilingAvailableIcon: {fileID: 0}
 --- !u!1 &6413295883230752078
 GameObject:
   m_ObjectHideFlags: 0
@@ -231,8 +251,9 @@ MonoBehaviour:
     bracketSprite: {fileID: 21300000, guid: eef0b290a24f79540b4bd397444069c9, type: 3}
     textColor: {r: 1, g: 1, b: 1, a: 1}
     textFontSize: 16
-  _animationSpeed: 20
-  _fadeSpeed: 10
+    fadeCrosshair: 1
+  _animationSpeed: 25
+  _fadeSpeed: 15
   _minFrameSize: 50
   _framePadding: 10
   _highlightCanvas: {fileID: 0}
@@ -245,6 +266,7 @@ MonoBehaviour:
   - {fileID: 0}
   _crosshairManager: {fileID: 0}
   _fadeCrosshairOnHighlight: 1
+  _crosshairFadeSpeed: 1000
   _animateBracketsFromCenter: 1
   _showDebugLogs: 0
 --- !u!1 &9074683480684096624
@@ -508,6 +530,11 @@ MonoBehaviour:
   _walkBobAmplitudeMultiplier: 0.5
   _sprintBobFrequencyMultiplier: 2
   _sprintBobAmplitudeMultiplier: 1.1
+  _enableCeilingLimp: 1
+  _limpFrequency: 5
+  _limpVerticalAmplitude: 0.08
+  _limpRollAmplitude: 1.5
+  _limpSmoothness: 8
   _enableSprintFOV: 1
   _sprintFOVIncrease: 10
   _fovTransitionSpeed: 5

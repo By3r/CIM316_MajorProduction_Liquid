@@ -48,14 +48,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _doorType: 0
-  _animationType: 2
+  _animationType: 0
   _slideDirection: {x: 0, y: 1, z: 0}
-  _slideDistance: 3
+  _slideDistance: 2
   _rotationAxis: {x: 0, y: 1, z: 0}
   _rotationAngle: 90
   _frontRotationAngle: 90
   _backRotationAngle: -90
-  _openingDuration: 1
+  _openingDuration: 0.5
   _closingDuration: 1
   _autoClose: 1
   _autoCloseDelay: 3
