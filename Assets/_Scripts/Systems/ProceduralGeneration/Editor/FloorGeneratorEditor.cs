@@ -49,11 +49,7 @@ namespace _Scripts.ProceduralGeneration.Editor
                 "4. (Optional) Add blockade prefabs to seal failed connections\n\n" +
                 "GENERATION:\n" +
                 "5. Click 'Generate Floor with Database' to create a floor\n" +
-                "6. Each generation randomly selects compatible rooms for branching layouts!\n\n" +
-                "FEATURES:\n" +
-                "Random socket selection creates maze-like dungeons\n" +
-                "Blockade system seals failed connection sockets\n" +
-                "Two-phase collision detection prevents overlaps",
+                "6. Each generation randomly selects compatible rooms for branching layouts!\n\n",
                 MessageType.Info);
 
             EditorGUILayout.Space(5);

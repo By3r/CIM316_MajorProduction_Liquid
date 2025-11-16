@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace _Scripts.ProceduralGeneration.ItemSpawning
+namespace _Scripts.Systems.ProceduralGeneration.Items
 {
     /// <summary>
     /// Defines a spawn point for items within a room prefab.
@@ -13,7 +13,6 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning
     {
         #region Serialized Fields
 
-        [Header("Spawn Settings")]
         [Tooltip("List of items that can spawn at this point with their spawn chances.")]
         [SerializeField] private List<SpawnableItem> _spawnableItems = new List<SpawnableItem>();
 

@@ -67,6 +67,7 @@ Transform:
   m_Children:
   - {fileID: 7237218669705918831}
   - {fileID: 6550235668929848934}
+  - {fileID: 4299280652638438197}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &6963335313549350085
@@ -172,10 +173,80 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 64
   _showDebugRays: 1
-  _showInteractionPrompt: 1
-  _openDoorPromptText: Press [E] to Open
-  _closeDoorPromptText: Press [E] to Close
-  _cannotClosePromptText: Cannot Close
+--- !u!1 &6413295883230752078
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4299280652638438197}
+  - component: {fileID: 5165944642294300973}
+  m_Layer: 0
+  m_Name: ObjectHighlightingSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4299280652638438197
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6413295883230752078}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 3588519887378791136}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5165944642294300973
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6413295883230752078}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bcf5b58cf7a474f8e8dcc800de4bf49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.UI.Interaction.ObjectHighlightingSystem
+  _raycastDistance: 3
+  _playerCamera: {fileID: 2507676271494124045}
+  _layerConfigs:
+  - configName: Pickupable
+    enabled: 1
+    layer: 7
+    showBrackets: 1
+    showText: 1
+    displayText: Pick up
+    bracketColor: {r: 0.2, g: 0.8, b: 1, a: 1}
+    bracketSize: 50
+    bracketSprite: {fileID: 21300000, guid: eef0b290a24f79540b4bd397444069c9, type: 3}
+    textColor: {r: 1, g: 1, b: 1, a: 1}
+    textFontSize: 16
+  _animationSpeed: 20
+  _fadeSpeed: 10
+  _minFrameSize: 50
+  _framePadding: 10
+  _highlightCanvas: {fileID: 0}
+  _highlightFrame: {fileID: 0}
+  _highlightText: {fileID: 0}
+  _cornerBrackets:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  _crosshairManager: {fileID: 0}
+  _fadeCrosshairOnHighlight: 1
+  _animateBracketsFromCenter: 1
+  _showDebugLogs: 0
 --- !u!1 &9074683480684096624
 GameObject:
   m_ObjectHideFlags: 0
@@ -244,7 +315,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.01
-  far clip plane: 1000
+  far clip plane: 30
   field of view: 100
   orthographic: 0
   orthographic size: 5
@@ -276,7 +347,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Unity.RenderPipelines.HighDefinition.Runtime::UnityEngine.Rendering.HighDefinition.HDAdditionalCameraData
   clearColorMode: 0
-  backgroundColorHDR: {r: 0.025, g: 0.07, b: 0.19, a: 0}
+  backgroundColorHDR: {r: 0.4575472, g: 0.4575472, b: 0.4575472, a: 0}
   clearDepth: 1
   volumeLayerMask:
     serializedVersion: 2

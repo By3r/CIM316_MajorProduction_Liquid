@@ -16,28 +16,24 @@ namespace _Scripts.UI
     {
         #region Serialized Fields
 
-        [Header("Crosshair Sprites")]
         [Tooltip("Default crosshair sprite (simple dot or crosshair).")]
         [SerializeField] private Sprite _normalCrosshair;
 
         [Tooltip("Crosshair sprite when looking at an interactable object.")]
         [SerializeField] private Sprite _interactionCrosshair;
 
-        [Header("UI References")]
         [Tooltip("The UI Image component that displays the crosshair.")]
         [SerializeField] private Image _crosshairImage;
 
         [Tooltip("Canvas group for fading crosshair in/out (optional).")]
         [SerializeField] private CanvasGroup _crosshairCanvasGroup;
 
-        [Header("Visibility Settings")]
         [Tooltip("Hide the normal crosshair when not looking at interactables? (for immersion)")]
         [SerializeField] private bool _hideNormalCrosshair = false;
 
         [Tooltip("Always show the crosshair regardless of interaction state.")]
         [SerializeField] private bool _alwaysShowCrosshair = true;
 
-        [Header("Animation Settings")]
         [Tooltip("How fast the crosshair changes between states.")]
         [SerializeField] private float _transitionSpeed = 10f;
 
@@ -53,7 +49,6 @@ namespace _Scripts.UI
         [Tooltip("Intensity of the pulse effect (0-1).")]
         [SerializeField] [Range(0f, 1f)] private float _pulseIntensity = 0.3f;
 
-        [Header("Color Settings (Optional)")]
         [Tooltip("Should the crosshair change color when looking at interactables?")]
         [SerializeField] private bool _useColorChange = false;
 
@@ -63,7 +58,6 @@ namespace _Scripts.UI
         [Tooltip("Normal crosshair color.")]
         [SerializeField] private Color _normalColor = Color.white;
 
-        [Header("Interaction Rotation Animation")]
         [Tooltip("Play a rotation animation when the player interacts with something?")]
         [SerializeField] private bool _enableInteractionRotation = true;
 
@@ -88,6 +82,7 @@ namespace _Scripts.UI
         private bool _isShowingInteraction;
         private Coroutine _rotationCoroutine;
         private bool _wasLookingAtInteractable;
+        private bool _externalHideRequest;
 
         #endregion
 
@@ -282,7 +277,7 @@ namespace _Scripts.UI
         {
             if (_crosshairImage == null) return;
 
-            bool shouldBeVisible = _alwaysShowCrosshair || _isShowingInteraction;
+            bool shouldBeVisible = (_alwaysShowCrosshair || _isShowingInteraction) && !_externalHideRequest;
 
             if (_hideNormalCrosshair && !_isShowingInteraction)
             {
@@ -295,7 +290,7 @@ namespace _Scripts.UI
                 _crosshairCanvasGroup.alpha = Mathf.Lerp(
                     _crosshairCanvasGroup.alpha,
                     targetAlpha,
-                    Time.deltaTime * _transitionSpeed
+                    Time.deltaTime * (_externalHideRequest ? 100f : _transitionSpeed)
                 );
             }
             else
@@ -444,6 +439,15 @@ namespace _Scripts.UI
         {
             _hideNormalCrosshair = hide;
         }
+        /// <summary>
+        /// Allows external systems (like ObjectHighlightingSystem) to request crosshair hiding.
+        /// </summary>
+        /// <param name="hide">True to request hide, false to allow normal visibility.</param>
+        public void SetExternalHideRequest(bool hide)
+        {
+            _externalHideRequest = hide;
+        }
+
 
         /// <summary>
         /// Gets debug information about the current crosshair state.

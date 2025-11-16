@@ -9,6 +9,7 @@ namespace _Scripts.UI.Interaction
     /// Layer-based object highlighting system with configurable settings per object type.
     /// Uses raycasting to detect objects on configured layers and displays customizable highlights.
     /// Supports different visual styles (brackets, text, colors) per layer.
+    /// Integrates with CrosshairManager for morphing crosshair effect.
     /// </summary>
     public class ObjectHighlightingSystem : MonoBehaviour
     {
@@ -17,7 +18,6 @@ namespace _Scripts.UI.Interaction
         [Header("Raycast Settings")]
         [SerializeField] private float _raycastDistance = 5f;
         [SerializeField] private Camera _playerCamera;
-        [Tooltip("Layers to check for highlightable objects")]
         
         [Header("Layer Configurations")]
         [SerializeField] private List<LayerHighlightConfig> _layerConfigs = new List<LayerHighlightConfig>();
@@ -36,14 +36,19 @@ namespace _Scripts.UI.Interaction
         [SerializeField] private TextMeshProUGUI _highlightText;
         [SerializeField] private Image[] _cornerBrackets;
         
-        
         [Header("Crosshair Integration")]
         [Tooltip("Reference to CrosshairManager for morphing effect")]
         [SerializeField] private CrosshairManager _crosshairManager;
-        [Tooltip("Fade out crosshair when highlighting objects")]
+        
+        [Tooltip("Global toggle: Fade out crosshair when highlighting objects")]
         [SerializeField] private bool _fadeCrosshairOnHighlight = true;
+        
+        [Tooltip("How fast the crosshair fades (higher = faster, 100+ recommended for instant feel)")]
+        [SerializeField] private float _crosshairFadeSpeed = 100f;
+
         [Tooltip("Animate brackets from screen center (crosshair position) to corners")]
         [SerializeField] private bool _animateBracketsFromCenter = true;
+        
         [Header("Debug")]
         [SerializeField] private bool _showDebugLogs = false;
 
@@ -69,9 +74,9 @@ namespace _Scripts.UI.Interaction
         private LayerMask _combinedLayerMask;
         
         // Bracket animation from center
-        private Vector2[] _bracketStartPositions; // Screen center position for morphing effect
-        private Vector2[] _bracketTargetPositions; // Final corner positions
-        private bool _justActivated = false; // Track when highlight just became active for animation
+        private Vector2[] _bracketStartPositions;
+        private Vector2[] _bracketTargetPositions;
+        private bool _justActivated = false;
         
         // Crosshair fade tracking
         private float _targetCrosshairAlpha = 1f;
@@ -86,7 +91,6 @@ namespace _Scripts.UI.Interaction
             SetupUIComponents();
             CalculateCombinedLayerMask();
             
-            // Initialize bracket position arrays
             _bracketStartPositions = new Vector2[4];
             _bracketTargetPositions = new Vector2[4];
         }
@@ -151,7 +155,6 @@ namespace _Scripts.UI.Interaction
             {
                 GameObject hitObject = hit.collider.gameObject;
                 
-                // Find matching layer config
                 LayerHighlightConfig config = GetConfigForLayer(hitObject.layer);
                 
                 if (config != null && config.enabled)
@@ -164,7 +167,6 @@ namespace _Scripts.UI.Interaction
                 }
             }
 
-            // Nothing hit - hide highlight
             if (_isHighlightActive)
             {
                 HideHighlight();
@@ -200,10 +202,8 @@ namespace _Scripts.UI.Interaction
             if (_targetCollider == null)
                 _targetCollider = targetObject.GetComponentInChildren<Collider>();
             
-            // Apply visual settings from config
             ApplyConfigVisuals(config);
             
-            // Set text if enabled
             if (_highlightText != null && config.showText)
             {
                 _highlightText.gameObject.SetActive(true);
@@ -218,10 +218,10 @@ namespace _Scripts.UI.Interaction
             
             _targetAlpha = 1f;
             _isHighlightActive = true;
-            _justActivated = true; // Flag for bracket animation from center
+            _justActivated = true;
             
-            // Fade out crosshair when highlight appears
-            if (_fadeCrosshairOnHighlight && _crosshairManager != null)
+            // Per-layer crosshair fade control
+            if (_fadeCrosshairOnHighlight && _crosshairManager != null && config.fadeCrosshair)
             {
                 _targetCrosshairAlpha = 0f;
             }
@@ -239,7 +239,7 @@ namespace _Scripts.UI.Interaction
             _targetAlpha = 0f;
             _isHighlightActive = false;
             
-            // Fade crosshair back in when highlight disappears
+            // Fade crosshair back in
             if (_fadeCrosshairOnHighlight && _crosshairManager != null)
             {
                 _targetCrosshairAlpha = 1f;
@@ -251,7 +251,6 @@ namespace _Scripts.UI.Interaction
             if (_cornerBrackets == null || _cornerBrackets.Length != 4)
                 return;
 
-            // Show/hide brackets based on config
             foreach (var bracket in _cornerBrackets)
             {
                 if (bracket != null)
@@ -259,13 +258,11 @@ namespace _Scripts.UI.Interaction
                     bracket.gameObject.SetActive(config.showBrackets);
                     bracket.color = config.bracketColor;
                     
-                    // Use custom sprite if provided
                     if (config.bracketSprite != null)
                     {
                         bracket.sprite = config.bracketSprite;
                     }
                     
-                    // Set bracket size
                     RectTransform rectTransform = bracket.GetComponent<RectTransform>();
                     if (rectTransform != null)
                     {
@@ -291,7 +288,6 @@ namespace _Scripts.UI.Interaction
                 CreateHighlightFrame();
             }
             
-            // CanvasGroup on frame (not canvas) to support shared canvas
             _highlightCanvasGroup = _highlightFrame.GetComponent<CanvasGroup>();
             if (_highlightCanvasGroup == null)
             {
@@ -371,12 +367,12 @@ namespace _Scripts.UI.Interaction
             
             string[] bracketNames = { "TopLeft", "TopRight", "BottomLeft", "BottomRight" };
             Vector2[] anchors = {
-                new Vector2(0f, 1f),    // Top-left
-                new Vector2(1f, 1f),    // Top-right
-                new Vector2(0f, 0f),    // Bottom-left
-                new Vector2(1f, 0f)     // Bottom-right
+                new Vector2(0f, 1f),
+                new Vector2(1f, 1f),
+                new Vector2(0f, 0f),
+                new Vector2(1f, 0f)
             };
-            float[] rotations = { 0f, -90f, 90f, 180f }; // TopLeft=0°, TopRight=-90°, BottomLeft=90°, BottomRight=180°
+            float[] rotations = { 0f, -90f, 90f, 180f };
             
             for (int i = 0; i < 4; i++)
             {
@@ -393,7 +389,7 @@ namespace _Scripts.UI.Interaction
                     RectTransform bracketRect = bracketGO.GetComponent<RectTransform>();
                     bracketRect.anchorMin = anchors[i];
                     bracketRect.anchorMax = anchors[i];
-                    bracketRect.pivot = new Vector2(0f, 1f); // All brackets use top-left pivot to match sprite
+                    bracketRect.pivot = new Vector2(0f, 1f);
                     bracketRect.sizeDelta = new Vector2(20f, 20f);
                     bracketRect.anchoredPosition = Vector2.zero;
                     bracketRect.localRotation = Quaternion.Euler(0f, 0f, rotations[i]);
@@ -411,7 +407,6 @@ namespace _Scripts.UI.Interaction
             
             int thickness = 3;
             
-            // Vertical line (left edge)
             for (int y = 0; y < 32; y++)
             {
                 for (int x = 0; x < thickness; x++)
@@ -420,7 +415,6 @@ namespace _Scripts.UI.Interaction
                 }
             }
             
-            // Horizontal line (top edge)
             for (int x = 0; x < 32; x++)
             {
                 for (int y = 32 - thickness; y < 32; y++)
@@ -432,7 +426,7 @@ namespace _Scripts.UI.Interaction
             tex.SetPixels(pixels);
             tex.Apply();
             
-            return Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0f, 1f)); // Pivot at top-left (where L-shape corner is)
+            return Sprite.Create(tex, new Rect(0, 0, 32, 32), new Vector2(0f, 1f));
         }
         
         private void DisableAllRaycastTargets()
@@ -532,7 +526,6 @@ namespace _Scripts.UI.Interaction
         
         private void AnimateHighlight()
         {
-            // LESS FLOATY: Use MoveTowards for snappier response
             _currentAlpha = Mathf.MoveTowards(_currentAlpha, _targetAlpha, _fadeSpeed * Time.deltaTime);
             
             if (_highlightCanvasGroup != null)
@@ -540,26 +533,28 @@ namespace _Scripts.UI.Interaction
                 _highlightCanvasGroup.alpha = _currentAlpha;
             }
             
-            // Animate crosshair fade
-            if (_crosshairManager != null)
+            // Update crosshair with per-layer control
+            if (_crosshairManager != null && _fadeCrosshairOnHighlight)
             {
-                _currentCrosshairAlpha = Mathf.MoveTowards(_currentCrosshairAlpha, _targetCrosshairAlpha, _fadeSpeed * Time.deltaTime);
+                _currentCrosshairAlpha = Mathf.MoveTowards(_currentCrosshairAlpha, _targetCrosshairAlpha, _crosshairFadeSpeed * Time.deltaTime);
                 
-                // Use CanvasGroup if available for smooth fading
-                var crosshairCanvasGroup = _crosshairManager.GetComponent<CanvasGroup>();
-                if (crosshairCanvasGroup != null)
-                {
-                    crosshairCanvasGroup.alpha = _currentCrosshairAlpha;
-                }
+                bool shouldHideCrosshair = _currentCrosshairAlpha < 0.5f;
+                _crosshairManager.SetExternalHideRequest(shouldHideCrosshair);
             }
             
             bool shouldShow = _currentAlpha > 0.01f;
             SetHighlightVisibility(shouldShow);
             
+            // FIX: Return brackets to center when fading out completely
+            if (_currentAlpha < 0.01f && _animateBracketsFromCenter)
+            {
+                ResetBracketsToCenter();
+                return;
+            }
+            
             if (!shouldShow)
                 return;
             
-            // LESS FLOATY: Use MoveTowards instead of Lerp for snappier movement
             _currentFramePosition = Vector2.MoveTowards(_currentFramePosition, _targetFramePosition, _animationSpeed * 100f * Time.deltaTime);
             _currentFrameSize = Vector2.MoveTowards(_currentFrameSize, _targetFrameSize, _animationSpeed * 100f * Time.deltaTime);
             
@@ -569,20 +564,17 @@ namespace _Scripts.UI.Interaction
                 _highlightFrame.sizeDelta = _currentFrameSize;
             }
             
-            // Animate brackets from center to corners
             if (_animateBracketsFromCenter && _cornerBrackets != null && _cornerBrackets.Length == 4)
             {
                 AnimateBracketsFromCenter();
             }
         }
         
-        
         private void AnimateBracketsFromCenter()
         {
-            // If just activated, set brackets to screen center
             if (_justActivated)
             {
-                Vector2 screenCenter = Vector2.zero; // Frame is centered, so (0,0) is screen center
+                Vector2 screenCenter = Vector2.zero;
                 
                 for (int i = 0; i < 4; i++)
                 {
@@ -591,11 +583,9 @@ namespace _Scripts.UI.Interaction
                         RectTransform bracketRect = _cornerBrackets[i].GetComponent<RectTransform>();
                         if (bracketRect != null)
                         {
-                            // Store the target corner position
                             Vector2 targetPos = GetBracketTargetPosition(i);
                             _bracketTargetPositions[i] = targetPos;
                             
-                            // Start at screen center
                             _bracketStartPositions[i] = screenCenter;
                             bracketRect.anchoredPosition = screenCenter;
                         }
@@ -605,7 +595,6 @@ namespace _Scripts.UI.Interaction
                 _justActivated = false;
             }
             
-            // Animate each bracket from center to its corner
             for (int i = 0; i < 4; i++)
             {
                 if (_cornerBrackets[i] != null)
@@ -616,7 +605,6 @@ namespace _Scripts.UI.Interaction
                         Vector2 currentPos = bracketRect.anchoredPosition;
                         Vector2 targetPos = _bracketTargetPositions[i];
                         
-                        // Animate to corner position
                         Vector2 newPos = Vector2.MoveTowards(currentPos, targetPos, _animationSpeed * 150f * Time.deltaTime);
                         bracketRect.anchoredPosition = newPos;
                     }
@@ -624,22 +612,48 @@ namespace _Scripts.UI.Interaction
             }
         }
         
+        /// <summary>
+        /// Resets brackets to screen center when highlight fully fades out.
+        /// This ensures they expand from center on next activation.
+        /// </summary>
+        private void ResetBracketsToCenter()
+        {
+            if (_cornerBrackets == null || _cornerBrackets.Length != 4)
+                return;
+                
+            Vector2 screenCenter = Vector2.zero;
+            
+            for (int i = 0; i < 4; i++)
+            {
+                if (_cornerBrackets[i] != null)
+                {
+                    RectTransform bracketRect = _cornerBrackets[i].GetComponent<RectTransform>();
+                    if (bracketRect != null)
+                    {
+                        bracketRect.anchoredPosition = screenCenter;
+                    }
+                }
+            }
+        }
+        
         private Vector2 GetBracketTargetPosition(int bracketIndex)
         {
-            // Brackets use anchors for positioning, so target is always (0,0)
-            // The anchors (top-left, top-right, etc.) automatically position them at frame corners
             return Vector2.zero;
         }
+        
         private void SetHighlightVisibility(bool visible)
         {
-            // Visibility controlled by CanvasGroup alpha in AnimateHighlight()
-            // No need to deactivate canvas - this allows shared canvas usage
+            // Visibility controlled by CanvasGroup alpha
         }
 
         #endregion
 
         #region Public API
 
+        /// <summary>
+        /// Recalculates the combined layer mask from all enabled layer configs.
+        /// Call this if you modify layer configs at runtime.
+        /// </summary>
         public void RefreshLayerMask()
         {
             CalculateCombinedLayerMask();
@@ -666,11 +680,15 @@ namespace _Scripts.UI.Interaction
         [Header("Bracket Settings")]
         public Color bracketColor = new Color(0.2f, 0.8f, 1f, 1f);
         public float bracketSize = 20f;
-        public Sprite bracketSprite; // Optional custom sprite
+        public Sprite bracketSprite;
         
         [Header("Text Settings")]
         public Color textColor = Color.white;
         public int textFontSize = 16;
+        
+        [Header("Crosshair Behavior")]
+        [Tooltip("Should the crosshair fade out when highlighting this object type?")]
+        public bool fadeCrosshair = true;
     }
 
     #endregion

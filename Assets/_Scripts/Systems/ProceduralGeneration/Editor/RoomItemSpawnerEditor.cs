@@ -1,8 +1,9 @@
-using _Scripts.Systems.ProceduralGeneration.Items;
-using UnityEditor;
 using UnityEngine;
+using UnityEditor;
+using _Scripts.ProceduralGeneration.ItemSpawning;
+using System.Collections.Generic;
 
-namespace _Scripts.Systems.ProceduralGeneration.Editor
+namespace _Scripts.Systems.ProceduralGeneration.Items.Editor
 {
     [CustomEditor(typeof(RoomItemSpawner))]
     public class RoomItemSpawnerEditor : UnityEditor.Editor
@@ -25,111 +26,71 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
             RoomItemSpawner spawner = (RoomItemSpawner)target;
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Room Item Spawner", EditorStyles.boldLabel);
-
-            EditorGUILayout.Space(5);
-
-            // === SETTINGS ===
-            DrawSettings();
-            EditorGUILayout.Space(10);
-
-            // === STATISTICS ===
-            DrawStatistics(spawner);
-            EditorGUILayout.Space(10);
-
-            // === BATCH OPERATIONS ===
-            DrawBatchOperations(spawner);
-            EditorGUILayout.Space(10);
-
-            // === DEBUG ===
-            DrawDebug();
-
-            serializedObject.ApplyModifiedProperties();
-        }
-
-        private void DrawSettings()
-        {
-            EditorGUILayout.LabelField("Spawn Settings", EditorStyles.boldLabel);
 
             EditorGUILayout.PropertyField(_spawnOnAwake, new GUIContent("Spawn On Awake"));
-            
-            if (_spawnOnAwake.boolValue)
-            {
-                EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_spawnDelay, new GUIContent("Spawn Delay (seconds)"));
-                EditorGUI.indentLevel--;
-            }
-        }
+            EditorGUILayout.PropertyField(_spawnDelay, new GUIContent("Spawn Delay (seconds)"));
 
-        private void DrawStatistics(RoomItemSpawner spawner)
-        {
+            EditorGUILayout.Space(10);
+
             EditorGUILayout.LabelField("Statistics", EditorStyles.boldLabel);
 
-            if (spawner.SpawnPoints != null)
+            if (Application.isPlaying && spawner.SpawnPoints != null)
             {
-                EditorGUILayout.LabelField($"Spawn Points: {spawner.SpawnPoints.Count}", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"Spawn Points: {spawner.SpawnPoints.Count}");
                 EditorGUILayout.LabelField($"Items Spawned: {spawner.TotalItemsSpawned}");
-
-                if (spawner.SpawnPoints.Count == 0)
-                {
-                    EditorGUILayout.HelpBox(
-                        "No spawn points found in this room.\n" +
-                        "Add ItemSpawnPoint components to child objects.",
-                        MessageType.Info);
-                }
             }
             else
             {
-                EditorGUILayout.HelpBox("Spawn points not initialized. Enter Play mode to see statistics.", MessageType.None);
+                int spawnPointCount = spawner.GetComponentsInChildren<ItemSpawnPoint>(true).Length;
+                EditorGUILayout.LabelField($"Spawn Points: {spawnPointCount}");
+                
+                if (!Application.isPlaying)
+                {
+                    EditorGUILayout.LabelField("Items Spawned: N/A (Runtime only)");
+                }
             }
-        }
 
-        private void DrawBatchOperations(RoomItemSpawner spawner)
-        {
+            EditorGUILayout.Space(10);
+
             EditorGUILayout.LabelField("Batch Operations", EditorStyles.boldLabel);
 
-            EditorGUILayout.BeginHorizontal();
-
-            // Spawn all button
-            GUI.backgroundColor = Color.green;
-            if (GUILayout.Button("Spawn All Items", GUILayout.Height(35)))
+            if (!Application.isPlaying)
             {
-                if (Application.isPlaying)
+                EditorGUILayout.HelpBox("Batch operations only available in Play Mode.", MessageType.Info);
+            }
+            else
+            {
+                EditorGUILayout.BeginHorizontal();
+
+                GUI.backgroundColor = new Color(0.3f, 0.8f, 0.3f);
+                if (GUILayout.Button("Spawn All Items", GUILayout.Height(30)))
                 {
                     spawner.SpawnAllItems();
                 }
-                else
+                GUI.backgroundColor = Color.white;
+
+                GUI.backgroundColor = new Color(0.8f, 0.3f, 0.3f);
+                if (GUILayout.Button("Clear All Items", GUILayout.Height(30)))
                 {
-                    Debug.LogWarning("[RoomItemSpawner] Item spawning only works in Play mode!");
+                    spawner.ClearAllSpawnedItems();
                 }
+                GUI.backgroundColor = Color.white;
+
+                EditorGUILayout.EndHorizontal();
+
+                GUI.backgroundColor = new Color(0.3f, 0.6f, 0.8f);
+                if (GUILayout.Button("Refresh Spawn Points", GUILayout.Height(30)))
+                {
+                    spawner.RefreshSpawnPoints();
+                }
+                GUI.backgroundColor = Color.white;
             }
 
-            // Clear all button
-            GUI.backgroundColor = Color.red;
-            if (GUILayout.Button("Clear All Items", GUILayout.Height(35)))
-            {
-                spawner.ClearAllSpawnedItems();
-            }
+            EditorGUILayout.Space(10);
 
-            GUI.backgroundColor = Color.white;
-            EditorGUILayout.EndHorizontal();
-
-            EditorGUILayout.Space(5);
-
-            // Refresh spawn points button
-            GUI.backgroundColor = Color.cyan;
-            if (GUILayout.Button("Refresh Spawn Points", GUILayout.Height(25)))
-            {
-                spawner.RefreshSpawnPoints();
-                Debug.Log($"[RoomItemSpawner] Refreshed spawn points: {spawner.SpawnPoints?.Count ?? 0} found.");
-            }
-            GUI.backgroundColor = Color.white;
-        }
-
-        private void DrawDebug()
-        {
-            EditorGUILayout.LabelField("Debug", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_showDebugLogs, new GUIContent("Show Debug Logs"));
+
+            serializedObject.ApplyModifiedProperties();
         }
     }
 }

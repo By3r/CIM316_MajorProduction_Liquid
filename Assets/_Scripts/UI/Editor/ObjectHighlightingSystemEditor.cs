@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEditor;
-using System.Collections.Generic;
 
 namespace _Scripts.UI.Interaction.Editor
 {
@@ -20,6 +19,7 @@ namespace _Scripts.UI.Interaction.Editor
         private SerializedProperty _cornerBrackets;
         private SerializedProperty _crosshairManager;
         private SerializedProperty _fadeCrosshairOnHighlight;
+        private SerializedProperty _crosshairFadeSpeed;
         private SerializedProperty _animateBracketsFromCenter;
         private SerializedProperty _showDebugLogs;
 
@@ -39,14 +39,13 @@ namespace _Scripts.UI.Interaction.Editor
             _showDebugLogs = serializedObject.FindProperty("_showDebugLogs");
             _crosshairManager = serializedObject.FindProperty("_crosshairManager");
             _fadeCrosshairOnHighlight = serializedObject.FindProperty("_fadeCrosshairOnHighlight");
+            _crosshairFadeSpeed = serializedObject.FindProperty("_crosshairFadeSpeed");
             _animateBracketsFromCenter = serializedObject.FindProperty("_animateBracketsFromCenter");
         }
 
         public override void OnInspectorGUI()
         {
             serializedObject.Update();
-
-            ObjectHighlightingSystem highlightSystem = (ObjectHighlightingSystem)target;
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Layer-Based Object Highlighting", EditorStyles.boldLabel);
@@ -57,31 +56,24 @@ namespace _Scripts.UI.Interaction.Editor
 
             EditorGUILayout.Space(10);
 
-            // === RAYCAST SETTINGS ===
             DrawRaycastSettings();
             EditorGUILayout.Space(10);
 
-            // === LAYER CONFIGURATIONS ===
             DrawLayerConfigurations();
             EditorGUILayout.Space(10);
 
-            // === ANIMATION SETTINGS ===
             DrawAnimationSettings();
             EditorGUILayout.Space(10);
 
-            // === FRAME SETTINGS ===
             DrawFrameSettings();
             EditorGUILayout.Space(10);
 
-            // === UI REFERENCES ===
             DrawUIReferences();
             EditorGUILayout.Space(10);
             
-            // === CROSSHAIR INTEGRATION ===
             DrawCrosshairIntegration();
             EditorGUILayout.Space(10);
 
-            // === DEBUG ===
             EditorGUILayout.LabelField("Debug", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(_showDebugLogs, new GUIContent("Show Debug Logs"));
 
@@ -107,19 +99,17 @@ namespace _Scripts.UI.Interaction.Editor
             
             EditorGUILayout.HelpBox(
                 "Add a config for each object type you want to highlight.\n" +
-                "Example: 'Pickupable' layer with green brackets, 'Door' layer with cyan brackets.",
+                "Each layer can have custom brackets, colors, text, and crosshair behavior.",
                 MessageType.None);
 
             EditorGUILayout.Space(5);
 
-            // Add new config button
             GUI.backgroundColor = Color.green;
             if (GUILayout.Button("+ Add Layer Config", GUILayout.Height(25)))
             {
                 _layerConfigs.arraySize++;
                 SerializedProperty newConfig = _layerConfigs.GetArrayElementAtIndex(_layerConfigs.arraySize - 1);
                 
-                // Set defaults for new config
                 newConfig.FindPropertyRelative("configName").stringValue = "New Config";
                 newConfig.FindPropertyRelative("enabled").boolValue = true;
                 newConfig.FindPropertyRelative("layer").intValue = 0;
@@ -130,12 +120,12 @@ namespace _Scripts.UI.Interaction.Editor
                 newConfig.FindPropertyRelative("bracketSize").floatValue = 20f;
                 newConfig.FindPropertyRelative("textColor").colorValue = Color.white;
                 newConfig.FindPropertyRelative("textFontSize").intValue = 16;
+                newConfig.FindPropertyRelative("fadeCrosshair").boolValue = true;
             }
             GUI.backgroundColor = Color.white;
 
             EditorGUILayout.Space(5);
 
-            // Draw each config
             for (int i = 0; i < _layerConfigs.arraySize; i++)
             {
                 DrawLayerConfig(_layerConfigs.GetArrayElementAtIndex(i), i);
@@ -152,7 +142,6 @@ namespace _Scripts.UI.Interaction.Editor
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-            // Header with enable toggle and delete button
             EditorGUILayout.BeginHorizontal();
             
             SerializedProperty enabled = config.FindPropertyRelative("enabled");
@@ -192,7 +181,6 @@ namespace _Scripts.UI.Interaction.Editor
 
             EditorGUI.indentLevel++;
 
-            // Basic settings
             EditorGUILayout.PropertyField(configName, new GUIContent("Config Name"));
             
             SerializedProperty layer = config.FindPropertyRelative("layer");
@@ -200,7 +188,6 @@ namespace _Scripts.UI.Interaction.Editor
             
             EditorGUILayout.Space(3);
 
-            // Visual toggles
             SerializedProperty showBrackets = config.FindPropertyRelative("showBrackets");
             SerializedProperty showText = config.FindPropertyRelative("showText");
             
@@ -211,40 +198,48 @@ namespace _Scripts.UI.Interaction.Editor
 
             EditorGUILayout.Space(3);
 
-            // Bracket settings
             if (showBrackets.boolValue)
             {
                 EditorGUILayout.LabelField("Bracket Settings", EditorStyles.miniLabel);
                 EditorGUI.indentLevel++;
                 
-                SerializedProperty bracketColor = config.FindPropertyRelative("bracketColor");
-                SerializedProperty bracketSize = config.FindPropertyRelative("bracketSize");
-                SerializedProperty bracketSprite = config.FindPropertyRelative("bracketSprite");
-                
-                EditorGUILayout.PropertyField(bracketColor, new GUIContent("Color"));
-                EditorGUILayout.PropertyField(bracketSize, new GUIContent("Size"));
-                EditorGUILayout.PropertyField(bracketSprite, new GUIContent("Custom Sprite (Optional)"));
+                EditorGUILayout.PropertyField(config.FindPropertyRelative("bracketColor"), new GUIContent("Color"));
+                EditorGUILayout.PropertyField(config.FindPropertyRelative("bracketSize"), new GUIContent("Size"));
+                EditorGUILayout.PropertyField(config.FindPropertyRelative("bracketSprite"), new GUIContent("Custom Sprite (Optional)"));
                 
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space(3);
             }
 
-            // Text settings
             if (showText.boolValue)
             {
                 EditorGUILayout.LabelField("Text Settings", EditorStyles.miniLabel);
                 EditorGUI.indentLevel++;
                 
-                SerializedProperty displayText = config.FindPropertyRelative("displayText");
-                SerializedProperty textColor = config.FindPropertyRelative("textColor");
-                SerializedProperty textFontSize = config.FindPropertyRelative("textFontSize");
-                
-                EditorGUILayout.PropertyField(displayText, new GUIContent("Display Text"));
-                EditorGUILayout.PropertyField(textColor, new GUIContent("Color"));
-                EditorGUILayout.PropertyField(textFontSize, new GUIContent("Font Size"));
+                EditorGUILayout.PropertyField(config.FindPropertyRelative("displayText"), new GUIContent("Display Text"));
+                EditorGUILayout.PropertyField(config.FindPropertyRelative("textColor"), new GUIContent("Color"));
+                EditorGUILayout.PropertyField(config.FindPropertyRelative("textFontSize"), new GUIContent("Font Size"));
                 
                 EditorGUI.indentLevel--;
+                EditorGUILayout.Space(3);
             }
+
+            EditorGUILayout.LabelField("Crosshair Behavior", EditorStyles.miniLabel);
+            EditorGUI.indentLevel++;
+            
+            SerializedProperty fadeCrosshair = config.FindPropertyRelative("fadeCrosshair");
+            EditorGUILayout.PropertyField(fadeCrosshair, new GUIContent("Fade Crosshair"));
+            
+            if (!_fadeCrosshairOnHighlight.boolValue)
+            {
+                EditorGUILayout.HelpBox("Global crosshair fading is disabled. Enable it in Crosshair Integration section.", MessageType.Info);
+            }
+            else if (!fadeCrosshair.boolValue)
+            {
+                EditorGUILayout.HelpBox("Crosshair will NOT fade when highlighting this layer.", MessageType.Info);
+            }
+            
+            EditorGUI.indentLevel--;
 
             EditorGUI.indentLevel--;
             EditorGUILayout.EndVertical();
@@ -292,20 +287,41 @@ namespace _Scripts.UI.Interaction.Editor
             EditorGUILayout.LabelField("Crosshair Integration", EditorStyles.boldLabel);
             
             EditorGUILayout.PropertyField(_crosshairManager, new GUIContent("Crosshair Manager"));
-            EditorGUILayout.PropertyField(_fadeCrosshairOnHighlight, new GUIContent("Fade Crosshair on Highlight"));
-            EditorGUILayout.PropertyField(_animateBracketsFromCenter, new GUIContent("Animate from Center"));
-            
-            EditorGUILayout.HelpBox(
-                "Crosshair Morphing Effect:\n" +
-                "• Crosshair fades out when highlighting\n" +
-                "• Brackets start at screen center\n" +
-                "• Brackets animate to corners\n" +
-                "• Crosshair fades back in when highlight ends",
-                MessageType.Info);
             
             if (_crosshairManager.objectReferenceValue == null)
             {
                 EditorGUILayout.HelpBox("Assign CrosshairManager for morphing effect.", MessageType.Warning);
+            }
+            
+            EditorGUILayout.Space(5);
+            
+            EditorGUILayout.PropertyField(_fadeCrosshairOnHighlight, new GUIContent("Fade Crosshair (Global)"));
+            
+            if (_fadeCrosshairOnHighlight.boolValue)
+            {
+                EditorGUI.indentLevel++;
+                EditorGUILayout.PropertyField(_crosshairFadeSpeed, new GUIContent("Fade Speed"));
+                EditorGUILayout.HelpBox(
+                    "100+ recommended for instant fade.\n" +
+                    "Per-layer fade control available in each Layer Config.",
+                    MessageType.None);
+                EditorGUI.indentLevel--;
+            }
+            
+            EditorGUILayout.Space(5);
+            
+            EditorGUILayout.PropertyField(_animateBracketsFromCenter, new GUIContent("Animate from Center"));
+            
+            if (_animateBracketsFromCenter.boolValue)
+            {
+                EditorGUILayout.HelpBox(
+                    "Crosshair Morphing Effect:\n" +
+                    "• Crosshair fades out when highlighting\n" +
+                    "• Brackets start at screen center\n" +
+                    "• Brackets animate to corners\n" +
+                    "• Brackets return to center when fading out\n" +
+                    "• Crosshair fades back in when highlight ends",
+                    MessageType.Info);
             }
         }
     }

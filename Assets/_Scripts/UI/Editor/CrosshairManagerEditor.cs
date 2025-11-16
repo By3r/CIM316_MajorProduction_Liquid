@@ -61,12 +61,6 @@ namespace _Scripts.UI.Editor
             serializedObject.Update();
             var crosshairManager = target as CrosshairManager;
 
-            EditorGUILayout.LabelField("Crosshair Manager", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(
-                "Manages crosshair appearance. Shows normal crosshair by default, " +
-                "switches to interaction crosshair when looking at interactables. " +
-                "Integrates with InteractionController for detection.",
-                MessageType.Info);
             EditorGUILayout.Space();
 
             _showSpriteSettings = EditorGUILayout.BeginFoldoutHeaderGroup(_showSpriteSettings, "Crosshair Sprites");
@@ -109,7 +103,7 @@ namespace _Scripts.UI.Editor
             EditorGUILayout.EndFoldoutHeaderGroup();
             EditorGUILayout.Space();
 
-            _showColorSettings = EditorGUILayout.BeginFoldoutHeaderGroup(_showColorSettings, "Color Settings (Optional)");
+            _showColorSettings = EditorGUILayout.BeginFoldoutHeaderGroup(_showColorSettings, "Color Settings");
             if (_showColorSettings)
             {
                 EditorGUI.indentLevel++;
@@ -119,7 +113,7 @@ namespace _Scripts.UI.Editor
             EditorGUILayout.EndFoldoutHeaderGroup();
             EditorGUILayout.Space();
 
-            _showRotationSettings = EditorGUILayout.BeginFoldoutHeaderGroup(_showRotationSettings, "Interaction Rotation Animation");
+            _showRotationSettings = EditorGUILayout.BeginFoldoutHeaderGroup(_showRotationSettings, "Interaction Rotation");
             if (_showRotationSettings)
             {
                 EditorGUI.indentLevel++;
@@ -142,10 +136,8 @@ namespace _Scripts.UI.Editor
 
         private void DrawSpriteSettings()
         {
-            EditorGUILayout.PropertyField(_normalCrosshairProp, new GUIContent("Normal Crosshair", 
-                "Crosshair sprite shown by default (e.g., simple dot)"));
-            EditorGUILayout.PropertyField(_interactionCrosshairProp, new GUIContent("Interaction Crosshair", 
-                "Crosshair sprite when looking at interactables"));
+            EditorGUILayout.PropertyField(_normalCrosshairProp, new GUIContent("Normal Crosshair"));
+            EditorGUILayout.PropertyField(_interactionCrosshairProp, new GUIContent("Interaction Crosshair"));
 
             if (_normalCrosshairProp.objectReferenceValue == null)
             {
@@ -210,10 +202,8 @@ namespace _Scripts.UI.Editor
 
         private void DrawVisibilitySettings()
         {
-            EditorGUILayout.PropertyField(_hideNormalCrosshairProp, new GUIContent("Hide Normal Crosshair", 
-                "Hide crosshair when not looking at interactables (immersion mode)"));
-            EditorGUILayout.PropertyField(_alwaysShowCrosshairProp, new GUIContent("Always Show Crosshair", 
-                "Always show crosshair regardless of interaction state"));
+            EditorGUILayout.PropertyField(_hideNormalCrosshairProp, new GUIContent("Hide Normal Crosshair"));
+            EditorGUILayout.PropertyField(_alwaysShowCrosshairProp, new GUIContent("Always Show Crosshair"));
 
             if (_hideNormalCrosshairProp.boolValue && _alwaysShowCrosshairProp.boolValue)
             {
@@ -240,10 +230,8 @@ namespace _Scripts.UI.Editor
 
         private void DrawAnimationSettings()
         {
-            EditorGUILayout.PropertyField(_transitionSpeedProp, new GUIContent("Transition Speed", 
-                "How fast crosshair changes between states"));
-            EditorGUILayout.PropertyField(_interactionScaleProp, new GUIContent("Interaction Scale", 
-                "Scale multiplier when showing interaction crosshair"));
+            EditorGUILayout.PropertyField(_transitionSpeedProp, new GUIContent("Transition Speed"));
+            EditorGUILayout.PropertyField(_interactionScaleProp, new GUIContent("Interaction Scale"));
 
             if (_transitionSpeedProp.floatValue <= 0)
             {
@@ -257,16 +245,13 @@ namespace _Scripts.UI.Editor
 
             EditorGUILayout.Space(5);
             EditorGUILayout.LabelField("Pulse Effect", EditorStyles.miniBoldLabel);
-            EditorGUILayout.PropertyField(_enablePulseEffectProp, new GUIContent("Enable Pulse", 
-                "Make the crosshair pulse when looking at interactables"));
+            EditorGUILayout.PropertyField(_enablePulseEffectProp, new GUIContent("Enable Pulse"));
 
             if (_enablePulseEffectProp.boolValue)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_pulseSpeedProp, new GUIContent("Pulse Speed", 
-                    "How fast the pulse oscillates"));
-                EditorGUILayout.PropertyField(_pulseIntensityProp, new GUIContent("Pulse Intensity", 
-                    "Strength of the pulse effect (0-1)"));
+                EditorGUILayout.PropertyField(_pulseSpeedProp, new GUIContent("Pulse Speed"));
+                EditorGUILayout.PropertyField(_pulseIntensityProp, new GUIContent("Pulse Intensity"));
 
                 if (_pulseSpeedProp.floatValue <= 0)
                 {
@@ -279,16 +264,13 @@ namespace _Scripts.UI.Editor
 
         private void DrawColorSettings()
         {
-            EditorGUILayout.PropertyField(_useColorChangeProp, new GUIContent("Use Color Change", 
-                "Change crosshair color when looking at interactables"));
+            EditorGUILayout.PropertyField(_useColorChangeProp, new GUIContent("Use Color Change"));
 
             if (_useColorChangeProp.boolValue)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.PropertyField(_normalColorProp, new GUIContent("Normal Color", 
-                    "Color when not looking at interactables"));
-                EditorGUILayout.PropertyField(_interactionColorProp, new GUIContent("Interaction Color", 
-                    "Color when looking at interactables"));
+                EditorGUILayout.PropertyField(_normalColorProp, new GUIContent("Normal Color"));
+                EditorGUILayout.PropertyField(_interactionColorProp, new GUIContent("Interaction Color"));
                 EditorGUI.indentLevel--;
 
                 EditorGUILayout.Space(5);
@@ -313,51 +295,28 @@ namespace _Scripts.UI.Editor
 
         private void DrawRotationSettings()
         {
-            EditorGUILayout.PropertyField(_enableInteractionRotationProp, new GUIContent("Enable Rotation", 
-                "Play a quick rotation animation when interacting"));
+            EditorGUILayout.PropertyField(_enableInteractionRotationProp, new GUIContent("Enable Rotation"));
 
             if (_enableInteractionRotationProp.boolValue)
             {
                 EditorGUI.indentLevel++;
                 
-                EditorGUILayout.LabelField("Rotation Angles (degrees)", EditorStyles.miniBoldLabel);
-                EditorGUILayout.PropertyField(_interactionRotationAnglesProp, new GUIContent("Rotation (X, Y, Z)", 
-                    "Rotation angles on each axis in degrees"));
+                EditorGUILayout.PropertyField(_interactionRotationAnglesProp, new GUIContent("Rotation (X, Y, Z)"));
                 
                 Vector3 angles = _interactionRotationAnglesProp.vector3Value;
                 EditorGUI.indentLevel++;
-                EditorGUILayout.LabelField($"X: {angles.x:F1} degrees (pitch)", EditorStyles.miniLabel);
-                EditorGUILayout.LabelField($"Y: {angles.y:F1} degrees (yaw)", EditorStyles.miniLabel);
-                EditorGUILayout.LabelField($"Z: {angles.z:F1} degrees (roll)", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField($"X: {angles.x:F1}° | Y: {angles.y:F1}° | Z: {angles.z:F1}°", EditorStyles.miniLabel);
                 EditorGUI.indentLevel--;
                 
                 EditorGUILayout.Space(3);
-                EditorGUILayout.PropertyField(_interactionRotationDurationProp, new GUIContent("Animation Duration", 
-                    "How long the rotation takes (in seconds)"));
-                
-                EditorGUILayout.PropertyField(_interactionRotationCurveProp, new GUIContent("Animation Curve", 
-                    "Curve for the rotation animation (makes it feel more dynamic)"));
+                EditorGUILayout.PropertyField(_interactionRotationDurationProp, new GUIContent("Duration"));
+                EditorGUILayout.PropertyField(_interactionRotationCurveProp, new GUIContent("Curve"));
 
                 EditorGUI.indentLevel--;
 
                 if (_interactionRotationDurationProp.floatValue <= 0)
                 {
-                    EditorGUILayout.HelpBox("Animation duration should be greater than 0!", MessageType.Warning);
-                }
-
-                EditorGUILayout.Space(3);
-                EditorGUILayout.HelpBox(
-                    "The rotation animation plays when you interact with something while looking at it. " +
-                    "It rotates on all three axes (X=pitch, Y=yaw, Z=roll) simultaneously. " +
-                    "When the sprite changes back to normal, the rotation resets automatically.",
-                    MessageType.Info);
-
-                if (Application.isPlaying)
-                {
-                    EditorGUILayout.Space(3);
-                    EditorGUILayout.HelpBox(
-                        "Tip: Look at a door and press E to see the 3D rotation animation in action!",
-                        MessageType.None);
+                    EditorGUILayout.HelpBox("Duration should be greater than 0!", MessageType.Warning);
                 }
             }
         }
@@ -374,12 +333,6 @@ namespace _Scripts.UI.Editor
 
             EditorGUILayout.Space(3);
             EditorGUILayout.HelpBox(manager.GetDebugInfo(), MessageType.None);
-
-            if (manager.GetDebugInfo().Contains("Rotating: True"))
-            {
-                EditorGUILayout.Space(3);
-                EditorGUILayout.HelpBox("Rotation animation is playing!", MessageType.Info);
-            }
 
             Repaint();
         }

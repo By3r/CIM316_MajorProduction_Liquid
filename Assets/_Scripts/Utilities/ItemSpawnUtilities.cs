@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
+using _Scripts.Systems.ProceduralGeneration.Items;
 
 namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
 {
