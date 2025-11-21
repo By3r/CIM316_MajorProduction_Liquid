@@ -1,7 +1,11 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 
+/// <summary>
+/// I will be discarding this to rework it. It's current state is unecessarily complex.
+/// </summary>
 public class RadialInventoryWheel : MonoBehaviour
 {
     #region Variables
@@ -27,20 +31,28 @@ public class RadialInventoryWheel : MonoBehaviour
 
     [Header("Angle Mapping")]
     [Tooltip("Rotation offset in degrees applied to the selection logic.")]
-    [SerializeField] private float angleOffset = 0f;
+    [SerializeField] private float angleOffset = 125f;
 
     [Tooltip("If true, interpret angles clockwise instead of counter clockwise.")]
-    [SerializeField] private bool clockwise = false;
+    [SerializeField] private bool clockwise = true;
 
     [Header("Temp Item Prefabs")]
     [Tooltip("UI prefabs for temp items (Item1, Item2, Item3, etc.).")]
     [SerializeField] private GameObject[] tempItemPrefab;
 
+    [Header("Legacy Keyboard Input (Optional Fallback)")]
     [Tooltip("Key to open the wheel by holding.")]
     [SerializeField] private KeyCode openKey = KeyCode.Tab;
 
     [Tooltip("Key to add a temp item to the next empty slot.")]
     [SerializeField] private KeyCode addItemKey = KeyCode.G;
+
+    [Header("Input Actions (New Input System)")]
+    [Tooltip("Action to open/hold the radial wheel (for example, bound to Tab key).")]
+    [SerializeField] private InputActionReference openWheelAction;
+
+    [Tooltip("Action to add a temp item to the next empty slot.")]
+    [SerializeField] private InputActionReference addItemAction;
 
     private bool _isWheelOpen;
     private int _currentSelectedIndex = -1;
@@ -70,18 +82,54 @@ public class RadialInventoryWheel : MonoBehaviour
         }
 
         SetSelectedIndex(-1);
+
+        ConfigurePieSlices();
     }
     #endregion
 
-    private void OnDestroy()
+    private void OnEnable()
     {
-        Debug.Log("RadialInventoryWheel: OnDestroy called on " + gameObject.name);
+        if (openWheelAction != null)
+        {
+            openWheelAction.action.performed += OnOpenWheelPerformed;
+            openWheelAction.action.canceled += OnOpenWheelCanceled;
+            openWheelAction.action.Enable();
+        }
+
+        if (addItemAction != null)
+        {
+            addItemAction.action.performed += OnAddItemPerformed;
+            addItemAction.action.Enable();
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (openWheelAction != null)
+        {
+            openWheelAction.action.performed -= OnOpenWheelPerformed;
+            openWheelAction.action.canceled -= OnOpenWheelCanceled;
+            openWheelAction.action.Disable();
+        }
+
+        if (addItemAction != null)
+        {
+            addItemAction.action.performed -= OnAddItemPerformed;
+            addItemAction.action.Disable();
+        }
     }
 
     private void Update()
     {
-        HandleInventoryToggleInput();
-        HandleAddingTempItem();
+        if (openWheelAction == null)
+        {
+            HandleInventoryToggleInput();
+        }
+
+        if (addItemAction == null)
+        {
+            HandleAddingTempItemLegacy();
+        }
 
         if (_isWheelOpen)
         {
@@ -93,13 +141,13 @@ public class RadialInventoryWheel : MonoBehaviour
     {
         if (Input.GetKeyDown(openKey))
         {
-            Debug.Log("RadialInventoryWheel: Detected openKey down: " + openKey);
+            Debug.Log("Detected openKey down: " + openKey);
             OpenWheel();
         }
 
         if (Input.GetKeyUp(openKey))
         {
-            Debug.Log("RadialInventoryWheel: Detected openKey up: " + openKey);
+            Debug.Log("Detected openKey up: " + openKey);
             CloseWheel();
         }
     }
@@ -110,14 +158,14 @@ public class RadialInventoryWheel : MonoBehaviour
         _isWheelOpen = true;
         SetWheelVisible(true);
         UpdateSelectionFromMouse();
-        Debug.Log("RadialInventoryWheel: Inventory opened.");
+        Debug.Log("Inventory opened.");
     }
 
     private void CloseWheel()
     {
         _isWheelOpen = false;
         SetWheelVisible(false);
-        Debug.Log("RadialInventoryWheel: Inventory closed.");
+        Debug.Log("Inventory closed.");
     }
     #endregion
 
@@ -135,7 +183,41 @@ public class RadialInventoryWheel : MonoBehaviour
         }
     }
 
-    #region Cursor logic - Navigating through the inventory 'items'.
+    private void ConfigurePieSlices()
+    {
+        if (slots == null || slots.Count == 0)
+        {
+            return;
+        }
+
+        float sliceFill = 1f / slots.Count;
+        float anglePerSlice = 360f / slots.Count;
+
+        for (int i = 0; i < slots.Count; i++)
+        {
+            RadialSlot slot = slots[i];
+            Image bg = slot.backgroundImage;
+
+            if (bg == null)
+            {
+                continue;
+            }
+
+            bg.type = Image.Type.Filled;
+            bg.fillMethod = Image.FillMethod.Radial360;
+            bg.fillAmount = sliceFill;
+            bg.fillClockwise = clockwise;
+            bg.fillOrigin = 2;
+
+            if (slot.slotTransform != null)
+            {
+                float sliceAngle = anglePerSlice * i + angleOffset;
+                slot.slotTransform.localRotation = Quaternion.Euler(0f, 0f, -sliceAngle);
+            }
+        }
+    }
+
+    #region Cursor logic: Navigating through the inventory 'items'.
     private void UpdateSelectionFromMouse()
     {
         if (slots == null || slots.Count == 0 || wheelRectTransform == null)
@@ -143,8 +225,17 @@ public class RadialInventoryWheel : MonoBehaviour
             return;
         }
 
+        Vector2 mousePos;
+        if (Mouse.current != null)
+        {
+            mousePos = Mouse.current.position.ReadValue();
+        }
+        else
+        {
+            mousePos = Input.mousePosition;
+        }
+
         Vector2 centerScreenPos = RectTransformUtility.WorldToScreenPoint(uiCamera, wheelRectTransform.position);
-        Vector2 mousePos = Input.mousePosition;
         Vector2 dir = mousePos - centerScreenPos;
 
         float distance = dir.magnitude;
@@ -154,7 +245,6 @@ public class RadialInventoryWheel : MonoBehaviour
             return;
         }
 
-        // Base angle from +X axis, counter clockwise
         float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
         if (angle < 0f)
         {
@@ -172,7 +262,6 @@ public class RadialInventoryWheel : MonoBehaviour
 
         float sectorSize = 360f / slots.Count;
 
-        // Apply the offset and center the slice on its direction
         float adjustedAngle = angle + angleOffset + sectorSize * 0.5f;
 
         if (adjustedAngle < 0f)
@@ -194,7 +283,7 @@ public class RadialInventoryWheel : MonoBehaviour
 
         _currentSelectedIndex = newIndex;
 
-        Debug.Log("RadialInventoryWheel: Selected index = " + _currentSelectedIndex);
+        Debug.Log("Selected index = " + _currentSelectedIndex);
 
         for (int i = 0; i < slots.Count; i++)
         {
@@ -204,16 +293,36 @@ public class RadialInventoryWheel : MonoBehaviour
     }
     #endregion
 
-    private void HandleAddingTempItem()
+    private void OnOpenWheelPerformed(InputAction.CallbackContext context)
+    {
+        OpenWheel();
+    }
+
+    private void OnOpenWheelCanceled(InputAction.CallbackContext context)
+    {
+        CloseWheel();
+    }
+
+    private void OnAddItemPerformed(InputAction.CallbackContext context)
+    {
+        TryAddTempItem();
+    }
+
+    private void HandleAddingTempItemLegacy()
     {
         if (!Input.GetKeyDown(addItemKey))
         {
             return;
         }
 
+        TryAddTempItem();
+    }
+
+    private void TryAddTempItem()
+    {
         if (tempItemPrefab == null || tempItemPrefab.Length == 0)
         {
-            Debug.LogWarning("RadialInventoryWheel: No tempItemPrefab assigned.");
+            Debug.LogWarning("No tempItemPrefab assigned.");
             return;
         }
 
@@ -224,17 +333,43 @@ public class RadialInventoryWheel : MonoBehaviour
                 GameObject prefab = tempItemPrefab[_tempItemIndex % tempItemPrefab.Length];
                 _tempItemIndex++;
 
-                GameObject instance = Instantiate(prefab, slots[i].slotContentRoot);
-                instance.transform.localScale = Vector3.one;
-                instance.transform.localPosition = Vector3.zero;
+                GameObject instance = Object.Instantiate(prefab, slots[i].slotContentRoot);
+
+                PositionItemInSlot(i, instance);
 
                 slots[i].SetItem(instance);
-                Debug.Log("RadialInventoryWheel: Added debug item to slot " + i);
+                Debug.Log("Added debug item to slot " + i);
                 return;
             }
         }
 
         Debug.Log("RadialInventoryWheel: All slots are fully filled with debug items.");
+    }
+
+    private void PositionItemInSlot(int slotIndex, GameObject itemInstance)
+    {
+        if (slots == null || slotIndex < 0 || slotIndex >= slots.Count)
+        {
+            return;
+        }
+
+        RadialSlot slot = slots[slotIndex];
+
+        RectTransform itemRect = itemInstance.GetComponent<RectTransform>();
+        if (itemRect == null)
+        {
+            return;
+        }
+
+        itemRect.anchorMin = new Vector2(0.5f, 0.5f);
+        itemRect.anchorMax = new Vector2(0.5f, 0.5f);
+        itemRect.pivot = new Vector2(0.5f, 0.5f);
+
+        float radius = slot.itemRadius;
+
+        itemRect.anchoredPosition = new Vector2(radius, 0f);
+
+        itemRect.localRotation = Quaternion.identity;
     }
 }
 
@@ -259,6 +394,10 @@ public class RadialSlot
 
     [Tooltip("Color when this slot is selected by cursor direction.")]
     public Color highlightColor = Color.yellow;
+
+    [Header("Item Layout")]
+    [Tooltip("Distance from the wheel center where the item should sit inside this pie slice.")]
+    public float itemRadius = 100f;
 
     [HideInInspector] public GameObject currentItemInstance;
     #endregion
