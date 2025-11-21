@@ -5340,7 +5340,7 @@ Transform:
   m_GameObject: {fileID: 1561104519885801684}
   serializedVersion: 2
   m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: 5.85, z: 0}
+  m_LocalPosition: {x: 0, y: 3.87, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5359,7 +5359,7 @@ Light:
   m_Color: {r: 1, g: 0.95603615, b: 0.9984686, a: 1}
   m_Intensity: 912837.94
   m_Range: 15
-  m_SpotAngle: 151.07982
+  m_SpotAngle: 179
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
@@ -5430,7 +5430,7 @@ MonoBehaviour:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_Intensity: 39.26703
-  m_InnerSpotPercent: 7.372694
+  m_InnerSpotPercent: 65.50959
   m_SpotIESCutoffPercent: 100
   m_LightDimmer: 1
   m_VolumetricDimmer: 1
@@ -5633,7 +5633,7 @@ Transform:
   m_GameObject: {fileID: 4048147868323175738}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -3.833, y: 1.57316, z: -4.50129}
+  m_LocalPosition: {x: -3.833, y: 0.1, z: -4.50129}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5657,6 +5657,10 @@ MonoBehaviour:
   - itemPrefab: {fileID: 5333549429777282362, guid: 02ec34fcc660b014b97dc84df06c297e, type: 3}
     spawnChance: 5
   - itemPrefab: {fileID: 5725912407974990886, guid: 2e20fe3f0d4cc8340959434f13ddeabf, type: 3}
+    spawnChance: 40
+  - itemPrefab: {fileID: 5736715821296530898, guid: 9b4e94311a64edf40af84660c114a117, type: 3}
+    spawnChance: 40
+  - itemPrefab: {fileID: 4870821793472388967, guid: 0257e21cc11f5d84aa2391dd6dcb233a, type: 3}
     spawnChance: 40
   _guaranteedSpawn: 0
   _useFallbackItem: 0
@@ -5694,7 +5698,7 @@ Transform:
   m_GameObject: {fileID: 5164549751417447130}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 3.67, y: 1.57316, z: 3.53}
+  m_LocalPosition: {x: 3.67, y: 0.1, z: 3.53}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5718,6 +5722,10 @@ MonoBehaviour:
   - itemPrefab: {fileID: 5333549429777282362, guid: 02ec34fcc660b014b97dc84df06c297e, type: 3}
     spawnChance: 5
   - itemPrefab: {fileID: 5725912407974990886, guid: 2e20fe3f0d4cc8340959434f13ddeabf, type: 3}
+    spawnChance: 40
+  - itemPrefab: {fileID: 5736715821296530898, guid: 9b4e94311a64edf40af84660c114a117, type: 3}
+    spawnChance: 40
+  - itemPrefab: {fileID: 4870821793472388967, guid: 0257e21cc11f5d84aa2391dd6dcb233a, type: 3}
     spawnChance: 40
   _guaranteedSpawn: 0
   _useFallbackItem: 0

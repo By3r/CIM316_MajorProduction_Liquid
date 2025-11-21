@@ -5741,7 +5741,7 @@ Transform:
   m_GameObject: {fileID: 7873030236629428107}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.43, y: 1.57316, z: 0.59}
+  m_LocalPosition: {x: 1.43, y: 0.1, z: 0.59}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5765,6 +5765,10 @@ MonoBehaviour:
   - itemPrefab: {fileID: 5333549429777282362, guid: 02ec34fcc660b014b97dc84df06c297e, type: 3}
     spawnChance: 5
   - itemPrefab: {fileID: 5725912407974990886, guid: 2e20fe3f0d4cc8340959434f13ddeabf, type: 3}
+    spawnChance: 40
+  - itemPrefab: {fileID: 5736715821296530898, guid: 9b4e94311a64edf40af84660c114a117, type: 3}
+    spawnChance: 40
+  - itemPrefab: {fileID: 4870821793472388967, guid: 0257e21cc11f5d84aa2391dd6dcb233a, type: 3}
     spawnChance: 40
   _guaranteedSpawn: 0
   _useFallbackItem: 0
