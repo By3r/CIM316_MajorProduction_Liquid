@@ -7,6 +7,12 @@
       "dependencies": {},
       "hash": "2e7ade973895a31b8b5d02672c1642b8b2bde6bb"
     },
+    "com.mibdev.fullscreen-editor": {
+      "version": "file:com.mibdev.fullscreen-editor",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.burst": {
       "version": "1.8.24",
       "depth": 2,
