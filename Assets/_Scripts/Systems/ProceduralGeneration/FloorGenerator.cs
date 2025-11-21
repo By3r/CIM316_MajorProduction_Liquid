@@ -1,11 +1,13 @@
 using System.Collections.Generic;
+using _Scripts.Core.Managers;
 using _Scripts.Systems.ProceduralGeneration.Doors;
 using UnityEngine;
 
 namespace _Scripts.Systems.ProceduralGeneration
 {
     /// <summary>
-    /// Enhanced     floor generator with TWO-PHASE collision detection, random socket selection, and blockade system.
+    /// Enhanced floor generator with TWO-PHASE collision detection, random socket selection, and blockade system.
+    /// NOW WITH SEED-BASED GENERATION: Integrates with FloorStateManager for deterministic floor generation.
     /// PHASE 1 (BROAD): Registry checks PADDED bounds before instantiation
     /// PHASE 2 (NARROW): DoorConnectionSystem checks TIGHT bounds during connection
     /// </summary>
@@ -49,6 +51,18 @@ namespace _Scripts.Systems.ProceduralGeneration
         [Tooltip("Maximum attempts to place a room at each socket")]
         [SerializeField] private int _maxAttemptsPerSocket = 5;
 
+        // ===== NEW: Floor Persistence Fields =====
+        [Header("Floor Persistence")]
+        [Tooltip("Current floor number being generated (1-based)")]
+        [SerializeField] private int _currentFloorNumber = 1;
+
+        [Tooltip("Current seed used for generation (read from FloorStateManager)")]
+        [SerializeField] private int _currentSeed;
+
+        [Tooltip("Use FloorStateManager for seed-based generation? If false, uses pure random generation.")]
+        [SerializeField] private bool _useSeedBasedGeneration = true;
+        // ========================================
+
         [Header("Runtime Info")]
         [SerializeField] private List<GameObject> _spawnedRooms = new();
         [SerializeField] private List<GameObject> _spawnedBlockades = new();
@@ -60,6 +74,22 @@ namespace _Scripts.Systems.ProceduralGeneration
         [SerializeField] private bool _exitRoomSpawned;
 
         private DoorConnectionSystem _connectionSystem;
+
+        // ===== NEW: Public Properties =====
+        /// <summary>
+        /// Gets or sets the current floor number being generated.
+        /// </summary>
+        public int CurrentFloorNumber
+        {
+            get => _currentFloorNumber;
+            set => _currentFloorNumber = Mathf.Max(1, value); // Clamp to minimum 1
+        }
+
+        /// <summary>
+        /// Gets the seed used for the current floor generation.
+        /// </summary>
+        public int CurrentSeed => _currentSeed;
+        // ==================================
 
         private void Awake()
         {
@@ -89,6 +119,7 @@ namespace _Scripts.Systems.ProceduralGeneration
         /// <summary>
         /// Generates a procedural floor using the room database with two-phase collision detection.
         /// Automatically regenerates if the budget wasn't fully utilized.
+        /// NOW SUPPORTS SEED-BASED GENERATION via FloorStateManager.
         /// </summary>
         public void GenerateFloor()
         {
@@ -153,6 +184,7 @@ namespace _Scripts.Systems.ProceduralGeneration
 
         /// <summary>
         /// Internal generation method that performs a single generation pass.
+        /// MODIFIED: Now integrates with FloorStateManager for seed-based generation.
         /// </summary>
         private void GenerateFloorInternal()
         {
@@ -169,6 +201,48 @@ namespace _Scripts.Systems.ProceduralGeneration
                 Debug.LogError("[FloorGenerator] Room database is invalid!");
                 return;
             }
+
+            // ===== NEW: Seed-Based Generation Integration =====
+            if (_useSeedBasedGeneration)
+            {
+                // Ensure FloorStateManager is initialized
+                if (!FloorStateManager.Instance.IsInitialized)
+                {
+                    Debug.LogWarning("[FloorGenerator] FloorStateManager not initialized. Initializing with random seed.");
+                    FloorStateManager.Instance.Initialize();
+                }
+
+                // Get or create floor state for current floor
+                FloorState floorState = FloorStateManager.Instance.GetOrCreateFloorState(_currentFloorNumber);
+                
+                // CRITICAL: Perturb seed on retry attempts to get different layouts
+                // This solves the determinism vs. retry conflict:
+                // - First attempt uses base seed
+                // - Each retry adds +1 to try different layouts
+                // - Final working seed is saved to ensure same layout on revisit
+                int baseSeed = floorState.generationSeed;
+                _currentSeed = baseSeed + _currentRegenerationAttempt;
+
+                // CRITICAL: Initialize Random with seed BEFORE any RNG calls
+                Random.InitState(_currentSeed);
+
+                if (_showDebugLogs)
+                {
+                    string retryInfo = _currentRegenerationAttempt > 0 
+                        ? $" (retry attempt {_currentRegenerationAttempt}, seed perturbed by +{_currentRegenerationAttempt})"
+                        : "";
+                    Debug.Log($"[FloorGenerator] Using seed-based generation for Floor {_currentFloorNumber} with seed: {_currentSeed}{retryInfo}");
+                }
+            }
+            else
+            {
+                _currentSeed = 0; // Pure random mode
+                if (_showDebugLogs)
+                {
+                    Debug.Log($"[FloorGenerator] Using pure random generation (seed-based generation disabled)");
+                }
+            }
+            // ==================================================
 
             ClearFloor();
 
@@ -217,6 +291,26 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             SpawnExitRoomAtTerminus();
             SpawnBlockadesOnUnconnectedSockets();
+
+            // ===== NEW: Mark floor as visited and save working seed =====
+            if (_useSeedBasedGeneration && _exitRoomSpawned)
+            {
+                FloorState floorState = FloorStateManager.Instance.GetCurrentFloorState();
+                
+                // CRITICAL: Save the working seed (which may be perturbed)
+                // This ensures revisiting this floor uses the SAME layout
+                if (floorState.generationSeed != _currentSeed)
+                {
+                    if (_showDebugLogs)
+                    {
+                        Debug.Log($"[FloorGenerator] Updating floor {_currentFloorNumber} seed from {floorState.generationSeed} to working seed {_currentSeed}");
+                    }
+                    floorState.generationSeed = _currentSeed;
+                }
+                
+                FloorStateManager.Instance.MarkCurrentFloorAsVisited();
+            }
+            // =================================================================
 
             if (_showDebugLogs)
             {
