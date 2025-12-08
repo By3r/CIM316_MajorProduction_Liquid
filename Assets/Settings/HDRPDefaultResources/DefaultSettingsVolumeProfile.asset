@@ -734,19 +734,19 @@ MonoBehaviour:
     m_Value: 20
   m_NearSampleCount:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 4
   m_NearMaxBlur:
     m_OverrideState: 1
-    m_Value: 4
+    m_Value: 3
   m_FarSampleCount:
     m_OverrideState: 1
-    m_Value: 7
+    m_Value: 5
   m_FarMaxBlur:
     m_OverrideState: 1
-    m_Value: 8
+    m_Value: 6
   m_Resolution:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 4
   m_HighQualityFiltering:
     m_OverrideState: 1
     m_Value: 1
@@ -802,10 +802,10 @@ MonoBehaviour:
   active: 1
   quality:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 2
   enable:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   tracing:
     m_OverrideState: 1
     m_Value: 1
@@ -825,7 +825,7 @@ MonoBehaviour:
     m_Value: 1
   m_MaxRaySteps:
     m_OverrideState: 1
-    m_Value: 64
+    m_Value: 128
   m_DenoiseSS:
     m_OverrideState: 1
     m_Value: 1
@@ -1174,19 +1174,19 @@ MonoBehaviour:
   active: 1
   quality:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 3
   enable:
     m_OverrideState: 1
     m_Value: 1
   length:
     m_OverrideState: 1
-    m_Value: 0.15
+    m_Value: 0.247
   opacity:
     m_OverrideState: 1
     m_Value: 1
   distanceScaleFactor:
     m_OverrideState: 1
-    m_Value: 0.5
+    m_Value: 0.703
   maxDistance:
     m_OverrideState: 1
     m_Value: 50
@@ -1195,19 +1195,19 @@ MonoBehaviour:
     m_Value: 0
   fadeDistance:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 30
   fadeInDistance:
     m_OverrideState: 1
     m_Value: 0
   rayBias:
     m_OverrideState: 1
-    m_Value: 0.2
+    m_Value: 1
   thicknessScale:
     m_OverrideState: 1
-    m_Value: 0.15
+    m_Value: 0.149
   m_SampleCount:
     m_OverrideState: 1
-    m_Value: 10
+    m_Value: 64
 --- !u!114 &-932844202915860331
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -2298,7 +2298,7 @@ MonoBehaviour:
     m_Value: 0
   m_RayMaxIterations:
     m_OverrideState: 1
-    m_Value: 32
+    m_Value: 16
   rayMiss:
     m_OverrideState: 1
     m_Value: 3
@@ -2388,7 +2388,7 @@ MonoBehaviour:
   active: 1
   quality:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 2
   rayTracing:
     m_OverrideState: 1
     m_Value: 0
@@ -2435,25 +2435,25 @@ MonoBehaviour:
     m_Value: 0
   m_MaximumRadiusInPixels:
     m_OverrideState: 1
-    m_Value: 40
+    m_Value: 32
   m_BilateralUpsample:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   m_DirectionCount:
     m_OverrideState: 1
     m_Value: 2
   m_RayLength:
     m_OverrideState: 1
-    m_Value: 3
+    m_Value: 20
   m_SampleCount:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 8
   m_Denoise:
     m_OverrideState: 1
     m_Value: 1
   m_DenoiserRadius:
     m_OverrideState: 1
-    m_Value: 0.5
+    m_Value: 0.65
 --- !u!114 &7542669330009093999
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -2549,16 +2549,16 @@ MonoBehaviour:
     m_Value: 4
   cascadeShadowSplit0:
     m_OverrideState: 1
-    m_Value: 0.05
+    m_Value: 0.09779411
   cascadeShadowSplit1:
     m_OverrideState: 1
-    m_Value: 0.15
+    m_Value: 0.22628671
   cascadeShadowSplit2:
     m_OverrideState: 1
-    m_Value: 0.3
+    m_Value: 0.4397059
   cascadeShadowBorder0:
     m_OverrideState: 1
-    m_Value: 0.06905067
+    m_Value: 0
   cascadeShadowBorder1:
     m_OverrideState: 1
     m_Value: 0.05086228
@@ -2602,16 +2602,16 @@ MonoBehaviour:
   active: 1
   quality:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0
   enabled:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   colorMode:
     m_OverrideState: 1
     m_Value: 1
   color:
     m_OverrideState: 1
-    m_Value: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
   tint:
     m_OverrideState: 1
     m_Value: {r: 1, g: 1, b: 1, a: 1}
@@ -2635,10 +2635,10 @@ MonoBehaviour:
     m_Value: 50
   meanFreePath:
     m_OverrideState: 1
-    m_Value: 400
+    m_Value: 20
   enableVolumetricFog:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   albedo:
     m_OverrideState: 1
     m_Value: {r: 1, g: 1, b: 1, a: 1}
@@ -2647,7 +2647,7 @@ MonoBehaviour:
     m_Value: 1
   depthExtent:
     m_OverrideState: 1
-    m_Value: 64
+    m_Value: 10
   denoisingMode:
     m_OverrideState: 1
     m_Value: 2
@@ -2671,7 +2671,7 @@ MonoBehaviour:
     m_Value: 64
   m_VolumetricFogBudget:
     m_OverrideState: 1
-    m_Value: 0.5
+    m_Value: 0.125
   m_ResolutionDepthRatio:
     m_OverrideState: 1
     m_Value: 0.5

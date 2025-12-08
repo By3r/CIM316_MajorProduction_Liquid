@@ -1,5 +1,18 @@
 {
   "dependencies": {
+    "ca.andydbc.unity-texture-packer": {
+      "version": "https://github.com/andydbc/unity-texture-packer.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "2e7ade973895a31b8b5d02672c1642b8b2bde6bb"
+    },
+    "com.mibdev.fullscreen-editor": {
+      "version": "file:com.mibdev.fullscreen-editor",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "com.unity.burst": {
       "version": "1.8.24",
       "depth": 2,
@@ -159,6 +172,24 @@
       "source": "builtin",
       "dependencies": {
         "com.unity.render-pipelines.core": "17.2.0"
+      }
+    },
+    "com.unity.render-pipelines.universal": {
+      "version": "17.2.0",
+      "depth": 0,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.render-pipelines.core": "17.2.0",
+        "com.unity.shadergraph": "17.2.0",
+        "com.unity.render-pipelines.universal-config": "17.0.3"
+      }
+    },
+    "com.unity.render-pipelines.universal-config": {
+      "version": "17.0.3",
+      "depth": 1,
+      "source": "builtin",
+      "dependencies": {
+        "com.unity.render-pipelines.core": "17.0.3"
       }
     },
     "com.unity.rendering.light-transport": {

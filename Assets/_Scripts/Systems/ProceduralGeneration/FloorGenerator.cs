@@ -1,11 +1,13 @@
 using System.Collections.Generic;
+using _Scripts.Core.Managers;
 using _Scripts.Systems.ProceduralGeneration.Doors;
 using UnityEngine;
 
 namespace _Scripts.Systems.ProceduralGeneration
 {
     /// <summary>
-    /// Enhanced     floor generator with TWO-PHASE collision detection, random socket selection, and blockade system.
+    /// Enhanced floor generator with TWO-PHASE collision detection, random socket selection, and blockade system.
+    /// NOW WITH SEED-BASED GENERATION: Integrates with FloorStateManager for deterministic floor generation.
     /// PHASE 1 (BROAD): Registry checks PADDED bounds before instantiation
     /// PHASE 2 (NARROW): DoorConnectionSystem checks TIGHT bounds during connection
     /// </summary>
@@ -20,6 +22,17 @@ namespace _Scripts.Systems.ProceduralGeneration
 
         [Tooltip("Door prefab to instantiate at connections")]
         [SerializeField] private GameObject _doorPrefab;
+
+        [Header("Retry Settings")]
+        [Tooltip("Enable automatic regeneration if budget not fully used")]
+        [SerializeField] private bool _enableRetryOnIncompleteGeneration = true;
+
+        [Tooltip("Maximum generation attempts before giving up")]
+        [SerializeField] private int _maxGenerationAttempts = 3;
+
+        [Tooltip("Minimum credits that must be used (percentage of budget)")]
+        [Range(0f, 1f)]
+        [SerializeField] private float _minBudgetUsageThreshold = 0.8f;
 
         [Header("Generation Options")]
         [SerializeField] private bool _generateOnStart;
@@ -38,6 +51,18 @@ namespace _Scripts.Systems.ProceduralGeneration
         [Tooltip("Maximum attempts to place a room at each socket")]
         [SerializeField] private int _maxAttemptsPerSocket = 5;
 
+        // ===== NEW: Floor Persistence Fields =====
+        [Header("Floor Persistence")]
+        [Tooltip("Current floor number being generated (1-based)")]
+        [SerializeField] private int _currentFloorNumber = 1;
+
+        [Tooltip("Current seed used for generation (read from FloorStateManager)")]
+        [SerializeField] private int _currentSeed;
+
+        [Tooltip("Use FloorStateManager for seed-based generation? If false, uses pure random generation.")]
+        [SerializeField] private bool _useSeedBasedGeneration = true;
+        // ========================================
+
         [Header("Runtime Info")]
         [SerializeField] private List<GameObject> _spawnedRooms = new();
         [SerializeField] private List<GameObject> _spawnedBlockades = new();
@@ -45,8 +70,26 @@ namespace _Scripts.Systems.ProceduralGeneration
         [SerializeField] private int _connectionsMade;
         [SerializeField] private int _creditsRemaining;
         [SerializeField] private int _blockadeSpawnCount;
+        [SerializeField] private int _currentRegenerationAttempt;
+        [SerializeField] private bool _exitRoomSpawned;
 
         private DoorConnectionSystem _connectionSystem;
+
+        // ===== NEW: Public Properties =====
+        /// <summary>
+        /// Gets or sets the current floor number being generated.
+        /// </summary>
+        public int CurrentFloorNumber
+        {
+            get => _currentFloorNumber;
+            set => _currentFloorNumber = Mathf.Max(1, value); // Clamp to minimum 1
+        }
+
+        /// <summary>
+        /// Gets the seed used for the current floor generation.
+        /// </summary>
+        public int CurrentSeed => _currentSeed;
+        // ==================================
 
         private void Awake()
         {
@@ -75,8 +118,75 @@ namespace _Scripts.Systems.ProceduralGeneration
 
         /// <summary>
         /// Generates a procedural floor using the room database with two-phase collision detection.
+        /// Automatically regenerates if the budget wasn't fully utilized.
+        /// NOW SUPPORTS SEED-BASED GENERATION via FloorStateManager.
         /// </summary>
         public void GenerateFloor()
+        {
+            _currentRegenerationAttempt = 0;
+
+            // Loop-based retry instead of recursion to avoid stack overflow
+            while (true)
+            {
+                GenerateFloorInternal();
+
+                float budgetUsagePercentage = 1f - ((float)_creditsRemaining / _doorCreditBudget);
+                bool budgetSufficient = budgetUsagePercentage >= _minBudgetUsageThreshold;
+
+                // CRITICAL: Exit room must ALWAYS spawn
+                if (!_exitRoomSpawned)
+                {
+                    if (_showDebugLogs)
+                        Debug.LogWarning($"[FloorGenerator] Exit room failed to spawn! Retrying generation...");
+                    
+                    _currentRegenerationAttempt++;
+                    if (_currentRegenerationAttempt >= _maxGenerationAttempts)
+                    {
+                        Debug.LogError($"[FloorGenerator] === GENERATION FAILED === Exit room could not spawn after {_maxGenerationAttempts} attempts!");
+                        break;
+                    }
+                    continue;
+                }
+
+                // Success: budget threshold met AND exit room spawned
+                if (budgetSufficient || _creditsRemaining == 0)
+                {
+                    if (_showDebugLogs && _currentRegenerationAttempt > 0)
+                    {
+                        Debug.Log($"[FloorGenerator] === GENERATION SUCCESSFUL on attempt {_currentRegenerationAttempt + 1} === " +
+                                  $"Budget usage: {budgetUsagePercentage:P1}");
+                    }
+                    break;
+                }
+
+                // Failure: max attempts reached
+                if (!_enableRetryOnIncompleteGeneration || _currentRegenerationAttempt >= _maxGenerationAttempts - 1)
+                {
+                    if (_showDebugLogs)
+                    {
+                        Debug.LogWarning($"[FloorGenerator] === GENERATION INCOMPLETE === " +
+                                       $"Final attempt ({_currentRegenerationAttempt + 1}/{_maxGenerationAttempts}) " +
+                                       $"used {budgetUsagePercentage:P1} of budget " +
+                                       $"({_doorCreditBudget - _creditsRemaining}/{_doorCreditBudget} credits)");
+                    }
+                    break;
+                }
+
+                // Retry
+                _currentRegenerationAttempt++;
+                if (_showDebugLogs)
+                {
+                    Debug.LogWarning($"[FloorGenerator] Budget usage {budgetUsagePercentage:P1} below threshold {_minBudgetUsageThreshold:P0}. " +
+                                   $"Retrying... (attempt {_currentRegenerationAttempt + 1}/{_maxGenerationAttempts})");
+                }
+            }
+        }
+
+        /// <summary>
+        /// Internal generation method that performs a single generation pass.
+        /// MODIFIED: Now integrates with FloorStateManager for seed-based generation.
+        /// </summary>
+        private void GenerateFloorInternal()
         {
             EnsureConnectionSystemExists();
 
@@ -92,16 +202,64 @@ namespace _Scripts.Systems.ProceduralGeneration
                 return;
             }
 
+            // ===== NEW: Seed-Based Generation Integration =====
+            if (_useSeedBasedGeneration)
+            {
+                // Ensure FloorStateManager is initialized
+                if (!FloorStateManager.Instance.IsInitialized)
+                {
+                    Debug.LogWarning("[FloorGenerator] FloorStateManager not initialized. Initializing with random seed.");
+                    FloorStateManager.Instance.Initialize();
+                }
+
+                // Get or create floor state for current floor
+                FloorState floorState = FloorStateManager.Instance.GetOrCreateFloorState(_currentFloorNumber);
+                
+                // CRITICAL: Perturb seed on retry attempts to get different layouts
+                // This solves the determinism vs. retry conflict:
+                // - First attempt uses base seed
+                // - Each retry adds +1 to try different layouts
+                // - Final working seed is saved to ensure same layout on revisit
+                int baseSeed = floorState.generationSeed;
+                _currentSeed = baseSeed + _currentRegenerationAttempt;
+
+                // CRITICAL: Initialize Random with seed BEFORE any RNG calls
+                Random.InitState(_currentSeed);
+
+                if (_showDebugLogs)
+                {
+                    string retryInfo = _currentRegenerationAttempt > 0 
+                        ? $" (retry attempt {_currentRegenerationAttempt}, seed perturbed by +{_currentRegenerationAttempt})"
+                        : "";
+                    Debug.Log($"[FloorGenerator] Using seed-based generation for Floor {_currentFloorNumber} with seed: {_currentSeed}{retryInfo}");
+                }
+            }
+            else
+            {
+                _currentSeed = 0; // Pure random mode
+                if (_showDebugLogs)
+                {
+                    Debug.Log($"[FloorGenerator] Using pure random generation (seed-based generation disabled)");
+                }
+            }
+            // ==================================================
+
             ClearFloor();
 
             OccupiedSpaceRegistry.Instance.ClearRegistry();
 
             if (_showDebugLogs)
-                Debug.Log($"[FloorGenerator] === STARTING FLOOR GENERATION === Budget: {_doorCreditBudget} credits");
+            {
+                string attemptInfo = _currentRegenerationAttempt > 0 
+                    ? $" (Regeneration Attempt {_currentRegenerationAttempt}/{_maxGenerationAttempts})" 
+                    : "";
+                Debug.Log($"[FloorGenerator] === STARTING FLOOR GENERATION{attemptInfo} === Budget: {_doorCreditBudget} credits");
+            }
 
             _creditsRemaining = _doorCreditBudget;
             _availableSockets.Clear();
             _blockadeSpawnCount = 0;
+            _exitRoomSpawned = false;
 
             GameObject startRoom = SpawnStartingRoom();
             if (startRoom == null)
@@ -112,7 +270,8 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             AddRoomSocketsToList(startRoom);
 
-            while (_creditsRemaining > 0 && _availableSockets.Count > 0)
+            // Reserve 1 credit for exit room - stop at 1 remaining
+            while (_creditsRemaining > 1 && _availableSockets.Count > 0)
             {
                 int randomIndex = Random.Range(0, _availableSockets.Count);
                 ConnectionSocket sourceSocket = _availableSockets[randomIndex];
@@ -130,11 +289,35 @@ namespace _Scripts.Systems.ProceduralGeneration
                 }
             }
 
+            SpawnExitRoomAtTerminus();
             SpawnBlockadesOnUnconnectedSockets();
+
+            // ===== NEW: Mark floor as visited and save working seed =====
+            if (_useSeedBasedGeneration && _exitRoomSpawned)
+            {
+                FloorState floorState = FloorStateManager.Instance.GetCurrentFloorState();
+                
+                // CRITICAL: Save the working seed (which may be perturbed)
+                // This ensures revisiting this floor uses the SAME layout
+                if (floorState.generationSeed != _currentSeed)
+                {
+                    if (_showDebugLogs)
+                    {
+                        Debug.Log($"[FloorGenerator] Updating floor {_currentFloorNumber} seed from {floorState.generationSeed} to working seed {_currentSeed}");
+                    }
+                    floorState.generationSeed = _currentSeed;
+                }
+                
+                FloorStateManager.Instance.MarkCurrentFloorAsVisited();
+            }
+            // =================================================================
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorGenerator] === GENERATION COMPLETE === " +
+                string attemptInfo = _currentRegenerationAttempt > 0 
+                    ? $" (Attempt {_currentRegenerationAttempt + 1}/{_maxGenerationAttempts})" 
+                    : "";
+                Debug.Log($"[FloorGenerator] === GENERATION PASS COMPLETE{attemptInfo} === " +
                           $"Spawned {_spawnedRooms.Count} rooms, {_connectionsMade} connections, " +
                           $"{_blockadeSpawnCount} blockades, {_creditsRemaining} credits remaining");
                 Debug.Log($"[FloorGenerator] {OccupiedSpaceRegistry.Instance.GetRegistryStats()}");
@@ -158,6 +341,204 @@ namespace _Scripts.Systems.ProceduralGeneration
                 Debug.Log($"[FloorGenerator] Spawned starting room: {startRoomEntry.displayName}");
 
             return startRoom;
+        }
+
+        /// <summary>
+        /// Spawns the exit elevator room at one of the unconnected sockets.
+        /// GUARANTEES at least one exit room is always present in the floor.
+        /// Uses the reserved credit and proper socket alignment via DoorConnectionSystem.
+        /// </summary>
+        private void SpawnExitRoomAtTerminus()
+        {
+            RoomPrefabDatabase.RoomEntry exitRoomEntry = _roomDatabase.ExitElevatorRoom;
+
+            if (exitRoomEntry == null || exitRoomEntry.prefab == null)
+            {
+                Debug.LogError("[FloorGenerator] Exit elevator room not set in database. Cannot guarantee exit room!");
+                return;
+            }
+
+            // Collect all unconnected sockets from spawned rooms
+            List<ConnectionSocket> candidateSockets = new List<ConnectionSocket>();
+            foreach (GameObject room in _spawnedRooms)
+            {
+                if (room == null) continue;
+
+                ConnectionSocket[] sockets = room.GetComponentsInChildren<ConnectionSocket>();
+                foreach (ConnectionSocket socket in sockets)
+                {
+                    if (socket != null && !socket.IsConnected && socket.ConnectedSocket == null)
+                    {
+                        // Check if exit room has compatible socket type
+                        ConnectionSocket exitSocket = FindCompatibleSocketInPrefab(exitRoomEntry.prefab, socket.SocketType);
+                        if (exitSocket != null)
+                        {
+                            candidateSockets.Add(socket);
+                        }
+                    }
+                }
+            }
+
+            // If no unconnected sockets, try ANY compatible socket (will use credit to spawn new room)
+            if (candidateSockets.Count == 0)
+            {
+                if (_showDebugLogs)
+                    Debug.LogWarning("[FloorGenerator] No unconnected sockets available for exit room. Will use any compatible socket.");
+
+                foreach (GameObject room in _spawnedRooms)
+                {
+                    if (room == null) continue;
+
+                    ConnectionSocket[] sockets = room.GetComponentsInChildren<ConnectionSocket>();
+                    foreach (ConnectionSocket socket in sockets)
+                    {
+                        if (socket != null)
+                        {
+                            ConnectionSocket exitSocket = FindCompatibleSocketInPrefab(exitRoomEntry.prefab, socket.SocketType);
+                            if (exitSocket != null)
+                            {
+                                candidateSockets.Add(socket);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (candidateSockets.Count == 0)
+            {
+                Debug.LogError("[FloorGenerator] CRITICAL: No compatible sockets found for exit room! Floor generation incomplete.");
+                return;
+            }
+
+            // Shuffle the list to try sockets in random order
+            for (int i = candidateSockets.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                ConnectionSocket temp = candidateSockets[i];
+                candidateSockets[i] = candidateSockets[j];
+                candidateSockets[j] = temp;
+            }
+
+            // Try each socket until one works
+            foreach (ConnectionSocket selectedSocket in candidateSockets)
+            {
+                // Find the compatible socket in the exit room prefab
+                ConnectionSocket exitSocketPrefab = FindCompatibleSocketInPrefab(exitRoomEntry.prefab, selectedSocket.SocketType);
+
+                if (exitSocketPrefab == null)
+                    continue;
+
+                // Store prefab's original transform state
+                Vector3 prefabOriginalPos = exitRoomEntry.prefab.transform.position;
+                Quaternion prefabOriginalRot = exitRoomEntry.prefab.transform.rotation;
+                
+                // Temporarily reset prefab to identity for clean calculation
+                exitRoomEntry.prefab.transform.position = Vector3.zero;
+                exitRoomEntry.prefab.transform.rotation = Quaternion.identity;
+
+                // Calculate alignment using DoorConnectionSystem
+                var (roomPosition, roomRotation) = _connectionSystem.CalculateTargetRoomTransform(
+                    selectedSocket, 
+                    exitSocketPrefab, 
+                    exitRoomEntry.prefab.transform
+                );
+                
+                // Restore prefab's original transform
+                exitRoomEntry.prefab.transform.position = prefabOriginalPos;
+                exitRoomEntry.prefab.transform.rotation = prefabOriginalRot;
+
+                // Check broad-phase collision before spawning
+                BoundsChecker exitBoundsChecker = exitRoomEntry.prefab.GetComponent<BoundsChecker>();
+                if (exitBoundsChecker != null)
+                {
+                    // Transform bounds to world space using calculated position/rotation
+                    exitRoomEntry.prefab.transform.position = roomPosition;
+                    exitRoomEntry.prefab.transform.rotation = roomRotation;
+                    
+                    Bounds worldBounds = exitBoundsChecker.GetPaddedBounds();
+                    
+                    // Restore prefab transform
+                    exitRoomEntry.prefab.transform.position = prefabOriginalPos;
+                    exitRoomEntry.prefab.transform.rotation = prefabOriginalRot;
+
+                    if (OccupiedSpaceRegistry.Instance.IsSpaceOccupied(worldBounds, (BoundsChecker)null))
+                    {
+                        if (_showDebugLogs)
+                            Debug.Log($"[FloorGenerator] Exit room would collide at socket '{selectedSocket.name}', trying next socket...");
+                        continue;
+                    }
+                }
+
+                // Spawn the exit room
+                GameObject exitRoom = SpawnRoom(
+                    exitRoomEntry.prefab,
+                    roomPosition,
+                    roomRotation,
+                    "ExitRoom",
+                    registerNow: true
+                );
+
+                if (exitRoom == null)
+                {
+                    Debug.LogWarning("[FloorGenerator] Failed to instantiate exit room, trying next socket...");
+                    continue;
+                }
+
+                _spawnedRooms.Add(exitRoom);
+
+                // Find the matching socket in the spawned exit room
+                ConnectionSocket spawnedExitSocket = FindMatchingSocketInInstance(exitRoom, exitSocketPrefab);
+
+                if (spawnedExitSocket == null)
+                {
+                    Debug.LogWarning("[FloorGenerator] Could not find exit socket in spawned exit room, trying next socket...");
+                    
+                    // Clean up failed spawn
+                    _spawnedRooms.Remove(exitRoom);
+                    if (Application.isPlaying)
+                        Destroy(exitRoom);
+                    else
+                        DestroyImmediate(exitRoom);
+                    
+                    continue;
+                }
+
+                // Connect the sockets using DoorConnectionSystem (performs narrow-phase check)
+                bool connectionSuccess = _connectionSystem.ConnectRooms(selectedSocket, spawnedExitSocket, exitRoom.transform, _doorPrefab);
+
+                if (connectionSuccess)
+                {
+                    // Success! Deduct the reserved credit
+                    _creditsRemaining--;
+                    _connectionsMade++;
+                    _exitRoomSpawned = true;
+                    
+                    if (_showDebugLogs)
+                        Debug.Log($"[FloorGenerator] ✓ Exit room spawned at '{selectedSocket.name}' (1 credit used)");
+                    
+                    return; // Exit room placed successfully
+                }
+                else
+                {
+                    // Narrow-phase collision detected, clean up and try next socket
+                    if (_showDebugLogs)
+                        Debug.Log($"[FloorGenerator] Narrow-phase collision for exit room at socket '{selectedSocket.name}', trying next socket...");
+                    
+                    _spawnedRooms.Remove(exitRoom);
+                    
+                    BoundsChecker boundsChecker = exitRoom.GetComponent<BoundsChecker>();
+                    if (boundsChecker != null)
+                        boundsChecker.UnregisterFromRegistry();
+                    
+                    if (Application.isPlaying)
+                        Destroy(exitRoom);
+                    else
+                        DestroyImmediate(exitRoom);
+                }
+            }
+
+            // If we get here, no socket worked
+            Debug.LogError("[FloorGenerator] CRITICAL: Failed to place exit room at any compatible socket! Floor generation incomplete.");
         }
 
         /// <summary>
@@ -490,6 +871,8 @@ namespace _Scripts.Systems.ProceduralGeneration
             _connectionsMade = 0;
             _creditsRemaining = 0;
             _blockadeSpawnCount = 0;
+            // Note: _currentRegenerationAttempt is NOT reset here
+            // It's only reset in GenerateFloor() to track across regeneration cycles
 
             if (OccupiedSpaceRegistry.Instance != null)
             {

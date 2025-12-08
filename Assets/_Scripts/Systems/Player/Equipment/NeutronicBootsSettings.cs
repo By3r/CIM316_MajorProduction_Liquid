@@ -25,8 +25,10 @@ namespace Liquid.Player.Equipment
         [Header("Activation")]
         [Tooltip("How long the player must hold jump to activate ceiling walk (in seconds)")]
         [SerializeField] private float _activationHoldTime = 1.5f;
+        
+        [Tooltip("Time window in seconds where releasing jump still counts as a tap. Holding longer than this will start the boot activation.")]
+        [SerializeField] private float _jumpGracePeriod = 0.1f;
 
-        // **FIX**: New header and property for rotation animation.
         [Header("Transitions")]
         [Tooltip("How long the rotation animation takes when mounting or dismounting from a ceiling (in seconds).")]
         [SerializeField] private float _rotationTransitionDuration = 0.25f;
@@ -85,7 +87,8 @@ namespace Liquid.Player.Equipment
         public LayerMask CeilingWalkableLayer => _ceilingWalkableLayer;
         public float DetectionRadius => _detectionRadius;
         public float ActivationHoldTime => _activationHoldTime;
-        public float RotationTransitionDuration => _rotationTransitionDuration; // **FIX**: Public property for the new setting.
+        public float JumpGracePeriod => _jumpGracePeriod;
+        public float RotationTransitionDuration => _rotationTransitionDuration;
         public float StickyForceStrength => _stickyForceStrength;
         public float MaxStickyForce => _maxStickyForce;
         public float CeilingFriction => _ceilingFriction;

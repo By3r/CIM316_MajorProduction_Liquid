@@ -36,6 +36,7 @@ namespace Liquid.Player.Equipment
         private bool _isTransitioning;
         private float _activationHoldTimer;
         private bool _isHoldingActivation;
+        private bool _isConsideringActivation; // Manages the tap-vs-hold state
         private float _ceilingGraceTimer;
         private float _dismountCooldownTimer; 
         private bool _isDismounting;
@@ -55,18 +56,18 @@ namespace Liquid.Player.Equipment
 
         public bool IsOnCeiling => _isOnCeiling;
         public bool IsTransitioning => _isTransitioning;
-        public float ActivationProgress => _settings != null ? Mathf.Clamp01(_activationHoldTimer / _settings.ActivationHoldTime) : 0f;
-        public bool ShouldPreventJump => _isHoldingActivation || _isOnCeiling || _isTransitioning;
+        public float ActivationProgress => _isHoldingActivation ? Mathf.Clamp01((_activationHoldTimer - _settings.JumpGracePeriod) / (_settings.ActivationHoldTime - _settings.JumpGracePeriod)) : 0f;
+        
+        // This property stops the MovementController from jumping on its own, giving this script full control.
+        public bool ShouldPreventJump =>
+            _isOnCeiling || 
+            _isTransitioning ||
+            // Proactively prevent any jump if we are even considering a ceiling walk.
+            (_ceilingDetector.IsCeilingAvailable && InputManager.Instance.IsJumpHeld && _movementController.IsGrounded) ||
+            _isConsideringActivation;
+            
         public bool ShouldOverrideMovement => (_isOnCeiling || _isTransitioning) && !_isDismounting;
-        
-        /// <summary>
-        /// Gets the current movement speed while on the ceiling.
-        /// </summary>
         public float CeilingSpeed => _ceilingVelocity.magnitude;
-        
-        /// <summary>
-        /// Gets the maximum possible movement speed while on the ceiling.
-        /// </summary>
         public float MaxCeilingSpeed => _baseMovementSpeed * (_settings != null ? _settings.CeilingMovementSpeedMultiplier : 1f);
 
 
@@ -149,30 +150,68 @@ namespace Liquid.Player.Equipment
 
         private void HandleActivationInput()
         {
-            bool jumpHeld = InputManager.Instance != null && InputManager.Instance.IsJumpHeld;
+            bool canActivate = _ceilingDetector.IsCeilingAvailable && _movementController != null && _movementController.IsGrounded;
 
-            if (jumpHeld && _ceilingDetector.IsCeilingAvailable && _movementController != null && _movementController.IsGrounded)
+            // --- State Machine for Tap-vs-Hold ---
+
+            // Entry condition: Player presses Jump while on the ground with a ceiling available.
+            if (InputManager.Instance.JumpPressed && canActivate && !_isConsideringActivation)
             {
-                _isHoldingActivation = true;
-                _activationHoldTimer += Time.deltaTime;
+                _isConsideringActivation = true;
+                _activationHoldTimer = 0f;
+            }
 
+            // Logic while in the "considering" state
+            if (_isConsideringActivation)
+            {
+                // Action 1: Player RELEASES the button. This is the highest priority.
+                if (InputManager.Instance.JumpReleased)
+                {
+                    // If the hold time was short enough, it's a "tap". JUMP IMMEDIATELY.
+                    if (_activationHoldTimer < _settings.JumpGracePeriod)
+                    {
+                        _movementController.ForceJump();
+                    }
+                    // No matter what, releasing the button resets the state.
+                    _isConsideringActivation = false;
+                    _isHoldingActivation = false;
+                }
+                // Action 2: Player CONTINUES TO HOLD the button.
+                else if (InputManager.Instance.IsJumpHeld)
+                {
+                    _activationHoldTimer += Time.deltaTime;
+                    // If the hold time passes the grace period, it's now officially a "hold".
+                    if (_activationHoldTimer >= _settings.JumpGracePeriod)
+                    {
+                        _isHoldingActivation = true;
+                    }
+                }
+                // Fallback: If the button is no longer held (but wasn't released this frame), reset.
+                else
+                {
+                    _isConsideringActivation = false;
+                    _isHoldingActivation = false;
+                }
+            }
+            
+            // --- Logic for when a "Hold" is confirmed ---
+            if (_isHoldingActivation)
+            {
+                // Update the UI slider
                 if (_activationSlider != null) _activationSlider.value = ActivationProgress;
 
+                // Check for full activation
                 if (_activationHoldTimer >= _settings.ActivationHoldTime)
                 {
                     StartCoroutine(ActivateCeilingWalk());
-                    _activationHoldTimer = 0f;
+                    _isConsideringActivation = false;
                     _isHoldingActivation = false;
                 }
             }
             else
             {
-                if (_isHoldingActivation)
-                {
-                    _activationHoldTimer = 0f;
-                    _isHoldingActivation = false;
-                    if (_activationSlider != null) _activationSlider.value = 0f;
-                }
+                // Ensure slider is hidden if not holding
+                if (_activationSlider != null) _activationSlider.value = 0;
             }
         }
 

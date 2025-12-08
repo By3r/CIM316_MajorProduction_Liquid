@@ -14,9 +14,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.ProceduralGeneration.RoomPrefabDatabase
   _rooms:
   - prefab: {fileID: 8589230654753735102, guid: 4c6321b3a9c95334d90ffcab10a45d03, type: 3}
-    roomID: 
+    roomID: 3
     displayName: 
-    category: 0
+    category: 2
     sectorNumber: 0
     socketTypes: 00000000
     socketCount: 4
@@ -24,7 +24,7 @@ MonoBehaviour:
     isEnabled: 1
     previewImage: {fileID: 0}
   - prefab: {fileID: 8589230654753735102, guid: 25a48a5d8784e494d91d56e2c4e82bb4, type: 3}
-    roomID: 
+    roomID: 4
     displayName: 
     category: 0
     sectorNumber: 0
@@ -63,9 +63,19 @@ MonoBehaviour:
     spawnWeight: 0
     isEnabled: 1
     previewImage: {fileID: 0}
+  - prefab: {fileID: 1747288296214140886, guid: c3dc26cb8ed316149bba77b4dbac2b09, type: 3}
+    roomID: 
+    displayName: Terminus
+    category: 4
+    sectorNumber: 0
+    socketTypes: 00000000
+    socketCount: 1
+    spawnWeight: 0
+    isEnabled: 1
+    previewImage: {fileID: 0}
   _entryElevatorRoom:
     prefab: {fileID: 5138822047483153816, guid: d69b80f8000253c489acefcbff8e994c, type: 3}
-    roomID: 
+    roomID: 1
     displayName: 
     category: 100
     sectorNumber: 1
@@ -75,8 +85,8 @@ MonoBehaviour:
     isEnabled: 1
     previewImage: {fileID: 0}
   _exitElevatorRoom:
-    prefab: {fileID: 1747288296214140886, guid: b4a37b28585e6ca429d49d0a6c6a6fcd, type: 3}
-    roomID: 
+    prefab: {fileID: 8589230654753735102, guid: 48ba5325773ea6a4296c258c62293e75, type: 3}
+    roomID: 2
     displayName: 
     category: 101
     sectorNumber: 1
@@ -87,7 +97,7 @@ MonoBehaviour:
     previewImage: {fileID: 0}
   _safeRoom:
     prefab: {fileID: 5905477482315762008, guid: 8cc30a3974b42ed4e90fd99f03f611d6, type: 3}
-    roomID: 
+    roomID: 1
     displayName: 
     category: 102
     sectorNumber: 1
@@ -96,9 +106,9 @@ MonoBehaviour:
     spawnWeight: 5
     isEnabled: 1
     previewImage: {fileID: 0}
-  _totalRooms: 5
-  _enabledRooms: 5
-  _corridorRooms: 5
-  _hubRooms: 0
+  _totalRooms: 6
+  _enabledRooms: 6
+  _corridorRooms: 4
+  _hubRooms: 1
   _intersectionRooms: 0
-  _terminusRooms: 0
+  _terminusRooms: 1
