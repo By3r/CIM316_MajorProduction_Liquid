@@ -1,6 +1,10 @@
+using System.Collections;
 using System.Collections.Generic;
 using _Scripts.Core.Managers;
+using _Scripts.Core.Persistence;
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using TMPro;
 
 namespace MainMenu.UI
 {
@@ -8,7 +12,7 @@ namespace MainMenu.UI
     {
         #region Variables
         [Header("Transforms")]
-        [Tooltip("Pivot transform of the flashlight that should rotate toward menu buttons.")]
+        [Tooltip("Pivot transform of the flashlight or the bone that should rotate toward menu buttons.")]
         [SerializeField] private Transform flashlightPivot;
 
         [SerializeField] private Transform playerRoot;
@@ -27,8 +31,24 @@ namespace MainMenu.UI
         [Tooltip("How strong the vertical input must be before it counts as a step.")]
         [SerializeField] private float navigationThreshold = 0.5f;
 
+        [Header("Scenes")]
+        [Tooltip("Name of the safe room scene to load for New Game / Load Game.")]
+        [SerializeField] private string safeRoomSceneName = "Game";
+
+        [Header("Panels")]
+        [Tooltip("Panel shown when Load Game is pressed but no save file exists.")]
+        [SerializeField] private GameObject noSavePanel;
+        [SerializeField] private TMP_Text noSaveText;
+        [SerializeField] private float noSaveMessageDuration = 5f;
+
+        [Tooltip("Panel shown when New Game is pressed but a save file already exists.")]
+        [SerializeField] private GameObject overwriteConfirmPanel;
+        [SerializeField] private TMP_Text overwriteConfirmText;
+
         private int _currentIndex;
         private float _lastNavigateTime;
+        private bool _isModalOpen;
+        private Coroutine _noSaveCoroutine;
         #endregion
 
         private void Awake()
@@ -43,11 +63,27 @@ namespace MainMenu.UI
                 Debug.LogWarning("No menu buttons assigned.", this);
             }
 
+            if (noSavePanel != null)
+            {
+                noSavePanel.SetActive(false);
+            }
+
+            if (overwriteConfirmPanel != null)
+            {
+                overwriteConfirmPanel.SetActive(false);
+            }
+
             SetSelectedIndex(0, force: true);
         }
 
         private void Update()
         {
+            if (_isModalOpen)
+            {
+                AimFlashlightAtCurrentButton();
+                return;
+            }
+
             HandleNavigationInput();
             HandleSubmitInput();
             AimFlashlightAtCurrentButton();
@@ -135,12 +171,173 @@ namespace MainMenu.UI
                 return;
             }
 
-            if (InputManager.Instance.SubmitPressed)
+            bool submit = InputManager.Instance.SubmitPressed;
+            bool interact = InputManager.Instance.InteractPressed;
+
+            if (!submit && !interact)
             {
-                DiegeticMenuButton currentButton = menuButtons[_currentIndex];
-                currentButton.Activate();
+                return;
+            }
+
+            DiegeticMenuButton currentButton = menuButtons[_currentIndex];
+
+            switch (currentButton.Type)
+            {
+                case DiegeticMenuButton.ButtonType.NewGame:
+                    OnNewGamePressed();
+                    break;
+
+                case DiegeticMenuButton.ButtonType.LoadGame:
+                    OnLoadGamePressed();
+                    break;
+
+                case DiegeticMenuButton.ButtonType.Settings:
+                    OnSettingsPressed();
+                    break;
+
+                case DiegeticMenuButton.ButtonType.Exit:
+                    OnExitPressed();
+                    break;
+            }
+
+            currentButton.Activate();
+        }
+
+        #region Button behaviours
+
+        private void OnNewGamePressed()
+        {
+            if (SaveSystem.SaveExists())
+            {
+                if (overwriteConfirmPanel != null)
+                {
+                    overwriteConfirmPanel.SetActive(true);
+                    _isModalOpen = true;
+
+                    if (overwriteConfirmText != null)
+                    {
+                        overwriteConfirmText.text ="Starting a New Game will overwrite your previous save.\nContinue?";
+                            }
+                }
+                else
+                {
+                    StartNewGameAndCreateSave();
+                }
+            }
+            else
+            {
+                StartNewGameAndCreateSave();
             }
         }
+
+        private void OnLoadGamePressed()
+        {
+            if (!SaveSystem.SaveExists())
+            {
+                ShowNoSaveMessage("No saved game found.\nStart a New Game first.");
+                return;
+            }
+
+            LoadGameScene();
+        }
+
+        private void OnSettingsPressed()
+        {
+            Debug.Log("Settings pressed. (TODO: rotate camera up and open settings canvas.)");
+        }
+
+        private void OnExitPressed()
+        {
+            Debug.Log("Exit pressed.");
+
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
+        }
+
+        #endregion
+
+        #region Panels
+        public void UI_ConfirmOverwriteNewGame()
+        {
+            if (overwriteConfirmPanel != null)
+            {
+                overwriteConfirmPanel.SetActive(false);
+            }
+
+            _isModalOpen = false;
+            StartNewGameAndCreateSave();
+        }
+
+        public void UI_CancelOverwriteNewGame()
+        {
+            if (overwriteConfirmPanel != null)
+            {
+                overwriteConfirmPanel.SetActive(false);
+            }
+
+            _isModalOpen = false;
+        }
+
+        private void ShowNoSaveMessage(string message)
+        {
+            if (noSavePanel == null)
+            {
+                Debug.LogWarning("NoSavePanel is not assigned.");
+                return;
+            }
+
+            if (_noSaveCoroutine != null)
+            {
+                StopCoroutine(_noSaveCoroutine);
+            }
+
+            if (noSaveText != null)
+            {
+                noSaveText.text = message;
+            }
+
+            noSavePanel.SetActive(true);
+            _noSaveCoroutine = StartCoroutine(NoSaveMessageRoutine());
+        }
+
+        private IEnumerator NoSaveMessageRoutine()
+        {
+            _isModalOpen = true;
+            yield return new WaitForSecondsRealtime(noSaveMessageDuration);
+            if (noSavePanel != null)
+            {
+                noSavePanel.SetActive(false);
+            }
+            _isModalOpen = false;
+            _noSaveCoroutine = null;
+        }
+
+        #endregion
+
+        #region Scene and Save helper functions.
+        private void StartNewGameAndCreateSave()
+        {
+            string debugName = $"DebugPlayer_{Random.Range(1000, 9999)}";
+            GameSaveData data = new GameSaveData(debugName);
+            SaveSystem.SaveGame(data);
+
+            LoadGameScene();
+        }
+
+        private void LoadGameScene()
+        {
+            if (string.IsNullOrEmpty(safeRoomSceneName))
+            {
+                Debug.LogError("Game scene name is not set.");
+                return;
+            }
+
+            SceneManager.LoadScene(safeRoomSceneName);
+        }
+        #endregion
 
         private void AimFlashlightAtCurrentButton()
         {
