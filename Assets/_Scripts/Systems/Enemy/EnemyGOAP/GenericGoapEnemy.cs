@@ -1,0 +1,530 @@
+using System.Collections.Generic;
+using UnityEngine;
+using Liquid.Audio;
+using TMPro;
+
+/// <summary>
+/// Basic GOAP style enemy that uses the Noise system and grid based AStar.
+/// </summary>
+public class GenericGoapEnemy : EnemyBase
+{
+    [Header("GOAP Settings")]
+    [SerializeField] private float nearbyPlayerDistance = 3f;
+    [SerializeField] private float sightDistance = 18f;
+    [SerializeField] private float mediumNoiseHearingRadius = 18f;
+
+    [Header("Combat")]
+    [Tooltip("Distance at which the genericEnemy is allowed to perform KillPlayer.")]
+    [SerializeField] private float killDistance = 1f;
+
+    [Header("Stamina")]
+    [SerializeField] private float staminaMax = 100f;
+    [Tooltip("How fast stamina drains whenever the genericEnemy is moving (patrol or chase).")]
+    [SerializeField] private float staminaDrainPerSecondMove = 5f;
+    [Tooltip("How fast stamina drains whenever the genericEnemy is threatening (roaring, posturing).")]
+    [SerializeField] private float staminaDrainPerSecondThreaten = 30f;
+    [Tooltip("How fast stamina regenerates while resting.")]
+    [SerializeField] private float staminaRegenPerSecondRest = 20f;
+    [Tooltip("When stamina reaches or exceeds this, HasStamina becomes true again.")]
+    [SerializeField] private float staminaRecoveredThreshold = 99f;
+
+    [Header("Patrol")]
+    [SerializeField] private List<Transform> patrolPoints = new List<Transform>();
+    [SerializeField] private float patrolPointReachRadius = 0.75f;
+    [Tooltip("If true, choose a random next patrol point instead of a simple sequence.")]
+    [SerializeField] private bool randomPatrolOrder = false;
+
+    [Header("Noise")]
+    [SerializeField] private NoiseEmitter playerNoiseSource;
+    [SerializeField] private float highNoiseHearingRadiusMultiplier = 1.2f;
+
+    [Header("Threaten Goal")]
+    [SerializeField] private float threatenCooldown = 3f;
+    [SerializeField] private TMP_Text threatenMessage;
+    [SerializeField]
+    private string[] threatenMessages =
+    {
+        "You cannot hide forever.",
+        "I can hear you in the dark.",
+        "The mines will be your grave."
+    };
+
+    private EnemyGoalType _currentGoal = EnemyGoalType.None;
+    private float _stamina;
+    private int _patrolIndex;
+
+    private NoiseLevel _lastNoiseLevel = NoiseLevel.Low;
+
+    #region Properties for UI / debug
+    [SerializeField] private string _debugLastDecisionReason;
+    public EnemyGoalType CurrentGoal => _currentGoal;
+    public float CurrentStamina => _stamina;
+    public NoiseLevel LastNoiseLevel => _lastNoiseLevel;
+    public float DebugDistanceToPlayer => DistanceToPlayer;
+    public bool DebugLastPathToPlayerFailed => _lastPathToPlayerFailed;
+    [SerializeField] private bool _hasStaminaFlag = true;
+    public bool DebugHasStaminaFlag => _hasStaminaFlag;
+
+    private float _lastNoiseIntensity;
+    private float _lastThreatenTime;
+    private bool _lastPathToPlayerFailed;
+    #endregion
+
+    protected override void Awake()
+    {
+        base.Awake();
+        _stamina = staminaMax;
+        _hasStaminaFlag = true;
+
+        if (patrolPoints.Count == 0)
+        {
+            GameObject[] taggedPoints = GameObject.FindGameObjectsWithTag("PatrolPoint");
+            foreach (GameObject go in taggedPoints)
+            {
+                patrolPoints.Add(go.transform);
+            }
+        }
+    }
+
+    private void OnEnable()
+    {
+        if (playerNoiseSource != null)
+        {
+            playerNoiseSource.NoiseChanged += OnPlayerNoiseChanged;
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (playerNoiseSource != null)
+        {
+            playerNoiseSource.NoiseChanged -= OnPlayerNoiseChanged;
+        }
+    }
+
+    private void OnPlayerNoiseChanged(NoiseLevel level, float intensity)
+    {
+        _lastNoiseLevel = level;
+        _lastNoiseIntensity = intensity;
+    }
+
+    protected override void Tick()
+    {
+        UpdateStamina(Time.deltaTime);
+        EvaluateAndSetGoal();
+        ExecuteCurrentGoal();
+    }
+
+    /// <summary>
+    /// Will be its own class later on.
+    /// </summary>
+    #region World state helpers
+
+    private bool PlayerAlive => playerTarget != null;
+
+    private float DistanceToPlayer
+    {
+        get
+        {
+            if (playerTarget == null)
+            {
+                return float.MaxValue;
+            }
+
+            return Vector3.Distance(transform.position, playerTarget.position);
+        }
+    }
+
+    private bool HasStamina => _hasStaminaFlag;
+
+    private bool PlayerNearby => DistanceToPlayer <= nearbyPlayerDistance;
+
+    private bool PlayerInSight
+    {
+        get
+        {
+            if (playerTarget == null)
+            {
+                return false;
+            }
+
+            return HasLineOfSightTo(playerTarget.position, sightDistance);
+        }
+    }
+
+    private bool PathValidToPlayer => DebugHasValidPath && PlayerAlive;
+
+    private bool CanKillPlayer => PlayerAlive && DistanceToPlayer <= killDistance && PathValidToPlayer;
+
+    private bool PlayerNoiseIsMedium => _lastNoiseLevel == NoiseLevel.Medium;
+
+    private bool PlayerIsLoud => _lastNoiseLevel == NoiseLevel.High || _lastNoiseLevel == NoiseLevel.Maximum;
+
+    private bool PlayerNoiseAudible
+    {
+        get
+        {
+            if (playerTarget == null)
+            {
+                return false;
+            }
+
+            float radius = Mathf.Clamp01(_lastNoiseIntensity) * mediumNoiseHearingRadius;
+            if (PlayerIsLoud)
+            {
+                radius *= highNoiseHearingRadiusMultiplier;
+            }
+
+            return DistanceToPlayer <= radius;
+        }
+    }
+
+    private bool HasAnyPatrolPoint => patrolPoints != null && patrolPoints.Count > 0;
+    #endregion
+
+    #region Stamina
+
+    private void UpdateStamina(float deltaTime)
+    {
+        if (_currentGoal == EnemyGoalType.PatrolArea ||
+            _currentGoal == EnemyGoalType.ChasePlayer)
+        {
+            _stamina -= staminaDrainPerSecondMove * deltaTime;
+        }
+        else if (_currentGoal == EnemyGoalType.ThreatenPlayer)
+        {
+            _stamina -= staminaDrainPerSecondThreaten * deltaTime;
+        }
+        else if (_currentGoal == EnemyGoalType.TakeRest)
+        {
+            _stamina += staminaRegenPerSecondRest * deltaTime;
+        }
+
+        if (PlayerIsLoud)
+        {
+            float bonusRegen = 0f;
+
+            if (_lastNoiseLevel == NoiseLevel.High)
+            {
+                bonusRegen = staminaRegenPerSecondRest * 0.5f;
+            }
+            else if (_lastNoiseLevel == NoiseLevel.Maximum)
+            {
+                bonusRegen = staminaRegenPerSecondRest;
+            }
+
+            _stamina += bonusRegen * deltaTime;
+        }
+
+        _stamina = Mathf.Clamp(_stamina, 0f, staminaMax);
+
+        if (_stamina <= 1f)
+        {
+            _hasStaminaFlag = false;
+        }
+        else if (_stamina >= staminaRecoveredThreshold)
+        {
+            _hasStaminaFlag = true;
+        }
+    }
+
+    #endregion
+
+    #region GOAP evaluation
+
+    private void EvaluateAndSetGoal()
+    {
+        EnemyGoalType previousGoal = _currentGoal;
+        EnemyGoalType newGoal = SelectGoal();
+
+        if (newGoal != previousGoal)
+        {
+            _currentGoal = newGoal;
+            OnGoalChanged(previousGoal, newGoal);
+            Debug.Log($"{name} switched goal: {previousGoal} -> {newGoal}. Reason: {_debugLastDecisionReason}");
+        }
+    }
+
+    private EnemyGoalType SelectGoal()
+    {
+        _debugLastDecisionReason = string.Empty;
+
+        if (!HasStamina)
+        {
+            _debugLastDecisionReason =
+                $"Stamina {_stamina:F1}. HasStamina=false. TakeRest until recovered.";
+            return EnemyGoalType.TakeRest;
+        }
+
+        if (!PlayerAlive)
+        {
+            if (HasAnyPatrolPoint)
+            {
+                _debugLastDecisionReason = "No player. HasStamina=true. PatrolArea.";
+                return EnemyGoalType.PatrolArea;
+            }
+
+            _debugLastDecisionReason = "No player and no patrol points.";
+            return EnemyGoalType.None;
+        }
+
+        bool canSeePlayer = PlayerInSight;
+        bool mediumNoiseAndAudible = PlayerNoiseIsMedium && PlayerNoiseAudible;
+
+        if (CanKillPlayer && HasStamina)
+        {
+            _debugLastDecisionReason = $"CanKillPlayer=true (dist={DistanceToPlayer:F2}, pathValid={PathValidToPlayer}). KillPlayer.";
+               
+            return EnemyGoalType.KillPlayer;
+        }
+
+        if (canSeePlayer)
+        {
+            if (DebugHasValidPath && !CanKillPlayer)
+            {
+                _debugLastDecisionReason = "Player in sight, path valid, but cannot kill yet. ChasePlayer.";
+                return EnemyGoalType.ChasePlayer;
+            }
+
+            if (!DebugHasValidPath)
+            {
+                _debugLastDecisionReason = "Player in sight but path invalid. ThreatenPlayer.";
+                return EnemyGoalType.ThreatenPlayer;
+            }
+        }
+
+        if (mediumNoiseAndAudible)
+        {
+            _debugLastDecisionReason = "Player noise medium and audible. ThreatenPlayer.";
+            return EnemyGoalType.ThreatenPlayer;
+        }
+
+        if (HasAnyPatrolPoint)
+        {
+            _debugLastDecisionReason = "HasStamina=true, no higher priority goal. PatrolArea.";
+            return EnemyGoalType.PatrolArea;
+        }
+
+        _debugLastDecisionReason = "Fallback. None.";
+        return EnemyGoalType.None;
+    }
+
+    private void OnGoalChanged(EnemyGoalType previousGoal, EnemyGoalType newGoal)
+    {
+        if (newGoal == EnemyGoalType.PatrolArea && HasAnyPatrolPoint)
+        {
+            _patrolIndex = FindNearestPatrolPointIndex(transform.position);
+            currentPath = null;
+            currentPathIndex = 0;
+
+            Debug.Log($"{name} entering PatrolArea. Starting at patrol index: {_patrolIndex} ({patrolPoints[_patrolIndex].name})");
+        }
+    }
+    #endregion
+
+    /// <summary>
+    /// This will be in its own enum 'class' later.
+    /// </summary>
+    #region Goal execution
+    private void ExecuteCurrentGoal()
+    {
+        switch (_currentGoal)
+        {
+            case EnemyGoalType.KillPlayer:
+                ExecuteKillPlayer();
+                break;
+            case EnemyGoalType.ChasePlayer:
+                ExecuteChasePlayer();
+                break;
+            case EnemyGoalType.PatrolArea:
+                ExecutePatrolArea();
+                break;
+            case EnemyGoalType.TakeRest:
+                ExecuteTakeRest();
+                break;
+            case EnemyGoalType.ThreatenPlayer:
+                ExecuteThreatenPlayer();
+                break;
+            case EnemyGoalType.None:
+                currentState = EnemyState.Idle;
+                break;
+        }
+    }
+
+    private void ExecuteKillPlayer()
+    {
+        currentState = EnemyState.Attacking;
+
+        if (!PlayerAlive)
+        {
+            Debug.LogWarning($"{name} ExecuteKillPlayer called but PlayerAlive == false.");
+            return;
+        }
+
+        if (!CanKillPlayer)
+        {
+            Debug.LogWarning(
+                $"{name} ExecuteKillPlayer called but CanKillPlayer=false (dist={DistanceToPlayer:F2}, pathValid={PathValidToPlayer}).");
+            return;
+        }
+
+        Debug.Log($"{name} tries to KILL the player. (Within kill distance {killDistance})");
+    }
+
+    private void ExecuteChasePlayer()
+    {
+        currentState = EnemyState.Moving;
+
+        if (!PlayerAlive)
+        {
+            return;
+        }
+
+        if (!HasStamina)
+        {
+            return;
+        }
+
+        Vector3 targetPos = playerTarget.position;
+
+        bool needNewPath = !DebugHasValidPath || ShouldRecalculatePath(targetPos);
+        if (needNewPath)
+        {
+            bool success = RequestPath(targetPos);
+            _lastPathToPlayerFailed = !success;
+        }
+
+        if (DebugHasValidPath)
+        {
+            FollowPath();
+        }
+    }
+
+    private void ExecutePatrolArea()
+    {
+        currentState = EnemyState.Moving;
+
+        if (!HasAnyPatrolPoint)
+        {
+            return;
+        }
+
+        Transform targetPoint = patrolPoints[_patrolIndex];
+        Vector3 targetPos = targetPoint.position;
+
+        bool needNewPath = !DebugHasValidPath || ShouldRecalculatePath(targetPos);
+        if (needNewPath)
+        {
+            bool success = RequestPath(targetPos);
+            if (!success)
+            {
+                Debug.LogWarning($"{name} could not reach patrol point {_patrolIndex} ({targetPoint.name}). Skipping.");
+                AdvancePatrolIndex();
+                currentPath = null;
+                currentPathIndex = 0;
+                return;
+            }
+        }
+
+        if (DebugHasValidPath)
+        {
+            FollowPath();
+        }
+
+        float sqrDistance = (transform.position - targetPos).sqrMagnitude;
+        float sqrRadius = patrolPointReachRadius * patrolPointReachRadius;
+
+        if (sqrDistance <= sqrRadius)
+        {
+            AdvancePatrolIndex();
+            currentPath = null;
+            currentPathIndex = 0;
+        }
+    }
+
+    private void ExecuteTakeRest()
+    {
+        currentState = EnemyState.Resting;
+    }
+
+    private void ExecuteThreatenPlayer()
+    {
+        currentState = EnemyState.Threatening;
+
+        if (Time.time < _lastThreatenTime + threatenCooldown)
+        {
+            return;
+        }
+
+        _lastThreatenTime = Time.time;
+
+        if (threatenMessages == null || threatenMessages.Length == 0)
+        {
+            Debug.Log($"{name} threatens the player.");
+            return;
+        }
+
+        int index = Random.Range(0, threatenMessages.Length);
+        string msg = threatenMessages[index];
+        threatenMessage.text = threatenMessages[index];
+        Debug.Log($"{name} threatens: \"{msg}\"");
+    }
+
+    #endregion
+
+    #region Patrol helpers
+
+    private int FindNearestPatrolPointIndex(Vector3 fromPosition)
+    {
+        int bestIndex = 0;
+        float bestSqr = float.MaxValue;
+
+        for (int i = 0; i < patrolPoints.Count; i++)
+        {
+            Transform pt = patrolPoints[i];
+            if (pt == null)
+            {
+                continue;
+            }
+
+            float sqr = (pt.position - fromPosition).sqrMagnitude;
+            if (sqr < bestSqr)
+            {
+                bestSqr = sqr;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    private void AdvancePatrolIndex()
+    {
+        if (patrolPoints.Count <= 1)
+        {
+            return;
+        }
+
+        if (randomPatrolOrder)
+        {
+            int nextIndex = _patrolIndex;
+            int safety = 0;
+
+            while (nextIndex == _patrolIndex && safety < 10)
+            {
+                nextIndex = Random.Range(0, patrolPoints.Count);
+                safety++;
+            }
+
+            _patrolIndex = nextIndex;
+        }
+        else
+        {
+            _patrolIndex = (_patrolIndex + 1) % patrolPoints.Count;
+        }
+
+        Debug.Log($"{name} switching patrol target to index: {_patrolIndex} ({patrolPoints[_patrolIndex].name})");
+    }
+
+    #endregion
+}
