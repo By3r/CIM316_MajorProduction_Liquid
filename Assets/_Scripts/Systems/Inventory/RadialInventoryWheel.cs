@@ -1,55 +1,61 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace _Scripts.Systems.Inventory
 {
     public class RadialInventoryWheel : MonoBehaviour
     {
         #region Variables
-        [Header(" 'Wheel References' ")]
-        [Tooltip("Center of the circle.")]
+
+        [Header("Wheel References")]
+        [Tooltip("Center of the wheel in UI space.")]
         [SerializeField] private RectTransform wheelRectTransform;
 
-        [Tooltip("CanvasGroup to fade and block raycasts when hidden")]
+        [Tooltip("CanvasGroup to fade and block raycasts when hidden.")]
         [SerializeField] private CanvasGroup wheelCanvasGroup;
 
-        [Tooltip("Camera used for ScreenPoint conversion")]
+        [Tooltip("Camera used for ScreenPoint conversion. Leave null for Screen Space Overlay.")]
         [SerializeField] private Camera uiCamera;
 
         [Header("Slots")]
-        [Tooltip("All slots that belong to this wheel, in circular order.")]
-        [SerializeField] private List<RadialSlot> slots = new();
+        [Tooltip("All slot UI elements that belong to this wheel, in circular order.")]
+        [SerializeField] private List<RadialInventorySlotUI> slots = new List<RadialInventorySlotUI>();
+
+        [Tooltip("Radius in pixels from center to each slot.")]
+        [SerializeField] private float slotRadius = 200f;
 
         [Header("Selection Settings")]
+        [Tooltip("Inner dead zone where no slot is selected.")]
         [SerializeField] private float deadZoneRadius = 50f;
 
-        [Tooltip("If true, selection only updates while Tab is held.")]
-        [SerializeField] private bool requireHoldForSelection = true;
-
-        [Header("Angle Mapping")]
-        [Tooltip("Rotation offset in degrees applied to the selection logic.")]
+        [Tooltip("Angle offset in degrees applied to selection and layout.")]
         [SerializeField] private float angleOffset;
 
-        [Tooltip("If true, interpret angles clockwise instead of counter clockwise.")]
+        [Tooltip("If true, layout and selection will go clockwise instead of counter clockwise.")]
         [SerializeField] private bool clockwise;
 
-        [Header("Temp Item Prefabs")]
-        [Tooltip("UI prefabs for temp items (Item1, Item2, Item3, etc.).")]
-        [SerializeField] private GameObject[] tempItemPrefab;
-
-        [Tooltip("Key to open the wheel by holding.")]
+        [Header("Input Settings")]
+        [Tooltip("Key to hold in order to show the wheel.")]
         [SerializeField] private KeyCode openKey = KeyCode.Tab;
 
-        [Tooltip("Key to add a temp item to the next empty slot.")]
-        [SerializeField] private KeyCode addItemKey = KeyCode.G;
+        [Tooltip("Key that confirms the currently selected slot.")]
+        [SerializeField] private KeyCode confirmKey = KeyCode.Mouse0;
+
+        [Tooltip("If true, selection only updates while the wheel is open (i.e. while openKey is held).")]
+        [SerializeField] private bool requireHoldForSelection = true;
 
         private bool _isWheelOpen;
         private int _currentSelectedIndex = -1;
-        private int _tempItemIndex = 0;
+
+        public event Action<int, InventoryItemData> OnSelectionChanged;
+
+        public event Action<int, InventoryItemData> OnSlotConfirmed;
+
         #endregion
 
-        #region Awake
+        #region Unity
+
         private void Awake()
         {
             if (wheelRectTransform == null)
@@ -57,7 +63,7 @@ namespace _Scripts.Systems.Inventory
                 wheelRectTransform = GetComponent<RectTransform>();
                 if (wheelRectTransform == null)
                 {
-                    Debug.LogError("RadialInventoryWheel: There is no wheelRectTransform assigned and no RectTransform on this GameObject.");
+                    Debug.LogError("RadialInventoryWheel: wheelRectTransform is not assigned and no RectTransform found.");
                 }
             }
 
@@ -66,62 +72,93 @@ namespace _Scripts.Systems.Inventory
                 wheelCanvasGroup = GetComponent<CanvasGroup>();
             }
 
-            if (uiCamera == null)
-            {
-                uiCamera = null;
-            }
-
+            ArrangeSlotsRadially();
             SetSelectedIndex(-1);
-        }
-        #endregion
-
-        private void OnDestroy()
-        {
-            Debug.Log("RadialInventoryWheel: OnDestroy called on " + gameObject.name);
+            SetWheelVisible(false);
         }
 
         private void Update()
         {
-            HandleInventoryToggleInput();
-            HandleAddingTempItem();
+            HandleOpenCloseInput();
 
             if (_isWheelOpen)
             {
-                UpdateSelectionFromMouse();
+                UpdateSelectionFromPointer();
+                HandleConfirmInput();
             }
         }
 
-        private void HandleInventoryToggleInput()
+        #endregion
+
+        #region Public Functions
+        public void SetItems(IReadOnlyList<InventoryItemData> items)
+        {
+            int count = slots.Count;
+            for (int i = 0; i < count; i++)
+            {
+                InventoryItemData data = (items != null && i < items.Count) ? items[i] : null;
+                slots[i].SetItem(data);
+            }
+
+            ArrangeSlotsRadially();
+            SetSelectedIndex(-1);
+        }
+
+        #endregion
+
+        #region Input
+        private void HandleOpenCloseInput()
         {
             if (Input.GetKeyDown(openKey))
             {
-                Debug.Log("RadialInventoryWheel: Detected openKey down: " + openKey);
                 OpenWheel();
             }
 
             if (Input.GetKeyUp(openKey))
             {
-                Debug.Log("RadialInventoryWheel: Detected openKey up: " + openKey);
                 CloseWheel();
             }
         }
 
-        #region Open / Close Inventory.
+        private void HandleConfirmInput()
+        {
+            if (!Input.GetKeyDown(confirmKey))
+            {
+                return;
+            }
+
+            if (_currentSelectedIndex < 0 || _currentSelectedIndex >= slots.Count)
+            {
+                return;
+            }
+
+            RadialInventorySlotUI slot = slots[_currentSelectedIndex];
+            InventoryItemData data = slot != null ? slot.ItemData : null;
+
+            OnSlotConfirmed?.Invoke(_currentSelectedIndex, data);
+            Debug.Log($"Confirmed slot {_currentSelectedIndex} [{data?.displayName}]");
+        }
+
+        #endregion
+
+        #region Open / Close
         private void OpenWheel()
         {
             _isWheelOpen = true;
             SetWheelVisible(true);
-            UpdateSelectionFromMouse();
-            Debug.Log("RadialInventoryWheel: Inventory opened.");
+
+            if (requireHoldForSelection)
+            {
+                UpdateSelectionFromPointer();
+            }
         }
 
         private void CloseWheel()
         {
             _isWheelOpen = false;
             SetWheelVisible(false);
-            Debug.Log("RadialInventoryWheel: Inventory closed.");
+            SetSelectedIndex(-1);
         }
-        #endregion
 
         private void SetWheelVisible(bool visible)
         {
@@ -137,8 +174,10 @@ namespace _Scripts.Systems.Inventory
             }
         }
 
-        #region Cursor logic - Navigating through the inventory 'items'.
-        private void UpdateSelectionFromMouse()
+        #endregion
+
+        #region Selection
+        private void UpdateSelectionFromPointer()
         {
             if (slots == null || slots.Count == 0 || wheelRectTransform == null)
             {
@@ -156,7 +195,6 @@ namespace _Scripts.Systems.Inventory
                 return;
             }
 
-            // Base angle from +X axis, counter clockwise
             float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
             if (angle < 0f)
             {
@@ -172,11 +210,9 @@ namespace _Scripts.Systems.Inventory
                 }
             }
 
-            float sectorSize = 360f / slots.Count;
+            float sectorSize = 360f / Mathf.Max(1, slots.Count);
 
-            // Apply the offset and center the slice on its direction
             float adjustedAngle = angle + angleOffset + sectorSize * 0.5f;
-
             if (adjustedAngle < 0f)
             {
                 adjustedAngle += 360f;
@@ -196,94 +232,60 @@ namespace _Scripts.Systems.Inventory
 
             _currentSelectedIndex = newIndex;
 
-            Debug.Log("RadialInventoryWheel: Selected index = " + _currentSelectedIndex);
-
             for (int i = 0; i < slots.Count; i++)
             {
                 bool isSelected = (i == _currentSelectedIndex);
                 slots[i].SetHighlight(isSelected);
             }
+
+            InventoryItemData data = null;
+            if (_currentSelectedIndex >= 0 && _currentSelectedIndex < slots.Count)
+            {
+                data = slots[_currentSelectedIndex].ItemData;
+            }
+
+            OnSelectionChanged?.Invoke(_currentSelectedIndex, data);
         }
+
         #endregion
 
-        private void HandleAddingTempItem()
+        #region Layout
+        /// <summary>
+        /// Positions all slots in a circle around the wheel center.
+        /// </summary>
+        private void ArrangeSlotsRadially()
         {
-            if (!Input.GetKeyDown(addItemKey))
+            if (wheelRectTransform == null || slots == null || slots.Count == 0)
             {
                 return;
             }
 
-            if (tempItemPrefab == null || tempItemPrefab.Length == 0)
-            {
-                Debug.LogWarning("RadialInventoryWheel: No tempItemPrefab assigned.");
-                return;
-            }
+            float sectorSize = 360f / Mathf.Max(1, slots.Count);
 
             for (int i = 0; i < slots.Count; i++)
             {
-                if (!slots[i].HasItem())
+                RadialInventorySlotUI slot = slots[i];
+                if (slot == null || slot.SlotRectTransform == null)
                 {
-                    GameObject prefab = tempItemPrefab[_tempItemIndex % tempItemPrefab.Length];
-                    _tempItemIndex++;
-
-                    GameObject instance = Instantiate(prefab, slots[i].slotContentRoot);
-                    instance.transform.localScale = Vector3.one;
-                    instance.transform.localPosition = Vector3.zero;
-
-                    slots[i].SetItem(instance);
-                    Debug.Log("RadialInventoryWheel: Added debug item to slot " + i);
-                    return;
+                    continue;
                 }
+
+                float angle = sectorSize * i;
+
+                if (clockwise)
+                {
+                    angle = -angle;
+                }
+
+                angle += angleOffset;
+
+                float rad = angle * Mathf.Deg2Rad;
+                Vector2 offset = new Vector2(Mathf.Cos(rad) * slotRadius, Mathf.Sin(rad) * slotRadius);
+
+                slot.SlotRectTransform.anchoredPosition = offset;
+                slot.SlotRectTransform.localRotation = Quaternion.identity;
             }
-
-            Debug.Log("RadialInventoryWheel: All slots are fully filled with debug items.");
-        }
-    }
-
-    #region Slots class
-    [System.Serializable]
-    public class RadialSlot
-    {
-        #region Variables
-        [Header("Slot References")]
-        [Tooltip("The RectTransform of this slot.")]
-        public RectTransform slotTransform;
-
-        [Tooltip("Image for the slot background (used for highlight).")]
-        public Image backgroundImage;
-
-        [Tooltip("Parent where item UI prefab will be instantiated.")]
-        public RectTransform slotContentRoot;
-
-        [Header("Colors")]
-        [Tooltip("Default color when not selected.")]
-        public Color normalColor = Color.white;
-
-        [Tooltip("Color when this slot is selected by cursor direction.")]
-        public Color highlightColor = Color.yellow;
-
-        [HideInInspector] public GameObject currentItemInstance;
-        #endregion
-
-        #region Public Functions
-        public void SetHighlight(bool isHighlighted)
-        {
-            if (backgroundImage != null)
-            {
-                backgroundImage.color = isHighlighted ? highlightColor : normalColor;
-            }
-        }
-
-        public bool HasItem()
-        {
-            return currentItemInstance != null;
-        }
-
-        public void SetItem(GameObject itemInstance)
-        {
-            currentItemInstance = itemInstance;
         }
         #endregion
     }
-    #endregion
 }
