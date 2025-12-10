@@ -45,10 +45,30 @@ namespace MainMenu.UI
         [SerializeField] private GameObject overwriteConfirmPanel;
         [SerializeField] private TMP_Text overwriteConfirmText;
 
+        [Header("Settings View")]
+        [Tooltip("Camera that should rotate up to look at the settings panel.")]
+        [SerializeField] private Transform cameraTransform;
+
+        [Tooltip("Settings panel that appears when Settings is selected.")]
+        [SerializeField] private GameObject settingsPanel;
+
+        [Tooltip("Target X rotation (in degrees) when looking at the settings panel.")]
+        [SerializeField] private float settingsTargetXRotation = -90f;
+
+        [Tooltip("Duration of the camera rotation when entering/exiting settings.")]
+        [SerializeField] private float settingsRotationDuration = 0.75f;
+
         private int _currentIndex;
         private float _lastNavigateTime;
+
         private bool _isModalOpen;
         private Coroutine _noSaveCoroutine;
+
+        private bool _settingsOpen;
+        private float _defaultCameraXRotation;
+        private Coroutine _cameraRotationCoroutine;
+
+        private bool IsInputBlocked => _isModalOpen || _settingsOpen;
         #endregion
 
         private void Awake()
@@ -63,6 +83,16 @@ namespace MainMenu.UI
                 Debug.LogWarning("No menu buttons assigned.", this);
             }
 
+            if (cameraTransform == null && Camera.main != null)
+            {
+                cameraTransform = Camera.main.transform;
+            }
+
+            if (cameraTransform != null)
+            {
+                _defaultCameraXRotation = cameraTransform.eulerAngles.x;
+            }
+
             if (noSavePanel != null)
             {
                 noSavePanel.SetActive(false);
@@ -73,19 +103,22 @@ namespace MainMenu.UI
                 overwriteConfirmPanel.SetActive(false);
             }
 
+            if (settingsPanel != null)
+            {
+                settingsPanel.SetActive(false);
+            }
+
             SetSelectedIndex(0, force: true);
         }
 
         private void Update()
         {
-            if (_isModalOpen)
+            if (!IsInputBlocked)
             {
-                AimFlashlightAtCurrentButton();
-                return;
+                HandleNavigationInput();
+                HandleSubmitInput();
             }
 
-            HandleNavigationInput();
-            HandleSubmitInput();
             AimFlashlightAtCurrentButton();
         }
 
@@ -216,8 +249,8 @@ namespace MainMenu.UI
 
                     if (overwriteConfirmText != null)
                     {
-                        overwriteConfirmText.text ="Starting a New Game will overwrite your previous save.\nContinue?";
-                            }
+                        overwriteConfirmText.text = "Starting a New Game will overwrite your previous save.\nContinue?";
+                    }
                 }
                 else
                 {
@@ -243,7 +276,7 @@ namespace MainMenu.UI
 
         private void OnSettingsPressed()
         {
-            Debug.Log("Settings pressed. (TODO: rotate camera up and open settings canvas.)");
+            OpenSettingsView();
         }
 
         private void OnExitPressed()
@@ -285,7 +318,7 @@ namespace MainMenu.UI
         {
             if (noSavePanel == null)
             {
-                Debug.LogWarning("NoSavePanel is not assigned.");
+                Debug.LogWarning("[DiegeticMainMenu] NoSavePanel is not assigned.");
                 return;
             }
 
@@ -317,7 +350,76 @@ namespace MainMenu.UI
 
         #endregion
 
-        #region Scene and Save helper functions.
+        #region Settings view + camera
+        private void OpenSettingsView()
+        {
+            if (settingsPanel != null)
+            {
+                settingsPanel.SetActive(true);
+            }
+
+            _settingsOpen = true;
+            StartCameraRotation(settingsTargetXRotation);
+        }
+
+        public void UI_CloseSettingsView()
+        {
+            if (settingsPanel != null)
+            {
+                settingsPanel.SetActive(false);
+            }
+
+            _settingsOpen = false;
+            StartCameraRotation(_defaultCameraXRotation);
+        }
+
+        private void StartCameraRotation(float targetX)
+        {
+            if (cameraTransform == null)
+            {
+                return;
+            }
+
+            if (_cameraRotationCoroutine != null)
+            {
+                StopCoroutine(_cameraRotationCoroutine);
+            }
+
+            _cameraRotationCoroutine = StartCoroutine(RotateCameraXRoutine(targetX));
+        }
+
+        private IEnumerator RotateCameraXRoutine(float targetX)
+        {
+            float duration = Mathf.Max(0.01f, settingsRotationDuration);
+
+            Vector3 startEuler = cameraTransform.eulerAngles;
+            float startX = startEuler.x;
+            float endX = targetX;
+
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+
+                float currentX = Mathf.LerpAngle(startX, endX, t);
+                Vector3 euler = cameraTransform.eulerAngles;
+                euler.x = currentX;
+                cameraTransform.eulerAngles = euler;
+
+                yield return null;
+            }
+
+            Vector3 finalEuler = cameraTransform.eulerAngles;
+            finalEuler.x = endX;
+            cameraTransform.eulerAngles = finalEuler;
+
+            _cameraRotationCoroutine = null;
+        }
+        #endregion
+
+        #region Scene + save helpers
         private void StartNewGameAndCreateSave()
         {
             string debugName = $"DebugPlayer_{Random.Range(1000, 9999)}";
