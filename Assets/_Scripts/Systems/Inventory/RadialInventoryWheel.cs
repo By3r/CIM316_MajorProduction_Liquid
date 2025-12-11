@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace _Scripts.Systems.Inventory
 {
@@ -48,8 +49,17 @@ namespace _Scripts.Systems.Inventory
         [Tooltip("If true, selection only updates while the wheel is open (i.e. while openKey is held).")]
         [SerializeField] private bool requireHoldForSelection = true;
 
+        [Header("Post Processing")]
+        [Tooltip("URP Volume that contains Depth Of Field. Weight is driven by this wheel.")]
+        [SerializeField] private Volume blurVolume;
+
+        [Tooltip("How fast the blur fades in and out.")]
+        [SerializeField] private float blurFadeSpeed = 8f;
+
         private bool _isWheelOpen;
         private int _currentSelectedIndex = -1;
+
+        private float _targetBlurWeight;
 
         public event Action<int, InventoryItemData> OnSelectionChanged;
         public event Action<int, InventoryItemData> OnSlotConfirmed;
@@ -65,13 +75,19 @@ namespace _Scripts.Systems.Inventory
                 wheelRectTransform = GetComponent<RectTransform>();
                 if (wheelRectTransform == null)
                 {
-                    Debug.LogError("RadialInventoryWheel: wheelRectTransform is not assigned and no RectTransform found.");
+                    Debug.LogError("WheelRectTransform is not assigned and no RectTransform found.");
                 }
             }
 
             if (wheelCanvasGroup == null)
             {
                 wheelCanvasGroup = GetComponent<CanvasGroup>();
+            }
+
+            if (blurVolume != null)
+            {
+                blurVolume.weight = 0f;
+                _targetBlurWeight = 0f;
             }
 
             ArrangeSlotsRadially();
@@ -88,6 +104,30 @@ namespace _Scripts.Systems.Inventory
                 UpdateSelectionFromPointer();
                 HandleConfirmInput();
             }
+
+            UpdateBlurWeight();
+        }
+
+        #endregion
+
+        #region Blur logic
+        private void UpdateBlurWeight()
+        {
+            if (blurVolume == null)
+            {
+                return;
+            }
+
+            float current = blurVolume.weight;
+            float target = _targetBlurWeight;
+
+            if (Mathf.Approximately(current, target))
+            {
+                return;
+            }
+
+            float lerped = Mathf.Lerp(current, target, Time.unscaledDeltaTime * blurFadeSpeed);
+            blurVolume.weight = lerped;
         }
 
         #endregion
@@ -153,6 +193,8 @@ namespace _Scripts.Systems.Inventory
             {
                 UpdateSelectionFromPointer();
             }
+
+            _targetBlurWeight = 1f;
         }
 
         private void CloseWheel()
@@ -160,6 +202,8 @@ namespace _Scripts.Systems.Inventory
             _isWheelOpen = false;
             SetWheelVisible(false);
             SetSelectedIndex(-1);
+
+            _targetBlurWeight = 0f;
         }
 
         private void SetWheelVisible(bool visible)
