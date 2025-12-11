@@ -10,11 +10,11 @@ public enum NoiseCategory
     Other
 }
 
-[CreateAssetMenu(
-    fileName = "EnvNoiseProfile",
-    menuName = "Audio/Environment Noise Profile")]
+[CreateAssetMenu(fileName = "EnvNoiseProfile", menuName = "Audio/Environment Noise Profile")]
+
 public class EnvironmentNoiseProfile : ScriptableObject
 {
+    #region Variables
     [Header("Meta")]
     [SerializeField] private string environmentName = "Constructed Mine";
 
@@ -32,7 +32,7 @@ public class EnvironmentNoiseProfile : ScriptableObject
     [SerializeField] private float jumpRadiusMultiplier = 1.1f;
     [SerializeField] private float gunshotRadiusMultiplier = 2.5f;
     [SerializeField] private float objectImpactRadiusMultiplier = 1.5f;
-
+    #endregion
     public float GlobalRadiusMultiplier => globalRadiusMultiplier;
     public float AmbientNoiseLevel => ambientNoiseLevel;
 
