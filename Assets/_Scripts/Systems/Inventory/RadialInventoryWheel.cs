@@ -35,6 +35,9 @@ namespace _Scripts.Systems.Inventory
         [Tooltip("If true, layout and selection will go clockwise instead of counter clockwise.")]
         [SerializeField] private bool clockwise;
 
+        [Tooltip("Extra step offset applied to the selected index.")]
+        [SerializeField] private int selectionIndexOffsetSteps = 0;
+
         [Header("Input Settings")]
         [Tooltip("Key to hold in order to show the wheel.")]
         [SerializeField] private KeyCode openKey = KeyCode.Tab;
@@ -49,7 +52,6 @@ namespace _Scripts.Systems.Inventory
         private int _currentSelectedIndex = -1;
 
         public event Action<int, InventoryItemData> OnSelectionChanged;
-
         public event Action<int, InventoryItemData> OnSlotConfirmed;
 
         #endregion
@@ -220,6 +222,15 @@ namespace _Scripts.Systems.Inventory
 
             int index = Mathf.FloorToInt(adjustedAngle / sectorSize) % slots.Count;
 
+            if (selectionIndexOffsetSteps != 0 && slots.Count > 0)
+            {
+                index = (index + selectionIndexOffsetSteps) % slots.Count;
+                if (index < 0)
+                {
+                    index += slots.Count;
+                }
+            }
+
             SetSelectedIndex(index);
         }
 
@@ -252,10 +263,17 @@ namespace _Scripts.Systems.Inventory
         #region Layout
         /// <summary>
         /// Positions all slots in a circle around the wheel center.
+        /// If a RadialSegmentArranger is present then this method will not modify the slot transforms.
         /// </summary>
         private void ArrangeSlotsRadially()
         {
             if (wheelRectTransform == null || slots == null || slots.Count == 0)
+            {
+                return;
+            }
+
+            RadialSegmentArranger arranger = GetComponent<RadialSegmentArranger>();
+            if (arranger != null)
             {
                 return;
             }
