@@ -6,12 +6,11 @@ using TMPro;
 /// <summary>
 /// Basic GOAP style enemy that uses the Noise system and grid based AStar.
 /// </summary>
-public class GenericGoapEnemy : EnemyBase
+public class GenericGoapEnemy : EnemyBase, INoiseListener
 {
     [Header("GOAP Settings")]
     [SerializeField] private float nearbyPlayerDistance = 3f;
     [SerializeField] private float sightDistance = 18f;
-    [SerializeField] private float mediumNoiseHearingRadius = 18f;
 
     [Header("Combat")]
     [Tooltip("Distance at which the genericEnemy is allowed to perform KillPlayer.")]
@@ -34,9 +33,8 @@ public class GenericGoapEnemy : EnemyBase
     [Tooltip("If true, choose a random next patrol point instead of a simple sequence.")]
     [SerializeField] private bool randomPatrolOrder = false;
 
-    [Header("Noise")]
-    [SerializeField] private NoiseEmitter playerNoiseSource;
-    [SerializeField] private float highNoiseHearingRadiusMultiplier = 1.2f;
+    [Tooltip("How long after hearing a noise we still consider it 'audible' for GOAP decisions.")]
+    [SerializeField] private float noiseMemoryDuration = 3f;
 
     [Header("Threaten Goal")]
     [SerializeField] private float threatenCooldown = 3f;
@@ -54,6 +52,8 @@ public class GenericGoapEnemy : EnemyBase
     private int _patrolIndex;
 
     private NoiseLevel _lastNoiseLevel = NoiseLevel.Low;
+    private float _lastHeardNoiseTime;
+    private Vector3 _lastHeardNoisePosition;
 
     #region Properties for UI / debug
     [SerializeField] private string _debugLastDecisionReason;
@@ -65,7 +65,6 @@ public class GenericGoapEnemy : EnemyBase
     [SerializeField] private bool _hasStaminaFlag = true;
     public bool DebugHasStaminaFlag => _hasStaminaFlag;
 
-    private float _lastNoiseIntensity;
     private float _lastThreatenTime;
     private bool _lastPathToPlayerFailed;
     #endregion
@@ -88,24 +87,29 @@ public class GenericGoapEnemy : EnemyBase
 
     private void OnEnable()
     {
-        if (playerNoiseSource != null)
+        if (NoiseManager.Instance != null)
         {
-            playerNoiseSource.NoiseChanged += OnPlayerNoiseChanged;
+            NoiseManager.Instance.RegisterListener(this);
         }
     }
 
     private void OnDisable()
     {
-        if (playerNoiseSource != null)
+        if (NoiseManager.Instance != null)
         {
-            playerNoiseSource.NoiseChanged -= OnPlayerNoiseChanged;
+            NoiseManager.Instance.UnregisterListener(this);
         }
     }
 
-    private void OnPlayerNoiseChanged(NoiseLevel level, float intensity)
+    /// <summary>
+    /// Called by NoiseManager when any noise event reaches this enemy.
+    /// The NoiseManager has already filtered by radius, taking environment into account.
+    /// </summary>
+    public void OnNoiseHeard(NoiseEvent noiseEvent)
     {
-        _lastNoiseLevel = level;
-        _lastNoiseIntensity = intensity;
+        _lastNoiseLevel = noiseEvent.level;
+        _lastHeardNoiseTime = Time.time;
+        _lastHeardNoisePosition = noiseEvent.worldPosition;
     }
 
     protected override void Tick()
@@ -164,18 +168,17 @@ public class GenericGoapEnemy : EnemyBase
     {
         get
         {
-            if (playerTarget == null)
+            if (!PlayerAlive)
             {
                 return false;
             }
 
-            float radius = Mathf.Clamp01(_lastNoiseIntensity) * mediumNoiseHearingRadius;
-            if (PlayerIsLoud)
+            if (_lastHeardNoiseTime <= 0f)
             {
-                radius *= highNoiseHearingRadiusMultiplier;
+                return false;
             }
 
-            return DistanceToPlayer <= radius;
+            return (Time.time - _lastHeardNoiseTime) <= noiseMemoryDuration;
         }
     }
 
@@ -231,7 +234,6 @@ public class GenericGoapEnemy : EnemyBase
     #endregion
 
     #region GOAP evaluation
-
     private void EvaluateAndSetGoal()
     {
         EnemyGoalType previousGoal = _currentGoal;
@@ -273,8 +275,9 @@ public class GenericGoapEnemy : EnemyBase
 
         if (CanKillPlayer && HasStamina)
         {
-            _debugLastDecisionReason = $"CanKillPlayer=true (dist={DistanceToPlayer:F2}, pathValid={PathValidToPlayer}). KillPlayer.";
-               
+            _debugLastDecisionReason =
+                $"CanKillPlayer=true (dist={DistanceToPlayer:F2}, pathValid={PathValidToPlayer}). KillPlayer.";
+
             return EnemyGoalType.KillPlayer;
         }
 

@@ -1,6 +1,7 @@
 using System.Collections;
 using _Scripts.Core.Managers;
 using UnityEngine;
+using Liquid.Audio;
 
 namespace _Scripts.Systems.Player
 {
@@ -14,7 +15,7 @@ namespace _Scripts.Systems.Player
     public class MovementController : MonoBehaviour
     {
         #region Private Fields
-        
+
         private CharacterController _characterController;
         private PlayerSettings _settings;
 
@@ -31,9 +32,11 @@ namespace _Scripts.Systems.Player
         private float _currentTargetSpeed;
 
         private Coroutine _crouchRoutine;
-        
+
         private Liquid.Player.Equipment.NeutronicBoots _neutronicBoots;
         private float _gravityMultiplier = 1f;
+
+        private float _footstepTimer;
 
         #endregion
 
@@ -44,7 +47,7 @@ namespace _Scripts.Systems.Player
         [SerializeField] private float _sprintSpeed = 8f;
         [SerializeField] private float _crouchSpeed = 2.5f;
         [SerializeField] private float _walkToggleSpeed = 2.5f;
-        
+
         [Header("Jump Settings")]
         [SerializeField] private float _jumpForce = 5f;
         [SerializeField] private float _gravity = -9.81f;
@@ -57,6 +60,15 @@ namespace _Scripts.Systems.Player
         [SerializeField] private Transform _groundCheck;
         [SerializeField] private float _groundDistance = 0.4f;
         [SerializeField] private LayerMask _groundMask;
+
+        [Header("Noise Settings")]
+        [SerializeField] private bool _enableMovementNoise = true;
+        [Tooltip("Base time between footsteps at normal walk speed.")] // TODO: Match it with footstep audio.
+        [SerializeField] private float _baseFootstepInterval = 0.5f;
+        [Tooltip("Minimum horizontal movement speed before we start emitting footsteps.")]
+        [SerializeField] private float _minSpeedForSteps = 0.1f;
+        [Tooltip("References the room the player is in (For noise multiplier purposes)")]
+        [SerializeField] private RoomNoisePreset _currentRoomNoise;
 
         #endregion
 
@@ -105,7 +117,7 @@ namespace _Scripts.Systems.Player
 
             if (!wasGrounded && _isGrounded) _isJumping = false;
             if (_isGrounded && _velocity.y < 0) _velocity.y = -2f;
-            
+
             _moveInput = InputManager.Instance.MoveInput;
             _isSprinting = InputManager.Instance.IsSprinting && !_isCrouching;
 
@@ -118,19 +130,22 @@ namespace _Scripts.Systems.Player
             else if (_isSprinting) _currentTargetSpeed = _sprintSpeed;
             else if (IsWalkingToggled) _currentTargetSpeed = _walkToggleSpeed;
             else _currentTargetSpeed = _walkSpeed;
-            
+
             _characterController.Move(move * _currentTargetSpeed * Time.deltaTime);
 
             Vector3 horizontalVelocity = _characterController.velocity;
             horizontalVelocity.y = 0f;
             _currentSpeed = horizontalVelocity.magnitude;
 
-            // This jump logic now only handles "normal" jumps when the boots aren't interfering.
+            HandleMovementNoise(_currentSpeed);
+
             bool bootsPreventJump = _neutronicBoots != null && _neutronicBoots.ShouldPreventJump;
             if (InputManager.Instance.JumpPressed && _isGrounded && !_isCrouching && !bootsPreventJump)
             {
                 _velocity.y = Mathf.Sqrt(_jumpForce * -2f * _gravity);
                 _isJumping = true;
+
+                EmitJumpNoise();
             }
 
             _velocity.y += _gravity * _gravityMultiplier * Time.deltaTime;
@@ -138,9 +153,9 @@ namespace _Scripts.Systems.Player
         }
 
         #endregion
-        
+
         #region Neutronic Boots Integration
-        
+
         /// <summary>
         /// Called by NeutronicBoots when a "tap jump" is detected.
         /// Bypasses the normal jump conditions to execute a jump.
@@ -152,9 +167,11 @@ namespace _Scripts.Systems.Player
                 _velocity.y = Mathf.Sqrt(_jumpForce * -2f * _gravity);
                 _isJumping = true;
                 Debug.Log("[MovementController] ForceJump executed by NeutronicBoots.");
+
+                EmitJumpNoise();
             }
         }
-        
+
         public void SetGravityMultiplier(float multiplier)
         {
             _gravityMultiplier = multiplier;
@@ -175,10 +192,10 @@ namespace _Scripts.Systems.Player
         {
             float targetHeight = crouch ? _originalHeight * _crouchHeightMultiplier : _originalHeight;
             Vector3 targetCenter = crouch ? new Vector3(_originalCenter.x, _originalCenter.y * _crouchHeightMultiplier, _originalCenter.z) : _originalCenter;
-            
+
             float startHeight = _characterController.height;
             Vector3 startCenter = _characterController.center;
-            
+
             float elapsed = 0f;
 
             while (elapsed < _crouchTransitionDuration)
@@ -192,6 +209,89 @@ namespace _Scripts.Systems.Player
 
             _characterController.height = targetHeight;
             _characterController.center = targetCenter;
+        }
+
+        #endregion
+
+        #region Noise System
+        /// <summary>
+        /// Called by either triggers or other systems when the player enters a new room.
+        /// </summary>
+        public void SetCurrentRoom(RoomNoisePreset roomNoisePreset)
+        {
+            _currentRoomNoise = roomNoisePreset;
+        }
+
+        private void HandleMovementNoise(float horizontalSpeed)
+        {
+            if (!_enableMovementNoise)
+            {
+                return;
+            }
+
+            if (NoiseManager.Instance == null)
+            {
+                return;
+            }
+
+            if (!_isGrounded)
+            {
+                _footstepTimer = 0f;
+                return;
+            }
+
+            if (horizontalSpeed < _minSpeedForSteps)
+            {
+                _footstepTimer = 0f;
+                return;
+            }
+
+            float interval = _baseFootstepInterval;
+            NoiseLevel level = NoiseLevel.Medium;
+
+            if (_isCrouching)
+            {
+                interval *= 1.4f;
+                level = NoiseLevel.Low;
+            }
+            else if (_isSprinting)
+            {
+                interval *= 0.7f;
+                level = NoiseLevel.High;
+            }
+            else if (IsWalkingToggled)
+            {
+                interval *= 1.1f;
+                level = NoiseLevel.Medium;
+            }
+
+            _footstepTimer += Time.deltaTime;
+
+            if (_footstepTimer >= interval)
+            {
+                _footstepTimer = 0f;
+
+                NoiseManager.Instance.EmitNoise(
+                    transform.position,
+                    level,
+                    NoiseCategory.Footsteps,
+                    _currentRoomNoise);
+            }
+        }
+
+        private void EmitJumpNoise()
+        {
+            if (!_enableMovementNoise)
+            {
+                return;
+            }
+
+            if (NoiseManager.Instance == null)
+            {
+                return;
+            }
+
+            NoiseManager.Instance.EmitNoise(transform.position, NoiseLevel.Medium, NoiseCategory.Jump, _currentRoomNoise);
         }
 
         #endregion

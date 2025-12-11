@@ -4,45 +4,51 @@ namespace Liquid.Audio
 {
     // Debugs the radius in which the sound can reach enemies by..
     // Attach this to the player. :)
-    public class EnemyNoiseListener : MonoBehaviour
+    public class EnemyNoiseListener : MonoBehaviour, INoiseListener
     {
         #region Variables
-        [SerializeField] private NoiseEmitter playerNoiseSource;
+        [Tooltip("If true this component will register itself with the NoiseManager automatically.")]
+        [SerializeField] private bool autoRegisterWithManager = true;
 
-        [Tooltip("At intensity 1.0, this is the hearing radius in meters")]
-        [SerializeField] private float maxHearingDistance = 18f;
+        private NoiseEvent? _lastNoiseEvent;
         #endregion
 
         private void OnEnable()
         {
-            if (playerNoiseSource != null)
+            if (autoRegisterWithManager && NoiseManager.Instance != null)
             {
-                playerNoiseSource.NoiseChanged += OnPlayerNoiseChanged;
+                NoiseManager.Instance.RegisterListener(this);
             }
         }
 
         private void OnDisable()
         {
-            if (playerNoiseSource != null)
+            if (NoiseManager.Instance != null)
             {
-                playerNoiseSource.NoiseChanged -= OnPlayerNoiseChanged;
+                NoiseManager.Instance.UnregisterListener(this);
             }
         }
 
-        private void OnPlayerNoiseChanged(NoiseLevel level, float intensity)
+        /// <summary>
+        /// Called by NoiseManager when any noise event reaches this listener.
+        /// </summary>
+        public void OnNoiseHeard(NoiseEvent noiseEvent)
         {
-            float radius = intensity * maxHearingDistance;
-            Debug.Log($"Player noise {level} → estimated hearing radius {radius:0.0} m", this);
+            _lastNoiseEvent = noiseEvent;
         }
 
 #if UNITY_EDITOR
         private void OnDrawGizmosSelected()
         {
-            if (playerNoiseSource == null) return;
+            if (!_lastNoiseEvent.HasValue)
+            {
+                return;
+            }
 
-            float radius = Mathf.Clamp01(playerNoiseSource.CurrentIntensity) * maxHearingDistance;
+            NoiseEvent noiseEvent = _lastNoiseEvent.Value;
+
             Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(transform.position, radius);
+            Gizmos.DrawWireSphere(noiseEvent.worldPosition, noiseEvent.finalRadius);
         }
 #endif
     }
