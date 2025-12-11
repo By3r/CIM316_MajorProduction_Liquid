@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+[ExecuteAlways]
 public class GridPathfinder : MonoBehaviour
 {
     #region Node Class
@@ -76,6 +77,35 @@ public class GridPathfinder : MonoBehaviour
         _gridSizeX = Mathf.RoundToInt(gridWorldSize.x / _nodeDiameter);
         _gridSizeY = Mathf.RoundToInt(gridWorldSize.y / _nodeDiameter);
         _gridSizeZ = Mathf.RoundToInt(gridWorldSize.z / _nodeDiameter);
+
+        CreateGrid();
+    }
+    public void RebuildToFitBounds(Bounds floorBounds, float extraPaddingXZ = 1f, float gridHeight = 4f)
+    {
+        if (gridHeight <= 0f)
+        {
+            gridHeight = 4f;
+        }
+
+        Bounds bound = floorBounds;
+
+        bound.Expand(new Vector3(extraPaddingXZ * 2f, 0f, extraPaddingXZ * 2f));
+
+        gridWorldSize = new Vector3(bound.size.x, gridHeight, bound.size.z);
+
+        float centerY = bound.min.y + gridHeight * 0.5f;
+        transform.position = new Vector3(bound.center.x, centerY, bound.center.z);
+
+        RebuildWithCurrentSettings();
+    }
+
+    private void RebuildWithCurrentSettings()
+    {
+        _nodeDiameter = nodeRadius * 2f;
+
+        _gridSizeX = Mathf.Max(1, Mathf.RoundToInt(gridWorldSize.x / _nodeDiameter));
+        _gridSizeY = Mathf.Max(1, Mathf.RoundToInt(gridWorldSize.y / _nodeDiameter));
+        _gridSizeZ = Mathf.Max(1, Mathf.RoundToInt(gridWorldSize.z / _nodeDiameter));
 
         CreateGrid();
     }

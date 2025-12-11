@@ -1,6 +1,7 @@
-using System.Collections.Generic;
 using _Scripts.Core.Managers;
 using _Scripts.Systems.ProceduralGeneration.Doors;
+using System.Collections.Generic;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace _Scripts.Systems.ProceduralGeneration
@@ -74,6 +75,10 @@ namespace _Scripts.Systems.ProceduralGeneration
         [SerializeField] private bool _exitRoomSpawned;
 
         private DoorConnectionSystem _connectionSystem;
+        [SerializeField] private GridPathfinder gridPathfinder;
+        [SerializeField] private OccupiedSpaceRegistry occupiedSpaceRegistry;
+        private GridPathfinder GridRef => gridPathfinder != null ? gridPathfinder : GridPathfinder.Instance;
+        private OccupiedSpaceRegistry RegistryRef => occupiedSpaceRegistry != null ? occupiedSpaceRegistry : OccupiedSpaceRegistry.Instance;
 
         // ===== NEW: Public Properties =====
         /// <summary>
@@ -138,7 +143,7 @@ namespace _Scripts.Systems.ProceduralGeneration
                 {
                     if (_showDebugLogs)
                         Debug.LogWarning($"[FloorGenerator] Exit room failed to spawn! Retrying generation...");
-                    
+
                     _currentRegenerationAttempt++;
                     if (_currentRegenerationAttempt >= _maxGenerationAttempts)
                     {
@@ -165,9 +170,9 @@ namespace _Scripts.Systems.ProceduralGeneration
                     if (_showDebugLogs)
                     {
                         Debug.LogWarning($"[FloorGenerator] === GENERATION INCOMPLETE === " +
-                                       $"Final attempt ({_currentRegenerationAttempt + 1}/{_maxGenerationAttempts}) " +
-                                       $"used {budgetUsagePercentage:P1} of budget " +
-                                       $"({_doorCreditBudget - _creditsRemaining}/{_doorCreditBudget} credits)");
+                                         $"Final attempt ({_currentRegenerationAttempt + 1}/{_maxGenerationAttempts}) " +
+                                         $"used {budgetUsagePercentage:P1} of budget " +
+                                         $"({_doorCreditBudget - _creditsRemaining}/{_doorCreditBudget} credits)");
                     }
                     break;
                 }
@@ -177,7 +182,22 @@ namespace _Scripts.Systems.ProceduralGeneration
                 if (_showDebugLogs)
                 {
                     Debug.LogWarning($"[FloorGenerator] Budget usage {budgetUsagePercentage:P1} below threshold {_minBudgetUsageThreshold:P0}. " +
-                                   $"Retrying... (attempt {_currentRegenerationAttempt + 1}/{_maxGenerationAttempts})");
+                                     $"Retrying... (attempt {_currentRegenerationAttempt + 1}/{_maxGenerationAttempts})");
+                }
+            }
+            RebuildNavGridFromRegistry();
+
+            if (GridPathfinder.Instance != null && OccupiedSpaceRegistry.Instance != null)
+            {
+                if (OccupiedSpaceRegistry.Instance.TryGetCombinedBounds(out var floorBounds))
+                {
+                    float extraPadding = 1f;
+
+                    GridPathfinder.Instance.RebuildToFitBounds(floorBounds, extraPadding);
+                }
+                else
+                {
+                    Debug.LogWarning("GenerateFloor finished, but OccupiedSpaceRegistry has no rooms registered. Grid was not rebuilt.");
                 }
             }
         }
@@ -214,7 +234,7 @@ namespace _Scripts.Systems.ProceduralGeneration
 
                 // Get or create floor state for current floor
                 FloorState floorState = FloorStateManager.Instance.GetOrCreateFloorState(_currentFloorNumber);
-                
+
                 // CRITICAL: Perturb seed on retry attempts to get different layouts
                 // This solves the determinism vs. retry conflict:
                 // - First attempt uses base seed
@@ -228,7 +248,7 @@ namespace _Scripts.Systems.ProceduralGeneration
 
                 if (_showDebugLogs)
                 {
-                    string retryInfo = _currentRegenerationAttempt > 0 
+                    string retryInfo = _currentRegenerationAttempt > 0
                         ? $" (retry attempt {_currentRegenerationAttempt}, seed perturbed by +{_currentRegenerationAttempt})"
                         : "";
                     Debug.Log($"[FloorGenerator] Using seed-based generation for Floor {_currentFloorNumber} with seed: {_currentSeed}{retryInfo}");
@@ -250,8 +270,8 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             if (_showDebugLogs)
             {
-                string attemptInfo = _currentRegenerationAttempt > 0 
-                    ? $" (Regeneration Attempt {_currentRegenerationAttempt}/{_maxGenerationAttempts})" 
+                string attemptInfo = _currentRegenerationAttempt > 0
+                    ? $" (Regeneration Attempt {_currentRegenerationAttempt}/{_maxGenerationAttempts})"
                     : "";
                 Debug.Log($"[FloorGenerator] === STARTING FLOOR GENERATION{attemptInfo} === Budget: {_doorCreditBudget} credits");
             }
@@ -296,7 +316,7 @@ namespace _Scripts.Systems.ProceduralGeneration
             if (_useSeedBasedGeneration && _exitRoomSpawned)
             {
                 FloorState floorState = FloorStateManager.Instance.GetCurrentFloorState();
-                
+
                 // CRITICAL: Save the working seed (which may be perturbed)
                 // This ensures revisiting this floor uses the SAME layout
                 if (floorState.generationSeed != _currentSeed)
@@ -307,15 +327,15 @@ namespace _Scripts.Systems.ProceduralGeneration
                     }
                     floorState.generationSeed = _currentSeed;
                 }
-                
+
                 FloorStateManager.Instance.MarkCurrentFloorAsVisited();
             }
             // =================================================================
 
             if (_showDebugLogs)
             {
-                string attemptInfo = _currentRegenerationAttempt > 0 
-                    ? $" (Attempt {_currentRegenerationAttempt + 1}/{_maxGenerationAttempts})" 
+                string attemptInfo = _currentRegenerationAttempt > 0
+                    ? $" (Attempt {_currentRegenerationAttempt + 1}/{_maxGenerationAttempts})"
                     : "";
                 Debug.Log($"[FloorGenerator] === GENERATION PASS COMPLETE{attemptInfo} === " +
                           $"Spawned {_spawnedRooms.Count} rooms, {_connectionsMade} connections, " +
@@ -334,7 +354,11 @@ namespace _Scripts.Systems.ProceduralGeneration
                 return null;
             }
 
-            GameObject startRoom = SpawnRoom(startRoomEntry.prefab, Vector3.zero, Quaternion.identity, "EntryRoom", registerNow: true);
+            Vector3 startPosition = transform.position;
+            Quaternion startRotation = transform.rotation;
+
+            GameObject startRoom = SpawnRoom(startRoomEntry.prefab, startPosition, startRotation, "EntryRoom", registerNow: true);
+
             _spawnedRooms.Add(startRoom);
 
             if (_showDebugLogs)
@@ -431,18 +455,18 @@ namespace _Scripts.Systems.ProceduralGeneration
                 // Store prefab's original transform state
                 Vector3 prefabOriginalPos = exitRoomEntry.prefab.transform.position;
                 Quaternion prefabOriginalRot = exitRoomEntry.prefab.transform.rotation;
-                
+
                 // Temporarily reset prefab to identity for clean calculation
                 exitRoomEntry.prefab.transform.position = Vector3.zero;
                 exitRoomEntry.prefab.transform.rotation = Quaternion.identity;
 
                 // Calculate alignment using DoorConnectionSystem
                 var (roomPosition, roomRotation) = _connectionSystem.CalculateTargetRoomTransform(
-                    selectedSocket, 
-                    exitSocketPrefab, 
+                    selectedSocket,
+                    exitSocketPrefab,
                     exitRoomEntry.prefab.transform
                 );
-                
+
                 // Restore prefab's original transform
                 exitRoomEntry.prefab.transform.position = prefabOriginalPos;
                 exitRoomEntry.prefab.transform.rotation = prefabOriginalRot;
@@ -454,9 +478,9 @@ namespace _Scripts.Systems.ProceduralGeneration
                     // Transform bounds to world space using calculated position/rotation
                     exitRoomEntry.prefab.transform.position = roomPosition;
                     exitRoomEntry.prefab.transform.rotation = roomRotation;
-                    
+
                     Bounds worldBounds = exitBoundsChecker.GetPaddedBounds();
-                    
+
                     // Restore prefab transform
                     exitRoomEntry.prefab.transform.position = prefabOriginalPos;
                     exitRoomEntry.prefab.transform.rotation = prefabOriginalRot;
@@ -492,14 +516,14 @@ namespace _Scripts.Systems.ProceduralGeneration
                 if (spawnedExitSocket == null)
                 {
                     Debug.LogWarning("[FloorGenerator] Could not find exit socket in spawned exit room, trying next socket...");
-                    
+
                     // Clean up failed spawn
                     _spawnedRooms.Remove(exitRoom);
                     if (Application.isPlaying)
                         Destroy(exitRoom);
                     else
                         DestroyImmediate(exitRoom);
-                    
+
                     continue;
                 }
 
@@ -512,10 +536,10 @@ namespace _Scripts.Systems.ProceduralGeneration
                     _creditsRemaining--;
                     _connectionsMade++;
                     _exitRoomSpawned = true;
-                    
+
                     if (_showDebugLogs)
                         Debug.Log($"[FloorGenerator] ✓ Exit room spawned at '{selectedSocket.name}' (1 credit used)");
-                    
+
                     return; // Exit room placed successfully
                 }
                 else
@@ -523,13 +547,13 @@ namespace _Scripts.Systems.ProceduralGeneration
                     // Narrow-phase collision detected, clean up and try next socket
                     if (_showDebugLogs)
                         Debug.Log($"[FloorGenerator] Narrow-phase collision for exit room at socket '{selectedSocket.name}', trying next socket...");
-                    
+
                     _spawnedRooms.Remove(exitRoom);
-                    
+
                     BoundsChecker boundsChecker = exitRoom.GetComponent<BoundsChecker>();
                     if (boundsChecker != null)
                         boundsChecker.UnregisterFromRegistry();
-                    
+
                     if (Application.isPlaying)
                         Destroy(exitRoom);
                     else
@@ -624,7 +648,7 @@ namespace _Scripts.Systems.ProceduralGeneration
                 }
 
                 Quaternion proposedRotation = Quaternion.LookRotation(-sourceSocket.Forward) * Quaternion.Inverse(targetSocket.Rotation) * selectedRoom.prefab.transform.rotation;
-                
+
                 Vector3 targetSocketLocalPos = targetSocket.transform.localPosition;
                 Vector3 targetSocketWorldOffset = proposedRotation * targetSocketLocalPos;
                 Vector3 proposedPosition = sourceSocket.Position - targetSocketWorldOffset;
@@ -698,7 +722,7 @@ namespace _Scripts.Systems.ProceduralGeneration
                         Destroy(newRoom);
                     else
                         DestroyImmediate(newRoom);
-                    
+
                     _spawnedRooms.Remove(newRoom);
                     continue;
                 }
@@ -817,6 +841,35 @@ namespace _Scripts.Systems.ProceduralGeneration
         }
 
         /// <summary>
+        /// Rebuilds the GridPathfinder grid so it tightly fits the generated floor.
+        /// </summary>
+        private void RebuildNavGridFromRegistry()
+        {
+            if (GridPathfinder.Instance == null)
+            {
+                Debug.LogWarning("Could not rebuild nav grid: no GridPathfinder in scene.");
+                return;
+            }
+
+            if (OccupiedSpaceRegistry.Instance == null)
+            {
+                Debug.LogWarning("Could not rebuild nav grid: no OccupiedSpaceRegistry in scene.");
+                return;
+            }
+
+            if (!OccupiedSpaceRegistry.Instance.TryGetCombinedBounds(out var floorBounds))
+            {
+                Debug.LogWarning("Could not rebuild nav grid: no occupied spaces registered.");
+                return;
+            }
+
+            float extraPaddingXZ = 1f;
+            float gridHeight = 4f;
+
+            GridPathfinder.Instance.RebuildToFitBounds(floorBounds, extraPaddingXZ, gridHeight);
+        }
+
+        /// <summary>
         /// Clears all spawned rooms and resets generation state.
         /// </summary>
         public void ClearFloor()
@@ -897,6 +950,14 @@ namespace _Scripts.Systems.ProceduralGeneration
                     }
                 }
             }
+        }
+
+        [ContextMenu("Generate Floor + NavGrid")]
+        private void GenerateFloorAndNavGridInEditor()
+        {
+            GenerateFloor();
+            RebuildNavGridFromRegistry();
+            EditorSceneManager.MarkSceneDirty(gameObject.scene);
         }
 #endif
     }

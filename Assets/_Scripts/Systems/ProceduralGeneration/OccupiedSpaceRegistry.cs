@@ -80,10 +80,10 @@ namespace _Scripts.Systems.ProceduralGeneration
             public bool HasMoved()
             {
                 if (roomTransform == null) return false;
-                
+
                 float positionDelta = Vector3.Distance(roomTransform.position, registeredPosition);
                 float rotationDelta = Quaternion.Angle(roomTransform.rotation, registeredRotation);
-                
+
                 return positionDelta > 0.01f || rotationDelta > 0.1f;
             }
         }
@@ -166,11 +166,11 @@ namespace _Scripts.Systems.ProceduralGeneration
             if (boundsChecker == null) return;
 
             OccupiedSpace spaceToRemove = _occupiedSpaces.FirstOrDefault(space => space.boundsChecker == boundsChecker);
-            
+
             if (spaceToRemove != null)
             {
                 _occupiedSpaces.Remove(spaceToRemove);
-                
+
                 if (_showDebugLogs)
                 {
                     Debug.Log($"[OccupiedSpaceRegistry] ✓ Unregistered room '{spaceToRemove.roomName}' " +
@@ -232,6 +232,36 @@ namespace _Scripts.Systems.ProceduralGeneration
         }
 
         /// <summary>
+        /// Returns a combined bounds that encapsulates all registered padded room bounds.
+        /// </summary>
+        public bool TryGetCombinedBounds(out Bounds combinedBounds)
+        {
+            combinedBounds = new Bounds();
+            bool hasAny = false;
+
+            for (int i = 0; i < _occupiedSpaces.Count; i++)
+            {
+                OccupiedSpace space = _occupiedSpaces[i];
+                if (space == null || space.roomTransform == null)
+                {
+                    continue;
+                }
+
+                if (!hasAny)
+                {
+                    combinedBounds = space.paddedBoundsWorld;
+                    hasAny = true;
+                }
+                else
+                {
+                    combinedBounds.Encapsulate(space.paddedBoundsWorld);
+                }
+            }
+
+            return hasAny;
+        }
+
+        /// <summary>
         /// Gets the occupied space for a specific room transform.
         /// </summary>
         public OccupiedSpace GetOccupiedSpace(Transform roomTransform)
@@ -254,7 +284,7 @@ namespace _Scripts.Systems.ProceduralGeneration
         public void ClearRegistry()
         {
             _occupiedSpaces.Clear();
-            
+
             if (_showDebugLogs)
                 Debug.Log("[OccupiedSpaceRegistry] ✓ Cleared all occupied spaces.");
         }
@@ -265,7 +295,7 @@ namespace _Scripts.Systems.ProceduralGeneration
         private void CheckForMovedRooms()
         {
             int movedCount = 0;
-            
+
             foreach (OccupiedSpace space in _occupiedSpaces)
             {
                 if (space.roomTransform == null)
@@ -291,7 +321,7 @@ namespace _Scripts.Systems.ProceduralGeneration
         /// </summary>
         public void CleanupNullEntries()
         {
-            int removedCount = _occupiedSpaces.RemoveAll(space => 
+            int removedCount = _occupiedSpaces.RemoveAll(space =>
                 space.boundsChecker == null || space.roomTransform == null);
 
             if (removedCount > 0 && _showDebugLogs)
@@ -326,7 +356,7 @@ namespace _Scripts.Systems.ProceduralGeneration
 
                 // Draw PADDED occupied bounds (broad-phase)
                 Gizmos.DrawCube(space.paddedBoundsWorld.center, space.paddedBoundsWorld.size);
-                
+
                 // Draw wireframe for clarity
                 Gizmos.color = Color.red;
                 Gizmos.DrawWireCube(space.paddedBoundsWorld.center, space.paddedBoundsWorld.size);
