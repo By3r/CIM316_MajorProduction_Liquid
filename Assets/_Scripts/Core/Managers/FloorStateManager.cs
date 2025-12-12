@@ -9,6 +9,7 @@ namespace _Scripts.Core.Managers
     /// Manages floor states and persistence across the entire game session.
     /// Handles seed-based generation, state tracking, and save/load operations.
     /// </summary>
+    [DefaultExecutionOrder(-100)]
     public class FloorStateManager : MonoBehaviour
     {
         #region Singleton
@@ -42,14 +43,28 @@ namespace _Scripts.Core.Managers
 
             _instance = this;
             DontDestroyOnLoad(gameObject);
+
+            // Auto-initialize if configured (for Play Mode and runtime builds)
+            if (_autoInitializeOnAwake && !_isInitialized)
+            {
+                Initialize(_worldSeed); // Use serialized seed (0 = random)
+                if (_showDebugLogs)
+                {
+                    Debug.Log($"[FloorStateManager] Auto-initialized on Awake with seed: {_worldSeed}");
+                }
+            }
         }
 
         #endregion
 
         #region Serialized Fields
 
+        [Header("Initialization")]
+        [Tooltip("If true, automatically initializes with the serialized World Seed on Awake. Enable this for Play Mode testing and runtime builds.")]
+        [SerializeField] private bool _autoInitializeOnAwake = false;
+
         [Header("Configuration")]
-        [Tooltip("Master seed for the entire game world. All floor seeds derive from this.")]
+        [Tooltip("Master seed for the entire game world. All floor seeds derive from this. Set to 0 for random seed.")]
         [SerializeField] private int _worldSeed;
 
         [Tooltip("Prime number multiplier for floor seed generation. Ensures good distribution.")]

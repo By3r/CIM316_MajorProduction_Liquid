@@ -52,7 +52,6 @@ namespace _Scripts.Systems.ProceduralGeneration
         [Tooltip("Maximum attempts to place a room at each socket")]
         [SerializeField] private int _maxAttemptsPerSocket = 5;
 
-        // ===== NEW: Floor Persistence Fields =====
         [Header("Floor Persistence")]
         [Tooltip("Current floor number being generated (1-based)")]
         [SerializeField] private int _currentFloorNumber = 1;
@@ -62,7 +61,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
         [Tooltip("Use FloorStateManager for seed-based generation? If false, uses pure random generation.")]
         [SerializeField] private bool _useSeedBasedGeneration = true;
-        // ========================================
 
         [Header("Runtime Info")]
         [SerializeField] private List<GameObject> _spawnedRooms = new();
@@ -80,7 +78,6 @@ namespace _Scripts.Systems.ProceduralGeneration
         private GridPathfinder GridRef => gridPathfinder != null ? gridPathfinder : GridPathfinder.Instance;
         private OccupiedSpaceRegistry RegistryRef => occupiedSpaceRegistry != null ? occupiedSpaceRegistry : OccupiedSpaceRegistry.Instance;
 
-        // ===== NEW: Public Properties =====
         /// <summary>
         /// Gets or sets the current floor number being generated.
         /// </summary>
@@ -94,7 +91,6 @@ namespace _Scripts.Systems.ProceduralGeneration
         /// Gets the seed used for the current floor generation.
         /// </summary>
         public int CurrentSeed => _currentSeed;
-        // ==================================
 
         private void Awake()
         {
@@ -222,14 +218,17 @@ namespace _Scripts.Systems.ProceduralGeneration
                 return;
             }
 
-            // ===== NEW: Seed-Based Generation Integration =====
+            // ===== Seed-Based Generation Integration =====
             if (_useSeedBasedGeneration)
             {
-                // Ensure FloorStateManager is initialized
+                // FloorStateManager MUST be initialized before generation
+                // Enable 'Auto Initialize On Awake' in FloorStateManager, or call Initialize() manually
                 if (!FloorStateManager.Instance.IsInitialized)
                 {
-                    Debug.LogWarning("[FloorGenerator] FloorStateManager not initialized. Initializing with random seed.");
-                    FloorStateManager.Instance.Initialize();
+                    Debug.LogError("[FloorGenerator] FloorStateManager not initialized! " +
+                        "Enable 'Auto Initialize On Awake' in FloorStateManager inspector, or initialize manually before generation. " +
+                        "Aborting floor generation.");
+                    return;
                 }
 
                 // Get or create floor state for current floor
@@ -312,7 +311,7 @@ namespace _Scripts.Systems.ProceduralGeneration
             SpawnExitRoomAtTerminus();
             SpawnBlockadesOnUnconnectedSockets();
 
-            // ===== NEW: Mark floor as visited and save working seed =====
+            // Mark floor as visited and save working seed
             if (_useSeedBasedGeneration && _exitRoomSpawned)
             {
                 FloorState floorState = FloorStateManager.Instance.GetCurrentFloorState();
@@ -330,7 +329,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
                 FloorStateManager.Instance.MarkCurrentFloorAsVisited();
             }
-            // =================================================================
 
             if (_showDebugLogs)
             {
@@ -538,7 +536,7 @@ namespace _Scripts.Systems.ProceduralGeneration
                     _exitRoomSpawned = true;
 
                     if (_showDebugLogs)
-                        Debug.Log($"[FloorGenerator] ✓ Exit room spawned at '{selectedSocket.name}' (1 credit used)");
+                        Debug.Log($"[FloorGenerator] âœ“ Exit room spawned at '{selectedSocket.name}' (1 credit used)");
 
                     return; // Exit room placed successfully
                 }
