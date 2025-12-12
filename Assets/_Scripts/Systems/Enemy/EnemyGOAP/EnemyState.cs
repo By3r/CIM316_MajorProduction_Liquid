@@ -5,5 +5,8 @@ public enum EnemyState
     Attacking,
     Resting,
     Threatening,
-    Dead
+    Dead, 
+    Chasing,
+    Alerted,
+
 }
