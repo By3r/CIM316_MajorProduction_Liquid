@@ -1391,10 +1391,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c71911c23d4e69d44911328b795fe118, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Core.Managers.FloorStateManager
-  _worldSeed: -71460273
+  _autoInitializeOnAwake: 1
+  _worldSeed: 3345
   _seedMultiplier: 7919
   _currentFloorNumber: 1
-  _showDebugLogs: 0
+  _showDebugLogs: 1
 --- !u!4 &387593803
 Transform:
   m_ObjectHideFlags: 0
@@ -4246,50 +4247,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1212957437}
   m_CullTransparentMesh: 1
---- !u!1 &1246408219
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1246408221}
-  - component: {fileID: 1246408220}
-  m_Layer: 0
-  m_Name: Graphic Settings Manager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1246408220
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1246408219}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f7c13ad893448cf841e7690412e5bad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Graphics.GraphicsSettingsManager
---- !u!4 &1246408221
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1246408219}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1247638236
 GameObject:
   m_ObjectHideFlags: 0
@@ -5114,8 +5071,8 @@ MonoBehaviour:
   _corridorPreference: 5
   _hubPreference: 2
   _maxAttemptsPerSocket: 5
-  _currentFloorNumber: 3
-  _currentSeed: -71436516
+  _currentFloorNumber: 1
+  _currentSeed: 11264
   _useSeedBasedGeneration: 1
   _spawnedRooms: []
   _spawnedBlockades: []
@@ -5125,8 +5082,8 @@ MonoBehaviour:
   _blockadeSpawnCount: 0
   _currentRegenerationAttempt: 0
   _exitRoomSpawned: 1
-  gridPathfinder: {fileID: 0}
-  occupiedSpaceRegistry: {fileID: 0}
+  gridPathfinder: {fileID: 1519810842}
+  occupiedSpaceRegistry: {fileID: 1466747774}
 --- !u!114 &1466747773
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5411,13 +5368,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e07affb581e08d94fbdcd6732f6b056a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GridPathfinder
-  gridWorldSize: {x: 178.74345, y: 4, z: 148.92879}
+  gridWorldSize: {x: 128.94598, y: 4, z: 164.63657}
   nodeRadius: 0.5
   obstacleMask:
     serializedVersion: 2
     m_Bits: 0
   maxWalkableSearchRadius: 4
-  drawGizmos: 1
+  drawGizmos: 0
   walkableColor: {r: 1, g: 1, b: 1, a: 1}
   unwalkableColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!4 &1519810843
@@ -5429,7 +5386,7 @@ Transform:
   m_GameObject: {fileID: 1519810841}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 46.4878, y: 0.48864174, z: 44.20026}
+  m_LocalPosition: {x: 11.942394, y: 0.5945473, z: 21.845459}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7293,15 +7250,14 @@ PrefabInstance:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
+  - {fileID: 1620503219}
   - {fileID: 992326243}
   - {fileID: 2091374791}
   - {fileID: 6059095300077192631}
   - {fileID: 369630123}
-  - {fileID: 1246408221}
   - {fileID: 1072514415}
   - {fileID: 1514971725}
   - {fileID: 387593803}
-  - {fileID: 1620503219}
   - {fileID: 1466747771}
   - {fileID: 1283705174}
   - {fileID: 43087770}
