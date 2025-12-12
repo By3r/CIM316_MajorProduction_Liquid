@@ -55,6 +55,10 @@ public class GridPathfinder : MonoBehaviour
     [SerializeField] private Color walkableColor = Color.white;
     [SerializeField] private Color unwalkableColor = Color.red;
 
+    [Header("Vertical Alignment")]
+    [Tooltip("Additional offset (world units) applied to the grid center on Y. Negative = down, positive = up.")]
+    [SerializeField] private float gridCenterYOffset = 0f;
+
     private Node[,,] _grid;
     private float _nodeDiameter;
     private int _gridSizeX;
@@ -80,20 +84,20 @@ public class GridPathfinder : MonoBehaviour
 
         CreateGrid();
     }
-    public void RebuildToFitBounds(Bounds floorBounds, float extraPaddingXZ = 1f, float gridHeight = 4f)
+
+    /// <summary>
+    /// Rebuilds the grid so it fits the combined bounds of the generated floor.
+    /// Height comes from floorBounds.size.y automatically.
+    /// </summary>
+    public void RebuildToFitBounds(Bounds floorBounds, float extraPaddingXZ = 1f)
     {
-        if (gridHeight <= 0f)
-        {
-            gridHeight = 4f;
-        }
-
         Bounds bound = floorBounds;
-
         bound.Expand(new Vector3(extraPaddingXZ * 2f, 0f, extraPaddingXZ * 2f));
 
-        gridWorldSize = new Vector3(bound.size.x, gridHeight, bound.size.z);
+        float heightFromFloor = Mathf.Max(0.1f, floorBounds.size.y);
+        gridWorldSize = new Vector3(bound.size.x, heightFromFloor, bound.size.z);
 
-        float centerY = bound.min.y + gridHeight * 0.5f;
+        float centerY = floorBounds.center.y + gridCenterYOffset;
         transform.position = new Vector3(bound.center.x, centerY, bound.center.z);
 
         RebuildWithCurrentSettings();
@@ -114,7 +118,11 @@ public class GridPathfinder : MonoBehaviour
     {
         _grid = new Node[_gridSizeX, _gridSizeY, _gridSizeZ];
 
-        Vector3 bottomLeft = transform.position - Vector3.right * gridWorldSize.x / 2f - Vector3.up * gridWorldSize.y / 2f - Vector3.forward * gridWorldSize.z / 2f;
+        Vector3 bottomLeft =
+            transform.position
+            - Vector3.right * gridWorldSize.x / 2f
+            - Vector3.up * gridWorldSize.y / 2f
+            - Vector3.forward * gridWorldSize.z / 2f;
 
         int walkableCount = 0;
         int unwalkableCount = 0;
@@ -125,7 +133,11 @@ public class GridPathfinder : MonoBehaviour
             {
                 for (int z = 0; z < _gridSizeZ; z++)
                 {
-                    Vector3 worldPoint = bottomLeft + Vector3.right * (x * _nodeDiameter + nodeRadius) + Vector3.up * (y * _nodeDiameter + nodeRadius) + Vector3.forward * (z * _nodeDiameter + nodeRadius);
+                    Vector3 worldPoint =
+                        bottomLeft
+                        + Vector3.right * (x * _nodeDiameter + nodeRadius)
+                        + Vector3.up * (y * _nodeDiameter + nodeRadius)
+                        + Vector3.forward * (z * _nodeDiameter + nodeRadius);
 
                     bool walkable = true;
                     int surfaceLayer = -1;
@@ -146,7 +158,8 @@ public class GridPathfinder : MonoBehaviour
                         }
                     }
 
-                    if (walkable) walkableCount++; else unwalkableCount++;
+                    if (walkable) walkableCount++;
+                    else unwalkableCount++;
 
                     Node node = new Node(walkable, worldPoint, x, y, z);
                     node.surfaceLayer = surfaceLayer;
@@ -294,20 +307,11 @@ public class GridPathfinder : MonoBehaviour
         return best;
     }
 
-    /// <summary>
-    /// Returns a world-space path between two positions or null if none exists.
-    /// If start or target cell is blocked, tries to snap to nearest walkable cell first.
-    /// </summary>
     public List<Vector3> FindPath(Vector3 startPos, Vector3 targetPos)
     {
         return FindPath(startPos, targetPos, default);
     }
 
-    /// <summary>
-    /// Returns a world-space path between two positions or null if none exists.
-    /// If start or target cell is blocked, tries to snap to nearest walkable cell first.
-    /// Only nodes whose surfaceLayer is in allowedLayers are considered walkable.
-    /// </summary>
     public List<Vector3> FindPath(Vector3 startPos, Vector3 targetPos, LayerMask allowedLayers)
     {
         Node startNode = NodeFromWorldPoint(startPos);

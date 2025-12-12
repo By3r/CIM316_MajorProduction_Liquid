@@ -98,9 +98,18 @@ namespace _Scripts.Systems.ProceduralGeneration
 
         private void Start()
         {
+            // If we generate procedurally, the nav grid will be rebuilt
+            // at the end of GenerateFloor().
             if (_generateOnStart)
             {
                 GenerateFloor();
+            }
+            else
+            {
+                // If the level is already built (for example placed manually
+                // or restored from a save), try to build the nav grid once
+                // on startup based on the current OccupiedSpaceRegistry.
+                RebuildNavGridFromRegistry();
             }
         }
 
@@ -168,16 +177,8 @@ namespace _Scripts.Systems.ProceduralGeneration
                 _currentRegenerationAttempt++;
             }
 
+            // After the floor is built (and registry populated) rebuild the nav grid once.
             RebuildNavGridFromRegistry();
-
-            if (GridPathfinder.Instance != null && OccupiedSpaceRegistry.Instance != null)
-            {
-                if (OccupiedSpaceRegistry.Instance.TryGetCombinedBounds(out var floorBounds))
-                {
-                    float extraPadding = 1f;
-                    GridPathfinder.Instance.RebuildToFitBounds(floorBounds, extraPadding);
-                }
-            }
         }
 
         /// <summary>
@@ -584,15 +585,28 @@ namespace _Scripts.Systems.ProceduralGeneration
 
         private void RebuildNavGridFromRegistry()
         {
-            if (GridPathfinder.Instance == null || OccupiedSpaceRegistry.Instance == null)
+            if (this.gridPathfinder == null && GridPathfinder.Instance == null)
+            {
+                Debug.LogWarning("Could not rebuild nav grid: no GridPathfinder in scene.");
                 return;
+            }
+
+            if (OccupiedSpaceRegistry.Instance == null)
+            {
+                Debug.LogWarning("Could not rebuild nav grid: no OccupiedSpaceRegistry in scene.");
+                return;
+            }
 
             if (!OccupiedSpaceRegistry.Instance.TryGetCombinedBounds(out var floorBounds))
+            {
+                Debug.LogWarning("Couldn't rebuild nav grid: no occupied spaces registered.");
                 return;
+            }
 
             float extraPaddingXZ = 1f;
-            float gridHeight = 4f;
-            GridPathfinder.Instance.RebuildToFitBounds(floorBounds, extraPaddingXZ, gridHeight);
+
+            var gridPathfinder = this.gridPathfinder != null ? this.gridPathfinder : GridPathfinder.Instance;
+            gridPathfinder.RebuildToFitBounds(floorBounds, extraPaddingXZ);
         }
 
         /// <summary>

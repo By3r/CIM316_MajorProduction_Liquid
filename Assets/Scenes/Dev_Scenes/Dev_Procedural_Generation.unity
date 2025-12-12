@@ -5377,6 +5377,7 @@ MonoBehaviour:
   drawGizmos: 0
   walkableColor: {r: 1, g: 1, b: 1, a: 1}
   unwalkableColor: {r: 1, g: 0, b: 0, a: 1}
+  gridCenterYOffset: 1
 --- !u!4 &1519810843
 Transform:
   m_ObjectHideFlags: 0
