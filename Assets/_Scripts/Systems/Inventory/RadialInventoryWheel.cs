@@ -63,6 +63,7 @@ namespace _Scripts.Systems.Inventory
 
         public event Action<int, InventoryItemData> OnSelectionChanged;
         public event Action<int, InventoryItemData> OnSlotConfirmed;
+        public event Action<int, InventoryItemData> OnWheelClosedWithSelection;
 
         #endregion
 
@@ -188,6 +189,7 @@ namespace _Scripts.Systems.Inventory
         {
             _isWheelOpen = true;
             SetWheelVisible(true);
+            Cursor.visible = false;
 
             if (requireHoldForSelection)
             {
@@ -199,11 +201,27 @@ namespace _Scripts.Systems.Inventory
 
         private void CloseWheel()
         {
+            int selectedIndex = _currentSelectedIndex;
+            InventoryItemData selectedItem = null;
+            Cursor.visible = true;
+
+            if (selectedIndex >= 0 && selectedIndex < slots.Count)
+            {
+                RadialInventorySlotUI slot = slots[selectedIndex];
+                selectedItem = slot != null ? slot.ItemData : null;
+            }
+
             _isWheelOpen = false;
             SetWheelVisible(false);
             SetSelectedIndex(-1);
 
             _targetBlurWeight = 0f;
+
+            if (selectedItem != null)
+            {
+                OnWheelClosedWithSelection?.Invoke(selectedIndex, selectedItem);
+                Debug.Log($"Wheel closed with selection {selectedIndex} [{selectedItem.displayName}]");
+            }
         }
 
         private void SetWheelVisible(bool visible)
