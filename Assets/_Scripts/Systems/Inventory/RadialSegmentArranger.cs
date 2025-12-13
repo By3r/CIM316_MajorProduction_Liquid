@@ -7,7 +7,7 @@ namespace _Scripts.Systems.Inventory
     /// <summary>
     /// Automatically turns child Images into radial wedges that form a circle.
     /// </summary>
-    
+
     [ExecuteAlways]
     public class RadialSegmentArranger : MonoBehaviour
     {

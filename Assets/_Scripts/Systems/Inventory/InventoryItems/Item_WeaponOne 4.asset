@@ -10,9 +10,9 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 31d7394168f8a9b4d82e1c604f0071d1, type: 3}
-  m_Name: Item_WeaponOne
+  m_Name: Item_WeaponOne 4
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Inventory.InventoryItemData
-  itemId: WP1
-  displayName: Weapon One
-  icon: {fileID: 21300000, guid: 5cb5abc6ea1be5b4ba995348c00cb5e7, type: 3}
+  itemId: AR1
+  displayName: AR One
+  icon: {fileID: 21300000, guid: ef9d9edc1f11c7a4888fa75f9233ba9c, type: 3}
   description: Weapon Item description
