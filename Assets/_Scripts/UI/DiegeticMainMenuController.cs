@@ -109,6 +109,7 @@ namespace MainMenu.UI
             }
 
             SetSelectedIndex(0, force: true);
+            Cursor.visible = false;
         }
 
         private void Update()
@@ -120,6 +121,11 @@ namespace MainMenu.UI
             }
 
             AimFlashlightAtCurrentButton();
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                Cursor.visible = !Cursor.visible;
+            }
         }
 
         private void HandleNavigationInput()
@@ -206,8 +212,9 @@ namespace MainMenu.UI
 
             bool submit = InputManager.Instance.SubmitPressed;
             bool interact = InputManager.Instance.InteractPressed;
+            bool mouseSubmit = Input.GetMouseButtonDown(0);
 
-            if (!submit && !interact)
+            if (!submit && !interact && !mouseSubmit)
             {
                 return;
             }
@@ -235,6 +242,7 @@ namespace MainMenu.UI
 
             currentButton.Activate();
         }
+
 
         #region Button behaviours
 

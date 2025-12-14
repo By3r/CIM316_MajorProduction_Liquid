@@ -31,6 +31,23 @@ public abstract class EnemyBase : MonoBehaviour
     [SerializeField] protected EnemyState currentState = EnemyState.Idle;
     [SerializeField] protected bool drawPathGizmos = true;
 
+    [Header("Debug Logging")]
+    [Tooltip("Turn OFF for performance.")]
+    [SerializeField] protected bool logPathFailures = false;
+
+    [Tooltip(" Turn OFF for performance.")]
+    [SerializeField] protected bool logPathBlocked = false;
+
+    [Tooltip("Turn OFF for performance.")]
+    [SerializeField] protected bool logStateChanges = false;
+
+    [Tooltip("Minimum seconds between repeated logs of the same type (per enemy).")]
+    [SerializeField] protected float logCooldownSeconds = 1.0f;
+
+    private float _nextAllowedPathFailLogTime;
+    private float _nextAllowedPathBlockedLogTime;
+    private float _nextAllowedStateLogTime;
+
     protected float currentHealth;
     protected bool isDead;
 
@@ -129,7 +146,13 @@ public abstract class EnemyBase : MonoBehaviour
         {
             currentPath = null;
             currentPathIndex = 0;
-            Debug.Log($"{name} could not find a path. Start: {transform.position}, Target: {destination}");
+
+            if (logPathFailures && Time.time >= _nextAllowedPathFailLogTime)
+            {
+                _nextAllowedPathFailLogTime = Time.time + Mathf.Max(0.1f, logCooldownSeconds);
+                Debug.LogWarning($"{name} could not find a path. Start: {transform.position}, Target: {destination}", this);
+            }
+
             return false;
         }
 
@@ -198,7 +221,12 @@ public abstract class EnemyBase : MonoBehaviour
 
     protected virtual void OnPathBlocked()
     {
-        Debug.Log($"{name} path blocked, invalidating current path.");
+        if (logPathBlocked && Time.time >= _nextAllowedPathBlockedLogTime)
+        {
+            _nextAllowedPathBlockedLogTime = Time.time + Mathf.Max(0.1f, logCooldownSeconds);
+            Debug.Log($"{name} path blocked, invalidating current path.", this);
+        }
+
         currentPath = null;
         currentPathIndex = 0;
     }
@@ -231,6 +259,7 @@ public abstract class EnemyBase : MonoBehaviour
 
         return true;
     }
+
     #region State handling
 
     /// <summary>
@@ -261,7 +290,11 @@ public abstract class EnemyBase : MonoBehaviour
                 break;
         }
 
-        Debug.Log($"{name} state changed: {oldState} -> {newState}");
+        if (logStateChanges && Time.time >= _nextAllowedStateLogTime)
+        {
+            _nextAllowedStateLogTime = Time.time + Mathf.Max(0.1f, logCooldownSeconds);
+            Debug.Log($"{name} state changed: {oldState} -> {newState}", this);
+        }
     }
     #endregion
     #endregion

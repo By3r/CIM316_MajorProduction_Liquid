@@ -577,9 +577,20 @@ public static class LiquidGoapActions
     #endregion
 
     #region Merge into Requester
-    /// <summary>Move to requester and merge into them. Responder is destroyed. Requester becomes merged.</summary>
+    /// <summary>
+    /// Move to requester and merge into them. Responder is destroyed. Requester becomes merged.
+    /// </summary>
     private class MergeIntoRequesterAction : GoapAction
     {
+        private const float DestinationRefreshIntervalSeconds = 0.35f;
+        private const float RetryAfterPathFailSeconds = 0.75f;
+        private const float GiveUpAfterSeconds = 3.0f;
+
+        private Vector3 _cachedDestination;
+        private float _nextDestinationRefreshTime;
+        private float _nextPathRetryTime;
+        private float _startTime;
+
         public MergeIntoRequesterAction()
         {
             Cost = 2.2f;
@@ -611,6 +622,12 @@ public static class LiquidGoapActions
             }
 
             Target = requester.gameObject;
+
+            _startTime = Time.time;
+            _cachedDestination = requester.transform.position;
+            _nextDestinationRefreshTime = Time.time + DestinationRefreshIntervalSeconds;
+            _nextPathRetryTime = Time.time;
+
             return true;
         }
 
@@ -628,10 +645,30 @@ public static class LiquidGoapActions
                 return false;
             }
 
-            enemy.SetState(EnemyState.Roaming);
-            if (!enemy.TryGoTo(requester.transform.position))
+            if (Time.time >= _startTime + GiveUpAfterSeconds)
             {
+                LiquidWorldState.Instance.ClearMergeRequest(requester);
                 return false;
+            }
+
+            if (Time.time >= _nextDestinationRefreshTime)
+            {
+                _cachedDestination = requester.transform.position;
+                _nextDestinationRefreshTime = Time.time + DestinationRefreshIntervalSeconds;
+            }
+
+            enemy.SetState(EnemyState.Roaming);
+
+            if (Time.time < _nextPathRetryTime)
+            {
+                return true;
+            }
+
+            bool moved = enemy.TryGoTo(_cachedDestination);
+            if (!moved)
+            {
+                _nextPathRetryTime = Time.time + RetryAfterPathFailSeconds;
+                return true;
             }
 
             if (Vector3.Distance(enemy.transform.position, requester.transform.position) <= enemy.MergeDistance)
@@ -663,6 +700,15 @@ public static class LiquidGoapActions
             }
 
             return Vector3.Distance(enemy.transform.position, Target.transform.position) <= enemy.MergeDistance;
+        }
+
+        public override void Reset()
+        {
+            base.Reset();
+            _cachedDestination = Vector3.zero;
+            _nextDestinationRefreshTime = 0f;
+            _nextPathRetryTime = 0f;
+            _startTime = 0f;
         }
     }
     #endregion
