@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if UNITY_EDITOR
+using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using _Scripts.Systems.ProceduralGeneration.Items;
@@ -85,7 +86,7 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
 
             EditorGUILayout.Space(3);
             EditorGUILayout.HelpBox(
-                "💡 Disable gizmos if you have 20+ spawn points for better editor performance.",
+                "Disable gizmos if you have 20+ spawn points for better editor performance.",
                 MessageType.None);
 
             EditorGUILayout.Space(10);
@@ -242,3 +243,4 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
         }
     }
 }
+#endif

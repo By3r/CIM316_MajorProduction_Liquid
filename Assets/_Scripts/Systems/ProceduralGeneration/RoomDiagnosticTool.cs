@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using _Scripts.Systems.ProceduralGeneration.Doors;
 using UnityEditor;
 using UnityEngine;
@@ -203,3 +204,4 @@ namespace _Scripts.Systems.ProceduralGeneration
         }
     }
 }
+#endif

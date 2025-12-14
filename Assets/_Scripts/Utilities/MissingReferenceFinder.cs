@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿#if UNITY_EDITOR
+using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +25,7 @@ namespace _Scripts.Editor.Tools
         {
             public Object targetObject;
             public string objectPath;
-            public string issueType; // "Missing Script" or "Missing Reference"
+            public string issueType;
             public string propertyPath;
             public Component component;
 
@@ -52,9 +53,9 @@ namespace _Scripts.Editor.Tools
             EditorGUILayout.LabelField("Missing Reference Finder", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 "Scans for missing scripts and null serialized field references.\n" +
-                "• Click 'Scan' to find all issues\n" +
-                "• Click results to select objects\n" +
-                "• Use filters to narrow results",
+                "- Click 'Scan' to find all issues\n" +
+                "- Click results to select objects\n" +
+                "- Use filters to narrow results",
                 MessageType.Info);
 
             EditorGUILayout.Space(10);
@@ -85,12 +86,10 @@ namespace _Scripts.Editor.Tools
                 EditorGUILayout.BeginHorizontal();
                 EditorGUILayout.LabelField($"Results ({_missingReferences.Count} issues found)", EditorStyles.boldLabel);
                 
-                // Search filter
                 GUILayout.FlexibleSpace();
                 GUILayout.Label("Filter:", GUILayout.Width(40));
                 _searchFilter = EditorGUILayout.TextField(_searchFilter, GUILayout.Width(200));
                 
-                // Clear button
                 if (GUILayout.Button("Clear", GUILayout.Width(60)))
                 {
                     _missingReferences.Clear();
@@ -120,7 +119,7 @@ namespace _Scripts.Editor.Tools
             }
             else if (_lastScanCount > 0)
             {
-                EditorGUILayout.HelpBox("✓ No missing references found!", MessageType.Info);
+                EditorGUILayout.HelpBox("No missing references found!", MessageType.Info);
             }
             else
             {
@@ -132,21 +131,17 @@ namespace _Scripts.Editor.Tools
         {
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-            // Issue type color coding
             Color issueColor = info.issueType == "Missing Script" ? new Color(1f, 0.4f, 0.4f) : new Color(1f, 0.8f, 0.4f);
             GUI.backgroundColor = issueColor;
 
             EditorGUILayout.BeginHorizontal();
 
-            // Icon and issue type
             GUIStyle labelStyle = new GUIStyle(EditorStyles.boldLabel);
-            string icon = info.issueType == "Missing Script" ? "✗" : "⚠";
+            string icon = info.issueType == "Missing Script" ? "X" : "!";
             EditorGUILayout.LabelField($"{icon} {info.issueType}", labelStyle, GUILayout.Width(150));
 
-            // Object path
             EditorGUILayout.LabelField(info.objectPath, EditorStyles.label);
 
-            // Select button
             GUI.backgroundColor = Color.white;
             if (GUILayout.Button("Select", GUILayout.Width(70)))
             {
@@ -159,7 +154,6 @@ namespace _Scripts.Editor.Tools
 
             EditorGUILayout.EndHorizontal();
 
-            // Property path for missing serialized fields
             if (!string.IsNullOrEmpty(info.propertyPath) && info.issueType != "Missing Script")
             {
                 EditorGUI.indentLevel++;
@@ -167,7 +161,6 @@ namespace _Scripts.Editor.Tools
                 EditorGUI.indentLevel--;
             }
 
-            // Component info for missing scripts
             if (info.component != null && info.issueType == "Missing Script")
             {
                 EditorGUI.indentLevel++;
@@ -216,7 +209,7 @@ namespace _Scripts.Editor.Tools
 
         private void ScanSceneObjects()
         {
-            var allObjects = FindObjectsOfType<GameObject>(true); // Include inactive
+            var allObjects = FindObjectsOfType<GameObject>(true);
             int total = allObjects.Length;
 
             for (int i = 0; i < total; i++)
@@ -279,7 +272,6 @@ namespace _Scripts.Editor.Tools
 
         private void CheckGameObjectForMissingReferences(GameObject obj, string path)
         {
-            // Check for missing scripts
             Component[] components = obj.GetComponents<Component>();
             foreach (Component component in components)
             {
@@ -293,12 +285,10 @@ namespace _Scripts.Editor.Tools
                 }
                 else if (!_showOnlyMissingScripts)
                 {
-                    // Check serialized fields for null references
                     CheckComponentForNullReferences(component, obj, path);
                 }
             }
 
-            // Recursively check children
             foreach (Transform child in obj.transform)
             {
                 CheckGameObjectForMissingReferences(child.gameObject, path + "/" + child.name);
@@ -367,3 +357,4 @@ namespace _Scripts.Editor.Tools
         }
     }
 }
+#endif
