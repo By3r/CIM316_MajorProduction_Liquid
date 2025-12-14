@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using Liquid.Audio;
 using TMPro;
@@ -6,7 +7,7 @@ using TMPro;
 /// <summary>
 /// Basic GOAP style enemy that uses the Noise system and grid based AStar.
 /// </summary>
-public class GenericGoapEnemy : EnemyBase, INoiseListener
+public class GenericGoapEnemy : EnemyBase, INoiseListener, IEnemyDebugTarget
 {
     [Header("GOAP Settings")]
     [SerializeField] private float nearbyPlayerDistance = 3f;
@@ -47,6 +48,12 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
         "The mines will be your grave."
     };
 
+    [Header("Threaten Movement")]
+    [Tooltip("When threatening, the enemy will try to orbit around the player instead of standing still.")]
+    [SerializeField] private float threatenOrbitRadius = 2.5f;
+    [SerializeField] private float threatenOrbitAngularSpeed = 1.2f;
+    [SerializeField] private float threatenOrbitRepathInterval = 0.35f;
+
     private EnemyGoalType _currentGoal = EnemyGoalType.None;
     private float _stamina;
     private int _patrolIndex;
@@ -64,10 +71,14 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
     public bool DebugLastPathToPlayerFailed => _lastPathToPlayerFailed;
     [SerializeField] private bool _hasStaminaFlag = true;
     public bool DebugHasStaminaFlag => _hasStaminaFlag;
+    public string DebugLastDecisionReason => _debugLastDecisionReason;
 
     private float _lastThreatenTime;
     private bool _lastPathToPlayerFailed;
     #endregion
+
+    private float _threatenOrbitAngle;
+    private float _nextThreatenOrbitRepathTime;
 
     protected override void Awake()
     {
@@ -91,6 +102,11 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
         {
             NoiseManager.Instance.RegisterListener(this);
         }
+
+        if (EnemyDebugFocusManager.Instance != null)
+        {
+            EnemyDebugFocusManager.Instance.Register(this);
+        }
     }
 
     private void OnDisable()
@@ -99,11 +115,15 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
         {
             NoiseManager.Instance.UnregisterListener(this);
         }
+
+        if (EnemyDebugFocusManager.Instance != null)
+        {
+            EnemyDebugFocusManager.Instance.Unregister(this);
+        }
     }
 
     /// <summary>
     /// Called by NoiseManager when any noise event reaches this enemy.
-    /// The NoiseManager has already filtered by radius, taking environment into account.
     /// </summary>
     public void OnNoiseHeard(NoiseEvent noiseEvent)
     {
@@ -120,7 +140,7 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
     }
 
     /// <summary>
-    /// Will be its own class later on.
+    /// TODO: Will be its own class later on.
     /// </summary>
     #region World state helpers
 
@@ -186,7 +206,6 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
     #endregion
 
     #region Stamina
-
     private void UpdateStamina(float deltaTime)
     {
         if (_currentGoal == EnemyGoalType.PatrolArea ||
@@ -243,7 +262,6 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
         {
             _currentGoal = newGoal;
             OnGoalChanged(previousGoal, newGoal);
-            Debug.Log($"{name} switched goal: {previousGoal} -> {newGoal}. Reason: {_debugLastDecisionReason}");
         }
     }
 
@@ -253,8 +271,6 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
 
         if (!HasStamina)
         {
-            _debugLastDecisionReason =
-                $"Stamina {_stamina:F1}. HasStamina=false. TakeRest until recovered.";
             return EnemyGoalType.TakeRest;
         }
 
@@ -262,11 +278,9 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
         {
             if (HasAnyPatrolPoint)
             {
-                _debugLastDecisionReason = "No player. HasStamina=true. PatrolArea.";
                 return EnemyGoalType.PatrolArea;
             }
 
-            _debugLastDecisionReason = "No player and no patrol points.";
             return EnemyGoalType.None;
         }
 
@@ -275,9 +289,6 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
 
         if (CanKillPlayer && HasStamina)
         {
-            _debugLastDecisionReason =
-                $"CanKillPlayer=true (dist={DistanceToPlayer:F2}, pathValid={PathValidToPlayer}). KillPlayer.";
-
             return EnemyGoalType.KillPlayer;
         }
 
@@ -285,30 +296,25 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
         {
             if (DebugHasValidPath && !CanKillPlayer)
             {
-                _debugLastDecisionReason = "Player in sight, path valid, but cannot kill yet. ChasePlayer.";
                 return EnemyGoalType.ChasePlayer;
             }
 
             if (!DebugHasValidPath)
             {
-                _debugLastDecisionReason = "Player in sight but path invalid. ThreatenPlayer.";
                 return EnemyGoalType.ThreatenPlayer;
             }
         }
 
         if (mediumNoiseAndAudible)
         {
-            _debugLastDecisionReason = "Player noise medium and audible. ThreatenPlayer.";
             return EnemyGoalType.ThreatenPlayer;
         }
 
         if (HasAnyPatrolPoint)
         {
-            _debugLastDecisionReason = "HasStamina=true, no higher priority goal. PatrolArea.";
             return EnemyGoalType.PatrolArea;
         }
 
-        _debugLastDecisionReason = "Fallback. None.";
         return EnemyGoalType.None;
     }
 
@@ -319,8 +325,12 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
             _patrolIndex = FindNearestPatrolPointIndex(transform.position);
             currentPath = null;
             currentPathIndex = 0;
+        }
 
-            Debug.Log($"{name} entering PatrolArea. Starting at patrol index: {_patrolIndex} ({patrolPoints[_patrolIndex].name})");
+        if (newGoal == EnemyGoalType.ThreatenPlayer)
+        {
+            _threatenOrbitAngle = 0f;
+            _nextThreatenOrbitRepathTime = 0f;
         }
     }
     #endregion
@@ -349,34 +359,31 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
                 ExecuteThreatenPlayer();
                 break;
             case EnemyGoalType.None:
-                currentState = EnemyState.Idle;
+                SetState(EnemyState.Idle);
                 break;
         }
     }
 
     private void ExecuteKillPlayer()
     {
-        currentState = EnemyState.Attacking;
+        SetState(EnemyState.Attacking);
 
         if (!PlayerAlive)
         {
-            Debug.LogWarning($"{name} ExecuteKillPlayer called but PlayerAlive == false.");
             return;
         }
 
         if (!CanKillPlayer)
         {
-            Debug.LogWarning(
-                $"{name} ExecuteKillPlayer called but CanKillPlayer=false (dist={DistanceToPlayer:F2}, pathValid={PathValidToPlayer}).");
             return;
         }
 
-        Debug.Log($"{name} tries to KILL the player. (Within kill distance {killDistance})");
+        Debug.Log($"{name} tries to KILL the player.");
     }
 
     private void ExecuteChasePlayer()
     {
-        currentState = EnemyState.Moving;
+        SetState(EnemyState.Moving);
 
         if (!PlayerAlive)
         {
@@ -405,7 +412,7 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
 
     private void ExecutePatrolArea()
     {
-        currentState = EnemyState.Moving;
+        SetState(EnemyState.Moving);
 
         if (!HasAnyPatrolPoint)
         {
@@ -447,12 +454,39 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
 
     private void ExecuteTakeRest()
     {
-        currentState = EnemyState.Resting;
+        SetState(EnemyState.Resting);
     }
 
     private void ExecuteThreatenPlayer()
     {
-        currentState = EnemyState.Threatening;
+        SetState(EnemyState.Threatening);
+
+        if (PlayerAlive)
+        {
+            _threatenOrbitAngle += threatenOrbitAngularSpeed * Time.deltaTime;
+
+            Vector3 toEnemy = (transform.position - playerTarget.position);
+            toEnemy.y = 0f;
+            if (toEnemy.sqrMagnitude < 0.001f)
+            {
+                toEnemy = Vector3.forward;
+            }
+            toEnemy.Normalize();
+
+            Vector3 orbitOffset = Quaternion.Euler(0f, _threatenOrbitAngle * Mathf.Rad2Deg, 0f) * (toEnemy * threatenOrbitRadius);
+            Vector3 orbitTarget = playerTarget.position + orbitOffset;
+
+            if (Time.time >= _nextThreatenOrbitRepathTime)
+            {
+                _nextThreatenOrbitRepathTime = Time.time + threatenOrbitRepathInterval;
+                RequestPath(orbitTarget);
+            }
+
+            if (DebugHasValidPath)
+            {
+                FollowPath();
+            }
+        }
 
         if (Time.time < _lastThreatenTime + threatenCooldown)
         {
@@ -469,14 +503,16 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
 
         int index = Random.Range(0, threatenMessages.Length);
         string msg = threatenMessages[index];
-        threatenMessage.text = threatenMessages[index];
+        if (threatenMessage != null)
+        {
+            threatenMessage.text = threatenMessages[index];
+        }
         Debug.Log($"{name} threatens: \"{msg}\"");
     }
 
     #endregion
 
     #region Patrol helpers
-
     private int FindNearestPatrolPointIndex(Vector3 fromPosition)
     {
         int bestIndex = 0;
@@ -527,6 +563,27 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener
         }
 
         Debug.Log($"{name} switching patrol target to index: {_patrolIndex} ({patrolPoints[_patrolIndex].name})");
+    }
+
+    #endregion
+
+    #region Focused debug.
+    public string DebugDisplayName => name;
+    public Transform DebugTransform => transform;
+
+    public string GetDebugText()
+    {
+        StringBuilder sb = new StringBuilder(256);
+
+        sb.AppendLine($"Name: {name})");
+        sb.AppendLine($"State: {CurrentState}");
+        sb.AppendLine($"Goal: {CurrentGoal}");
+        sb.AppendLine($"Stamina: {_stamina:F1}/{staminaMax:F1}  HasStamina={HasStamina}");
+        sb.AppendLine($"PlayerDist: {DebugDistanceToPlayer:F2}  InSight={PlayerInSight}  PathValid={DebugHasValidPath}");
+        sb.AppendLine($"Noise: {_lastNoiseLevel}  Audible={PlayerNoiseAudible}");
+        sb.AppendLine($"Decision: {_debugLastDecisionReason}");
+
+        return sb.ToString();
     }
 
     #endregion

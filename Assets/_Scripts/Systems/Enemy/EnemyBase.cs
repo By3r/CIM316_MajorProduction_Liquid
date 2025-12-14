@@ -25,6 +25,7 @@ public abstract class EnemyBase : MonoBehaviour
     [Header("References")]
     [SerializeField] protected Transform modelRoot;
     [SerializeField] protected Transform playerTarget;
+    public Transform PlayerTarget => playerTarget;
 
     [Header("Debug")]
     [SerializeField] protected EnemyState currentState = EnemyState.Idle;
@@ -122,7 +123,6 @@ public abstract class EnemyBase : MonoBehaviour
             return false;
         }
 
-        // Use per-enemy walkableLayers to decide which nodes are allowed.
         List<Vector3> newPath = GridPathfinder.Instance.FindPath(transform.position, destination, walkableLayers);
 
         if (newPath == null || newPath.Count == 0)
@@ -146,7 +146,6 @@ public abstract class EnemyBase : MonoBehaviour
             return;
         }
 
-        // Use full 3D target (x, y, z) from the path so the enemy can move on the Y axis as well.
         Vector3 targetPoint = currentPath[currentPathIndex];
         Vector3 direction = targetPoint - transform.position;
         float distance = direction.magnitude;
@@ -174,7 +173,6 @@ public abstract class EnemyBase : MonoBehaviour
 
         float stepDistance = moveSpeed * Time.deltaTime;
 
-        // Still raycast along the movement direction to check for obstacles.
         if (Physics.Raycast(transform.position + Vector3.up * 0.5f, direction,
                 out RaycastHit hit, stepDistance + 0.2f, obstacleMask, QueryTriggerInteraction.Ignore))
         {
@@ -185,10 +183,8 @@ public abstract class EnemyBase : MonoBehaviour
             }
         }
 
-        // Move in full 3D, including Y.
         transform.position += direction * stepDistance;
 
-        // Keep rotation mostly horizontal (no pitching up/down), but you still turn towards movement direction.
         if (direction.sqrMagnitude > 0.001f)
         {
             Vector3 flatDir = new Vector3(direction.x, 0f, direction.z);
@@ -235,6 +231,39 @@ public abstract class EnemyBase : MonoBehaviour
 
         return true;
     }
+    #region State handling
+
+    /// <summary>
+    /// Changes the enemy state in a controlled way.
+    /// GOAP actions and AI logic should always use this instead of setting currentState directly.
+    /// </summary>
+    public virtual void SetState(EnemyState newState)
+    {
+        if (currentState == newState)
+        {
+            return;
+        }
+
+        EnemyState previousState = currentState;
+        currentState = newState;
+
+        OnStateChanged(previousState, newState);
+    }
+
+    protected virtual void OnStateChanged(EnemyState oldState, EnemyState newState)
+    {
+        switch (newState)
+        {
+            case EnemyState.Idle:
+            case EnemyState.Resting:
+                currentPath = null;
+                currentPathIndex = 0;
+                break;
+        }
+
+        Debug.Log($"{name} state changed: {oldState} -> {newState}");
+    }
+    #endregion
     #endregion
 
     #region Gizmos

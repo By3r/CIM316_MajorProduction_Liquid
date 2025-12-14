@@ -8,5 +8,5 @@ public enum EnemyState
     Dead, 
     Chasing,
     Alerted,
-
+    Roaming
 }

@@ -1,95 +1,241 @@
-﻿using System.Collections.Generic;
-using UnityEngine;
+﻿using Liquid.AI.GOAP;
 using Liquid.Audio;
+using System.Collections.Generic;
+using System.Text;
+using UnityEngine;
 
-public class LiquidEnemy : EnemyBase, INoiseListener
+public class LiquidEnemy : EnemyBase, INoiseListener, IEnemyDebugTarget
 {
-    #region Variables
-    #region Pond
+    #region World-state keys
+    public const string WS_HAS_PLAYER = "hasPlayer";
+    public const string WS_CAN_REACH_PLAYER = "canReachPlayer";
+    public const string WS_PLAYER_INTERESTING = "playerInteresting";
+    public const string WS_NEAR_PLAYER = "nearPlayer";
+    public const string WS_CAN_HOLD = "canHold";
+    public const string WS_PLAYER_HELD = "playerHeld";
+    public const string WS_IS_MERGED = "isMerged";
+    public const string WS_CAN_SWALLOW = "canSwallow";
+    public const string WS_PLAYER_SWALLOWED = "playerSwallowed";
+
+    public const string WS_HAS_POND = "hasPond";
+    public const string WS_IN_POND = "inPond";
+    public const string WS_RELAXED = "relaxed";
+    public const string WS_EMERGED = "emerged";
+
+    public const string WS_CAN_DUPLICATE = "canDuplicate";
+    public const string WS_DUPLICATED = "duplicated";
+
+    public const string WS_HAS_MERGE_REQUEST = "hasMergeRequest";
+    public const string WS_CAN_REQUEST_MERGE = "canRequestMerge";
+    public const string WS_MERGE_REQUESTED = "mergeRequested";
+
+    public const string WS_IS_BUSY = "isBusy";
+    public const string WS_ACCEPTED_MERGE_REQUEST = "acceptedMergeRequest";
+    public const string WS_HELPED_MERGE = "helpedMerge";
+
+    public const string WS_HAS_LAST_SEEN = "hasLastSeen";
+    public const string WS_AT_LAST_SEEN = "atLastSeen";
+    public const string WS_PATROLLED = "patrolled";
+
+    public const string WS_HEARD_NOISE = "heardNoise";
+    public const string WS_NOISE_AWARENESS = "noiseAwareness"; 
+    #endregion
+
+    #region Pond / environment
     [Header("Pond Settings")]
-    [Tooltip("Where the centre of this Liquid’s 'pond' is in world space.")]
+    [Tooltip("Where the centre of this Liquid’s pond is in world space.")] //TODO: Separate for multiple ponds, Multiple Liquid homes
     [SerializeField] private Transform pondCenter;
 
     [Tooltip("Radius around pondCenter that counts as 'in the pond'.")]
     [SerializeField] private float pondRadius = 4f;
 
-    [Tooltip("How long (seconds) Liquid is happy to just relax in the pond before re-evaluating.")]
+    [Tooltip("How long Liquid relaxes in the pond before replanning.")]
     [SerializeField] private float relaxDuration = 6f;
+
+    [Header("Pond Patrol")]
+    [Tooltip("How far from pond center the Liquid may wander while 'patrolling' (only used while in pond).")]
+    [SerializeField] private float pondPatrolRadius = 2.5f;
+
+    [Tooltip("How close to a patrol point counts as reached.")]
+    [SerializeField] private float pondPatrolArriveRadius = 0.6f;
+
+    [SerializeField] private Vector2 pondPatrolDurationRange = new Vector2(2.0f, 4.5f);
     #endregion
 
-    #region Player awareness
+    #region Player Awareness
     [Header("Awareness")]
     [Tooltip("Max distance for sight checks.")]
     [SerializeField] private float sightDistance = 18f;
 
-    [Tooltip("If player is within this distance, we treat them as 'near pond' for emerge / chase.")]
+    [Tooltip("If player is within this distance from pondCenter, they are considered 'near pond'.")]
     [SerializeField] private float chaseDistance = 15f;
 
-    [Tooltip("How long a heard noise stays 'interesting' for decision making.")]
-    [SerializeField] private float noiseMemoryDuration = 3f;
+    [Header("Interest Memory")]
+    [Tooltip("How long we keep 'playerInteresting = true' after we last saw them near pond.")]
+    [SerializeField] private float playerInterestingMemorySeconds = 1.25f;
+
+    [Header("Investigate")]
+    [Tooltip("How long the Liquid remembers the player's last seen position.")]
+    [SerializeField] private float lastSeenMemorySeconds = 4.0f;
+
+    [Tooltip("Distance to last seen that counts as 'arrived'.")]
+    [SerializeField] private float lastSeenArriveRadius = 1.25f;
+
+    [Header("Noise Awareness")]
+    [Tooltip("If noise awareness is below this, we may ignore it.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float noiseAwarenessThreshold = 0.22f;
+
+    [Tooltip("How long we treat recent noise as 'interesting' once awareness passes threshold.")]
+    [SerializeField] private float noiseInterestMemorySeconds = 2.0f;
+
+    [Tooltip("How fast noise awareness decays back to 0.")]
+    [SerializeField] private float noiseAwarenessDecayPerSecond = 0.18f;
+
+    [Tooltip("A multiplier to make noises matter more/less for Liquid.")]
+    [SerializeField] private float noiseAwarenessGainMultiplier = 1.0f;
     #endregion
 
-    #region Duplication
+    #region Duplication / merge
     [Header("Duplication")]
-    [Tooltip("Prefab for a duplicated Liquid (can be this same prefab).")]
+    [Tooltip("Prefab for a duplicated Liquid.")] // If not assigned, the original prefab will be used!
     [SerializeField] private LiquidEnemy liquidPrefab;
 
-    [Tooltip("Maximum number of clones that may exist at once.")]
-    [SerializeField] private int maxDuplicates = 3;
-
-    [Tooltip("Cooldown between duplication attempts, in seconds.")]
-    [SerializeField] private float duplicateCooldown = 8f;
-
     [Header("Merge")]
-    [Tooltip("How far we search for another Liquid to merge with.")]
-    [SerializeField] private float mergeSearchRadius = 6f;
-
-    [Tooltip("Distance at which two Liquid enemies are allowed to actually merge.")]
+    [Tooltip("Distance at which responder can merge into requester.")]
     [SerializeField] private float mergeDistance = 2f;
 
-    [Tooltip("Scale multiplier applied after a successful merge.")]
-    [SerializeField] private float mergeScaleMultiplier = 1.3f;
-    #endregion
-
-    #region Swallow
-    [Header("Swallow Attack")]
+    [Header("Hold / Swallow Attack")]
     [Tooltip("Distance to the player required to start holding them.")]
     [SerializeField] private float holdDistance = 1.5f;
 
-    [Tooltip("How long Liquid pins the player before trying to swallow.")]
+    [Tooltip("How long Liquid pins the player before replanning.")]
     [SerializeField] private float holdDuration = 2.5f;
 
     [Tooltip("Distance at which swallow is allowed to succeed.")]
     [SerializeField] private float swallowDistance = 1.1f;
+
+    [Header("Chase Feel")]
+    [Tooltip("Adds a small offset while chasing so multiple Liquids don't stack perfectly on player position.")]
+    [SerializeField] private float chaseStrafeOffset = 1.25f;
+
+    [Header("Reachability")]
+    [Tooltip("If pathfinding to the player fails, we treat them as unreachable for this long to avoid chase spam.")]
+    [SerializeField] private float unreachablePlayerCooldownSeconds = 3f;
+
+    private float _playerUnreachableUntilTime;
     #endregion
 
-    private LiquidGoalType _currentGoal = LiquidGoalType.None;
+    #region GOAP Debug
+    [Header("GOAP Debug")]
+    [SerializeField] private string currentGoalName;
+    [SerializeField] private string currentActionName;
+    [TextArea(6, 20)]
+    [SerializeField] private string worldStateDump;
 
-    private float _relaxTimer;
+    public string DebugCurrentGoalName => currentGoalName;
+    public string DebugCurrentActionName => currentActionName;
+    public Dictionary<string, object> DebugWorldState => _worldState;
+    #endregion
 
-    private NoiseLevel _lastNoiseLevel = NoiseLevel.Low;
-    private float _lastHeardNoiseTime;
-    private Vector3 _lastHeardNoisePosition;
+    #region Runtime
+    private readonly List<GoapAction> _availableActions = new List<GoapAction>();
+    private Queue<GoapAction> _currentPlan;
 
-    private float _lastDuplicateTime;
+    private Dictionary<string, object> _worldState;
+    private Dictionary<string, object> _currentGoal;
 
-    private float _holdTimer;
-    private bool _isHoldingPlayer;
+    private GoapAction _lastAction;
 
-    private static readonly List<LiquidEnemy> _allLiquidEnemies = new List<LiquidEnemy>();
+    private Dictionary<string, object> _lastGoal;
 
-    public LiquidGoalType CurrentLiquidGoal => _currentGoal;
-    public NoiseLevel LastNoiseLevel => _lastNoiseLevel;
-    public float DebugDistanceToPlayer => DistanceToPlayer;
+    private bool _requestedMergeHelp;
+    private bool _mergedOnce;
+    private int _mergedStage = 1;
+
+    private float _playerInterestingUntilTime;
+    private Vector3 _lastSeenPlayerPosition;
+    private float _lastSeenTime = -999f;
+
+    private float _noiseAwareness01;
+    private float _noiseInterestingUntilTime;
+    private NoiseEvent? _lastNoiseEvent;
+
+    private bool _lastRequestedPathWasPlayer;
+    #endregion
+
+    #region Public actions for outer access.
+    public Transform PondCenter => pondCenter;
+    public float PondRadius => pondRadius;
+    public float RelaxDuration => relaxDuration;
+    public LiquidEnemy LiquidPrefab => liquidPrefab;
+    public float MergeDistance => mergeDistance;
+    public float HoldDuration => holdDuration;
+
+    public float PondPatrolArriveRadius => pondPatrolArriveRadius;
+    public Vector2 PondPatrolDurationRange => pondPatrolDurationRange;
+
+    public bool HasPlayer => playerTarget != null;
+    public Vector3 PlayerPosition => playerTarget != null ? playerTarget.position : transform.position;
+
+    public bool InPond
+    {
+        get
+        {
+            if (pondCenter == null)
+            {
+                return false;
+            }
+
+            return Vector3.Distance(transform.position, pondCenter.position) <= pondRadius;
+        }
+    }
+
+    public bool IsMerged => _mergedStage >= 2;
+
+    public bool CanHoldPlayer
+    {
+        get
+        {
+            if (!HasPlayer)
+            {
+                return false;
+            }
+
+            return Vector3.Distance(transform.position, playerTarget.position) <= holdDistance;
+        }
+    }
+
+    public bool CanSwallowPlayer
+    {
+        get
+        {
+            if (!HasPlayer)
+            {
+                return false;
+            }
+
+            return Vector3.Distance(transform.position, playerTarget.position) <= swallowDistance;
+        }
+    }
+
+    public bool HasRecentLastSeen => (Time.time - _lastSeenTime) <= lastSeenMemorySeconds;
+    public Vector3 LastSeenPlayerPosition => _lastSeenPlayerPosition;
+
     #endregion
 
     protected override void Awake()
     {
         base.Awake();
-        if (!_allLiquidEnemies.Contains(this))
+
+        _availableActions.AddRange(LiquidGoapActions.CreateAll());
+
+        if (LiquidWorldState.Instance != null)
         {
-            _allLiquidEnemies.Add(this);
+            LiquidWorldState.Instance.Register(this);
         }
+
+        ApplyMergedStageVisual();
     }
 
     private void OnEnable()
@@ -97,6 +243,11 @@ public class LiquidEnemy : EnemyBase, INoiseListener
         if (NoiseManager.Instance != null)
         {
             NoiseManager.Instance.RegisterListener(this);
+        }
+
+        if (EnemyDebugFocusManager.Instance != null)
+        {
+            EnemyDebugFocusManager.Instance.Register(this);
         }
     }
 
@@ -107,468 +258,700 @@ public class LiquidEnemy : EnemyBase, INoiseListener
             NoiseManager.Instance.UnregisterListener(this);
         }
 
-        _allLiquidEnemies.Remove(this);
+        if (LiquidWorldState.Instance != null)
+        {
+            LiquidWorldState.Instance.Unregister(this);
+        }
+
+        if (EnemyDebugFocusManager.Instance != null)
+        {
+            EnemyDebugFocusManager.Instance.Unregister(this);
+        }
     }
 
-    #region Noise callback
-    /// <summary>
-    /// Called by NoiseManager when any noise event reaches this enemy.
-    /// </summary>
     public void OnNoiseHeard(NoiseEvent noiseEvent)
     {
-        _lastNoiseLevel = noiseEvent.level;
-        _lastHeardNoiseTime = Time.time;
-        _lastHeardNoisePosition = noiseEvent.worldPosition;
-    }
-    #endregion
+        _lastNoiseEvent = noiseEvent;
 
-    protected override void Tick()
-    {
-        EvaluateAndSetGoal();
-        ExecuteCurrentGoal();
-    }
-
-    private bool PlayerAlive => playerTarget != null;
-
-    private float DistanceToPlayer
-    {
-        get
+        float dist = Vector3.Distance(transform.position, noiseEvent.worldPosition);
+        float t = 1f;
+        if (noiseEvent.finalRadius > 0.01f)
         {
-            if (playerTarget == null)
-            {
-                return float.MaxValue;
-            }
+            t = Mathf.Clamp01(1f - (dist / noiseEvent.finalRadius));
+        }
 
-            return Vector3.Distance(transform.position, playerTarget.position);
+        float levelStrength = GetNoiseLevelStrength(noiseEvent.level);
+        float categoryStrength = GetNoiseCategoryStrength(noiseEvent.category);
+
+        float ambient = 0f;
+        if (noiseEvent.roomContext != null && noiseEvent.roomContext.ActiveProfile != null)
+        {
+            ambient = Mathf.Clamp01(noiseEvent.roomContext.ActiveProfile.AmbientNoiseLevel);
+        }
+
+        float gain = levelStrength * categoryStrength * t * (1f - ambient) * noiseAwarenessGainMultiplier;
+        _noiseAwareness01 = Mathf.Clamp01(_noiseAwareness01 + gain);
+
+        if (_noiseAwareness01 >= noiseAwarenessThreshold)
+        {
+            _noiseInterestingUntilTime = Time.time + noiseInterestMemorySeconds;
+
+            _lastSeenPlayerPosition = noiseEvent.worldPosition;
+            _lastSeenTime = Time.time;
+
+            _playerInterestingUntilTime = Mathf.Max(_playerInterestingUntilTime, Time.time + playerInterestingMemorySeconds);
         }
     }
 
-    private bool PlayerNearPond
+    private float GetNoiseLevelStrength(NoiseLevel level)
     {
-        get
+        switch (level)
         {
-            if (playerTarget == null || pondCenter == null)
-            {
-                return false;
-            }
-
-            float distToPond = Vector3.Distance(playerTarget.position, pondCenter.position);
-            return distToPond <= chaseDistance;
+            case NoiseLevel.Low: return 0.18f;
+            case NoiseLevel.Medium: return 0.35f;
+            case NoiseLevel.High: return 0.65f;
+            case NoiseLevel.Maximum: return 1.00f;
+            default: return 0.2f;
         }
     }
 
-    private bool InPond
+    private float GetNoiseCategoryStrength(NoiseCategory category)
     {
-        get
+        switch (category)
         {
-            if (pondCenter == null)
-            {
-                return false;
-            }
-
-            float dist = Vector3.Distance(transform.position, pondCenter.position);
-            return dist <= pondRadius;
+            case NoiseCategory.Footsteps: return 0.85f;
+            case NoiseCategory.Sprint: return 1.00f;
+            case NoiseCategory.Jump: return 0.95f;
+            case NoiseCategory.ObjectImpact: return 1.10f;
+            case NoiseCategory.Gunshot: return 1.35f;
+            default: return 1.0f;
         }
     }
 
-    private bool PlayerInSight
-    {
-        get
-        {
-            if (playerTarget == null)
-            {
-                return false;
-            }
+    public bool CanReachPlayer => Time.time >= _playerUnreachableUntilTime;
 
-            return HasLineOfSightTo(playerTarget.position, sightDistance);
-        }
+    public void MarkPlayerUnreachable()
+    {
+        _playerUnreachableUntilTime = Time.time + unreachablePlayerCooldownSeconds;
     }
 
-    private bool PlayerNoiseAudible
+    public bool TryGoToPlayer()
     {
-        get
+        _lastRequestedPathWasPlayer = true;
+
+        bool ok = TryGoTo(PlayerPosition);
+        if (!ok)
         {
-            if (!PlayerAlive)
-            {
-                return false;
-            }
-
-            if (_lastHeardNoiseTime <= 0f)
-            {
-                return false;
-            }
-
-            return (Time.time - _lastHeardNoiseTime) <= noiseMemoryDuration;
+            MarkPlayerUnreachable();
         }
+        return ok;
     }
 
-    private bool CanHoldPlayer => PlayerAlive && DistanceToPlayer <= holdDistance && DebugHasValidPath;
-    private bool CanSwallowPlayer => PlayerAlive && DistanceToPlayer <= swallowDistance && DebugHasValidPath;
-
-    private int CurrentLiquidCount => _allLiquidEnemies.Count;
-
-    private bool EnsurePathToPlayerIfNeeded()
+    public bool TryGoToPlayerSmart()
     {
-        if (!PlayerAlive)
+        if (!HasPlayer)
         {
             return false;
         }
 
-        Vector3 targetPos = playerTarget.position;
-        bool needNewPath = !DebugHasValidPath || ShouldRecalculatePath(targetPos);
-        if (needNewPath)
+        _lastRequestedPathWasPlayer = true;
+
+        Vector3 target = GetSmartChaseTarget();
+        bool ok = TryGoTo(target);
+        if (!ok)
         {
-            RequestPath(targetPos);
+            MarkPlayerUnreachable();
         }
 
-        return DebugHasValidPath;
+        return ok;
     }
 
-
-    #region GOAP selection
-    private void EvaluateAndSetGoal()
+    private Vector3 GetSmartChaseTarget()
     {
-        LiquidGoalType previous = _currentGoal;
-        _currentGoal = SelectGoal();
-
-        if (previous != _currentGoal)
+        if (!HasPlayer)
         {
-            if (_currentGoal == LiquidGoalType.RelaxInPond)
+            return transform.position;
+        }
+
+        Vector3 toPlayer = PlayerPosition - transform.position;
+        toPlayer.y = 0f;
+
+        if (toPlayer.sqrMagnitude < 0.01f)
+        {
+            return PlayerPosition;
+        }
+
+        Vector3 dir = toPlayer.normalized;
+        Vector3 perp = new Vector3(-dir.z, 0f, dir.x);
+
+        float side = (GetInstanceID() & 1) == 0 ? 1f : -1f;
+        Vector3 offset = perp * chaseStrafeOffset * side;
+
+        if (toPlayer.magnitude <= holdDistance * 1.1f)
+        {
+            offset = Vector3.zero;
+        }
+
+        return PlayerPosition + offset;
+    }
+
+    protected override void Tick()
+    {
+        _noiseAwareness01 = Mathf.Max(0f, _noiseAwareness01 - noiseAwarenessDecayPerSecond * Time.deltaTime);
+
+        _worldState = BuildWorldState();
+        _currentGoal = ChooseGoal(_worldState);
+
+        if (!GoalsEqual(_lastGoal, _currentGoal))
+        {
+            _currentPlan?.Clear();
+            _lastAction = null;
+            BuildNewPlan();
+            _lastGoal = CloneGoal(_currentGoal);
+        }
+
+        UpdateDebugStrings(_worldState, _currentGoal);
+
+        if (_currentPlan == null || _currentPlan.Count == 0)
+        {
+            _lastAction = null;
+            BuildNewPlan();
+        }
+
+        if (_currentPlan == null || _currentPlan.Count == 0)
+        {
+            if (pondCenter != null)
             {
-                _relaxTimer = 0f;
+                TryGoTo(pondCenter.position);
             }
 
-            if (_currentGoal == LiquidGoalType.HoldPlayer)
+            SetState(EnemyState.Idle);
+            return;
+        }
+
+        GoapAction action = _currentPlan.Peek();
+        currentActionName = action.GetType().Name;
+
+        if (action != _lastAction)
+        {
+            if (!action.CheckProceduralPrecondition(gameObject))
             {
-                _holdTimer = 0f;
-                _isHoldingPlayer = true;
+                ForceReplan();
+                return;
             }
-            else
+
+            _lastAction = action;
+        }
+
+        if (action.RequiresInRange())
+        {
+            if (action.Target == null)
             {
-                _isHoldingPlayer = false;
+                _lastAction = null;
+                BuildNewPlan();
+                return;
             }
+
+            action.InRange = IsInRange(action.Target);
+        }
+
+        _lastRequestedPathWasPlayer = false;
+        bool success = action.Perform(gameObject);
+
+        if (!success)
+        {
+            ForceReplan();
+            return;
+        }
+
+        if (action.IsDone(gameObject))
+        {
+            _currentPlan.Dequeue();
+            _lastAction = null;
+        }
+
+        if (GoalAchieved(_currentGoal, _worldState))
+        {
+            _currentPlan?.Clear();
+            _lastAction = null;
         }
     }
 
-    private LiquidGoalType SelectGoal()
+    #region Planning
+    private void BuildNewPlan()
     {
-        if (!PlayerAlive)
+        for (int i = 0; i < _availableActions.Count; i++)
         {
-            if (!InPond)
+            _availableActions[i].Reset();
+        }
+
+        Queue<GoapAction> plan;
+        bool hasPlan = GoapPlanner.Plan(_availableActions, _worldState, _currentGoal, out plan);
+
+        _currentPlan = hasPlan ? plan : null;
+
+        if (_currentPlan == null)
+        {
+            currentGoalName = "No Plan";
+        }
+    }
+
+    private void ForceReplan()
+    {
+        _currentPlan?.Clear();
+        _lastAction = null;
+        BuildNewPlan();
+    }
+
+    private bool GoalAchieved(Dictionary<string, object> goal, Dictionary<string, object> worldState)
+    {
+        if (goal == null || worldState == null)
+        {
+            return false;
+        }
+
+        foreach (var kvp in goal)
+        {
+            if (!worldState.ContainsKey(kvp.Key))
             {
-                return LiquidGoalType.GoToPond;
+                return false;
             }
 
-            return LiquidGoalType.RelaxInPond;
-        }
-
-        EnsurePathToPlayerIfNeeded();
-
-        if (CanSwallowPlayer)
-        {
-            return LiquidGoalType.SwallowPlayer;
-        }
-
-        if (CanHoldPlayer)
-        {
-            return LiquidGoalType.HoldPlayer;
-        }
-
-        bool playerInteresting = PlayerInSight || PlayerNearPond || PlayerNoiseAudible;
-
-        if (playerInteresting)
-        {
-            if (InPond)
+            object currentValue = worldState[kvp.Key];
+            if (!Equals(currentValue, kvp.Value))
             {
-                return LiquidGoalType.EmergeFromPond;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static Dictionary<string, object> CloneGoal(Dictionary<string, object> src)
+    {
+        if (src == null)
+        {
+            return null;
+        }
+
+        Dictionary<string, object> clone = new Dictionary<string, object>(src.Count);
+        foreach (var kvp in src)
+        {
+            clone[kvp.Key] = kvp.Value;
+        }
+        return clone;
+    }
+
+    private static bool GoalsEqual(Dictionary<string, object> a, Dictionary<string, object> b)
+    {
+        if (a == b)
+        {
+            return true;
+        }
+
+        if (a == null || b == null)
+        {
+            return false;
+        }
+
+        if (a.Count != b.Count)
+        {
+            return false;
+        }
+
+        foreach (var kvp in a)
+        {
+            if (!b.TryGetValue(kvp.Key, out object valB))
+            {
+                return false;
             }
 
-            bool canDuplicate = liquidPrefab != null && CurrentLiquidCount < maxDuplicates && (Time.time - _lastDuplicateTime) > duplicateCooldown;
-
-            if (canDuplicate)
+            if (!Equals(kvp.Value, valB))
             {
-                return LiquidGoalType.Duplicate;
+                return false;
             }
-
-            return LiquidGoalType.ChasePlayer;
         }
 
-        if (!InPond)
-        {
-            return LiquidGoalType.GoToPond;
-        }
-
-        return LiquidGoalType.RelaxInPond;
+        return true;
     }
     #endregion
 
-    #region Goal
-    private void ExecuteCurrentGoal()
+    #region World state + goal selection
+
+    private Dictionary<string, object> BuildWorldState()
     {
-        switch (_currentGoal)
+        Dictionary<string, object> ws = new Dictionary<string, object>();
+
+        ws[WS_HAS_POND] = pondCenter != null;
+        ws[WS_IN_POND] = InPond;
+
+        bool hasPlayerTarget = playerTarget != null;
+
+        bool playerInteresting = false;
+        if (hasPlayerTarget)
         {
-            case LiquidGoalType.GoToPond:
-                DoGoToPond();
-                break;
+            bool inSight = HasLineOfSightTo(playerTarget.position, sightDistance);
+            bool nearPond = false;
 
-            case LiquidGoalType.RelaxInPond:
-                DoRelaxInPond();
-                break;
+            if (pondCenter != null)
+            {
+                float distToPond = Vector3.Distance(playerTarget.position, pondCenter.position);
+                nearPond = distToPond <= chaseDistance;
+            }
 
-            case LiquidGoalType.EmergeFromPond:
-                DoEmergeFromPond();
-                break;
+            if (inSight || nearPond)
+            {
+                _playerInterestingUntilTime = Time.time + playerInterestingMemorySeconds;
+                _lastSeenPlayerPosition = playerTarget.position;
+                _lastSeenTime = Time.time;
+            }
 
-            case LiquidGoalType.ChasePlayer:
-                DoChasePlayer();
-                break;
+            bool heardNoiseRecently = Time.time <= _noiseInterestingUntilTime;
 
-            case LiquidGoalType.Duplicate:
-                DoDuplicate();
-                break;
-
-            case LiquidGoalType.AskForMerge:
-            case LiquidGoalType.LookForMergePartner:
-            case LiquidGoalType.MergeWithLiquid:
-                DoMergeBehaviour();
-                break;
-
-            case LiquidGoalType.HoldPlayer:
-                DoHoldPlayer();
-                break;
-
-            case LiquidGoalType.SwallowPlayer:
-                DoSwallowPlayer();
-                break;
-
-            case LiquidGoalType.None:
-            default:
-                currentState = EnemyState.Idle;
-                break;
+            playerInteresting = inSight || nearPond || heardNoiseRecently || Time.time <= _playerInterestingUntilTime;
         }
+
+        ws[WS_HAS_PLAYER] = hasPlayerTarget;
+        ws[WS_PLAYER_INTERESTING] = playerInteresting;
+
+        ws[WS_CAN_REACH_PLAYER] = CanReachPlayer;
+
+        ws[WS_CAN_HOLD] = CanHoldPlayer;
+        ws[WS_NEAR_PLAYER] = CanHoldPlayer;
+
+        ws[WS_IS_MERGED] = IsMerged;
+        ws[WS_CAN_SWALLOW] = CanSwallowPlayer;
+
+        ws[WS_CAN_DUPLICATE] = LiquidWorldState.Instance != null && LiquidWorldState.Instance.CanDuplicateNow();
+
+        bool hasMergeRequest = LiquidWorldState.Instance != null && LiquidWorldState.Instance.HasMergeRequest;
+        if (LiquidWorldState.Instance != null && LiquidWorldState.Instance.IsMergeRequestExpired())
+        {
+            hasMergeRequest = false;
+        }
+
+        ws[WS_HAS_MERGE_REQUEST] = hasMergeRequest;
+
+        bool isBusy = HasPlayer && CanHoldPlayer;
+        ws[WS_IS_BUSY] = isBusy;
+
+        bool canRequestMerge = false;
+        if (LiquidWorldState.Instance != null)
+        {
+            canRequestMerge = LiquidWorldState.Instance.CanRequestMerge(this) && !_requestedMergeHelp;
+        }
+
+        ws[WS_CAN_REQUEST_MERGE] = canRequestMerge;
+
+        ws[WS_HAS_LAST_SEEN] = HasRecentLastSeen;
+
+        bool atLastSeen = false;
+        if (HasRecentLastSeen)
+        {
+            float d = Vector3.Distance(transform.position, _lastSeenPlayerPosition);
+            atLastSeen = d <= lastSeenArriveRadius;
+        }
+        ws[WS_AT_LAST_SEEN] = atLastSeen;
+
+        bool heardNoise = Time.time <= _noiseInterestingUntilTime;
+        ws[WS_HEARD_NOISE] = heardNoise;
+        ws[WS_NOISE_AWARENESS] = _noiseAwareness01;
+
+        ws[WS_PLAYER_HELD] = false;
+        ws[WS_MERGE_REQUESTED] = _requestedMergeHelp;
+        ws[WS_ACCEPTED_MERGE_REQUEST] = false;
+        ws[WS_HELPED_MERGE] = false;
+        ws[WS_DUPLICATED] = false;
+        ws[WS_RELAXED] = false;
+        ws[WS_EMERGED] = false;
+        ws[WS_PLAYER_SWALLOWED] = false;
+        ws[WS_PATROLLED] = false;
+
+        return ws;
     }
 
-    private void DoGoToPond()
+    private Dictionary<string, object> ChooseGoal(Dictionary<string, object> ws)
+    {
+        Dictionary<string, object> goal = new Dictionary<string, object>();
+
+        bool hasPlayer = ws.ContainsKey(WS_HAS_PLAYER) && (bool)ws[WS_HAS_PLAYER];
+        bool playerInteresting = ws.ContainsKey(WS_PLAYER_INTERESTING) && (bool)ws[WS_PLAYER_INTERESTING];
+        bool canReachPlayer = ws.ContainsKey(WS_CAN_REACH_PLAYER) && (bool)ws[WS_CAN_REACH_PLAYER];
+
+        bool hasPond = ws.ContainsKey(WS_HAS_POND) && (bool)ws[WS_HAS_POND];
+        bool inPond = ws.ContainsKey(WS_IN_POND) && (bool)ws[WS_IN_POND];
+
+        bool hasMergeRequest = ws.ContainsKey(WS_HAS_MERGE_REQUEST) && (bool)ws[WS_HAS_MERGE_REQUEST];
+        bool isBusy = ws.ContainsKey(WS_IS_BUSY) && (bool)ws[WS_IS_BUSY];
+        bool isMerged = ws.ContainsKey(WS_IS_MERGED) && (bool)ws[WS_IS_MERGED];
+
+        if (hasMergeRequest && !isBusy && !isMerged)
+        {
+            goal[WS_HELPED_MERGE] = true;
+            currentGoalName = "HelpMerge";
+            return goal;
+        }
+
+        bool canHold = ws.ContainsKey(WS_CAN_HOLD) && (bool)ws[WS_CAN_HOLD];
+        if (canHold && !isMerged && !_mergedOnce)
+        {
+            goal[WS_MERGE_REQUESTED] = true;
+            currentGoalName = "RequestMerge";
+            return goal;
+        }
+
+        bool canSwallow = ws.ContainsKey(WS_CAN_SWALLOW) && (bool)ws[WS_CAN_SWALLOW];
+        if (isMerged && canSwallow)
+        {
+            goal[WS_PLAYER_SWALLOWED] = true;
+            currentGoalName = "Swallow";
+            return goal;
+        }
+
+        bool canDuplicate = ws.ContainsKey(WS_CAN_DUPLICATE) && (bool)ws[WS_CAN_DUPLICATE];
+        if (playerInteresting && canReachPlayer && inPond && canDuplicate &&
+            LiquidWorldState.Instance != null &&
+            LiquidWorldState.Instance.CurrentLiquidCount < LiquidWorldState.Instance.MaxLiquidCount)
+        {
+            goal[WS_DUPLICATED] = true;
+            currentGoalName = "Duplicate";
+            return goal;
+        }
+
+        if (canHold)
+        {
+            goal[WS_PLAYER_HELD] = true;
+            currentGoalName = "Hold";
+            return goal;
+        }
+
+        if (hasPlayer && playerInteresting && !canReachPlayer)
+        {
+            if (hasPond && !inPond)
+            {
+                goal[WS_IN_POND] = true;
+                currentGoalName = "ReturnToPond_Unreachable";
+                return goal;
+            }
+
+            goal[WS_PATROLLED] = true;
+            currentGoalName = "Patrol_Unreachable";
+            return goal;
+        }
+
+        if (hasPlayer && playerInteresting && canReachPlayer)
+        {
+            goal[WS_NEAR_PLAYER] = true;
+            currentGoalName = "Chase";
+            return goal;
+        }
+
+        bool hasLastSeen = ws.ContainsKey(WS_HAS_LAST_SEEN) && (bool)ws[WS_HAS_LAST_SEEN];
+        if (hasLastSeen)
+        {
+            goal[WS_AT_LAST_SEEN] = true;
+            currentGoalName = "InvestigateLastSeen";
+            return goal;
+        }
+
+        if (!hasPlayer)
+        {
+            if (hasPond && !inPond)
+            {
+                goal[WS_IN_POND] = true;
+                currentGoalName = "ReturnToPond";
+                return goal;
+            }
+
+            if (hasPond && inPond)
+            {
+                goal[WS_PATROLLED] = true;
+                currentGoalName = "PatrolPond";
+                return goal;
+            }
+
+            goal[WS_RELAXED] = true;
+            currentGoalName = "Relax_NoPond";
+            return goal;
+        }
+
+        if (hasPond && !inPond)
+        {
+            goal[WS_IN_POND] = true;
+            currentGoalName = "ReturnToPond_Fallback";
+            return goal;
+        }
+
+        goal[WS_RELAXED] = true;
+        currentGoalName = "FallbackRelax";
+        return goal;
+    }
+
+    private void UpdateDebugStrings(Dictionary<string, object> ws, Dictionary<string, object> goal)
+    {
+        StringBuilder sb = new StringBuilder(512);
+
+        sb.AppendLine($"GoalLabel: {currentGoalName}");
+        sb.AppendLine($"Action: {currentActionName}");
+        sb.AppendLine("");
+
+        sb.AppendLine("GoalKeyValues:");
+        if (goal != null)
+        {
+            foreach (var kvp in goal)
+            {
+                sb.AppendLine($"  {kvp.Key}: {kvp.Value}");
+            }
+        }
+
+        sb.AppendLine("WorldState:");
+        if (ws != null)
+        {
+            foreach (var kvp in ws)
+            {
+                sb.AppendLine($"  {kvp.Key}: {kvp.Value}");
+            }
+        }
+
+        if (_lastNoiseEvent.HasValue)
+        {
+            NoiseEvent e = _lastNoiseEvent.Value;
+            sb.AppendLine("");
+            sb.AppendLine($"LastNoise: {e.level} {e.category} awareness={_noiseAwareness01:0.00}");
+            sb.AppendLine($"  pos={e.worldPosition} finalRadius={e.finalRadius:0.0}");
+        }
+
+        worldStateDump = sb.ToString();
+    }
+
+    #endregion
+
+    #region Helper Functions used by actions.
+    /// <summary>
+    /// Move toward a target using EnemyBase pathfinding.
+    /// </summary>
+    public bool TryGoTo(Vector3 target)
+    {
+        if (!DebugHasValidPath || ShouldRecalculatePath(target))
+        {
+            bool success = RequestPath(target);
+            if (!success)
+            {
+                return false;
+            }
+        }
+
+        if (!DebugHasValidPath)
+        {
+            return false;
+        }
+
+        FollowPath();
+        return true;
+    }
+
+    public bool IsInRange(GameObject targetObj)
+    {
+        if (targetObj == null)
+        {
+            return false;
+        }
+
+        return Vector3.Distance(transform.position, targetObj.transform.position) <= 1.25f;
+    }
+
+    public void SoftSnapToward(Vector3 targetPosition, float backOffDistance)
+    {
+        Vector3 dir = (targetPosition - transform.position);
+        dir.y = 0f;
+
+        if (dir.sqrMagnitude < 0.001f)
+        {
+            return;
+        }
+
+        dir.Normalize();
+        Vector3 desired = targetPosition - dir * backOffDistance;
+        transform.position = Vector3.Lerp(transform.position, desired, Time.deltaTime * 3f);
+    }
+
+    public Vector3 GetPondSpawnPosition()
     {
         if (pondCenter == null)
         {
-            currentState = EnemyState.Idle;
-            return;
+            return transform.position;
         }
 
-        currentState = EnemyState.Moving;
-
-        Vector3 target = pondCenter.position;
-        bool needNewPath = !DebugHasValidPath || ShouldRecalculatePath(target);
-        if (needNewPath)
-        {
-            RequestPath(target);
-        }
-
-        if (DebugHasValidPath)
-        {
-            FollowPath();
-        }
-
-        if (InPond)
-        {
-            // ........
-        }
+        Vector2 circle = Random.insideUnitCircle.normalized * Mathf.Max(0.5f, pondRadius * 0.6f);
+        return pondCenter.position + new Vector3(circle.x, 0f, circle.y);
     }
 
-    private void DoRelaxInPond()
+    public Vector3 GetPondPatrolPosition()
     {
-        currentState = EnemyState.Idle;
-        _relaxTimer += Time.deltaTime;
-
-        if (_relaxTimer >= relaxDuration)
+        if (pondCenter == null)
         {
-            _relaxTimer = 0f;
+            return transform.position;
         }
+
+        Vector2 circle = Random.insideUnitCircle * Mathf.Max(0.25f, pondPatrolRadius);
+        return pondCenter.position + new Vector3(circle.x, 0f, circle.y);
     }
 
-    private void DoEmergeFromPond()
+    public void MarkRequestedMerge()
     {
-        currentState = EnemyState.Alerted;
-
-        if (playerTarget != null)
-        {
-            Vector3 dir = (playerTarget.position - transform.position).normalized;
-            Vector3 stepTarget = transform.position + dir * 1.5f;
-
-            bool needNewPath = !DebugHasValidPath || ShouldRecalculatePath(stepTarget);
-            if (needNewPath)
-            {
-                RequestPath(stepTarget);
-            }
-
-            if (DebugHasValidPath)
-            {
-                FollowPath();
-            }
-        }
+        _requestedMergeHelp = true;
     }
 
-    private void DoChasePlayer()
+    public void BecomeMerged()
     {
-        if (!PlayerAlive)
+        if (_mergedOnce)
         {
             return;
         }
 
-        currentState = EnemyState.Chasing;
-
-        Vector3 target = playerTarget.position;
-        bool needNewPath = !DebugHasValidPath || ShouldRecalculatePath(target);
-        if (needNewPath)
-        {
-            RequestPath(target);
-        }
-
-        if (DebugHasValidPath)
-        {
-            FollowPath();
-            return;
-        }
-
-        if (PlayerNoiseAudible)
-        {
-            bool needNoisePath = !DebugHasValidPath || ShouldRecalculatePath(_lastHeardNoisePosition);
-            if (needNoisePath)
-            {
-                RequestPath(_lastHeardNoisePosition);
-            }
-
-            if (DebugHasValidPath)
-            {
-                FollowPath();
-            }
-        }
+        _mergedOnce = true;
+        _mergedStage = 2;
+        ApplyMergedStageVisual();
     }
 
-    private void DoDuplicate()
+    private void ApplyMergedStageVisual()
     {
-        if (liquidPrefab == null)
-        {
-            return;
-        }
-
-        if ((Time.time - _lastDuplicateTime) < duplicateCooldown)
-        {
-            return;
-        }
-
-        if (CurrentLiquidCount >= maxDuplicates)
-        {
-            return;
-        }
-
-        _lastDuplicateTime = Time.time;
-
-        Vector3 offset = Random.insideUnitSphere;
-        offset.y = 0f;
-
-        if (offset.sqrMagnitude < 0.0001f)
-        {
-            offset = transform.right;
-        }
-        else
-        {
-            offset.Normalize();
-        }
-
-        offset *= 2f;
-
-        Vector3 spawnPos = transform.position + offset;
-        Instantiate(liquidPrefab, spawnPos, transform.rotation);
+        float scale = _mergedStage;
+        transform.localScale = new Vector3(scale, scale, scale);
     }
 
-    private void DoMergeBehaviour()
+    #endregion
+
+    #region Path blocked hook
+    protected override void OnPathBlocked()
     {
-        LiquidEnemy best = null;
-        float bestDistance = float.MaxValue;
+        base.OnPathBlocked();
 
-        foreach (LiquidEnemy other in _allLiquidEnemies)
+        if (_lastRequestedPathWasPlayer)
         {
-            if (other == null || other == this)
-            {
-                continue;
-            }
-
-            float dist = Vector3.Distance(transform.position, other.transform.position);
-            if (dist < bestDistance && dist <= mergeSearchRadius)
-            {
-                bestDistance = dist;
-                best = other;
-            }
-        }
-
-        if (best == null)
-        {
-            return;
-        }
-
-        currentState = EnemyState.Moving;
-
-        Vector3 partnerPos = best.transform.position;
-        bool needNewPath = !DebugHasValidPath || ShouldRecalculatePath(partnerPos);
-        if (needNewPath)
-        {
-            RequestPath(partnerPos);
-        }
-
-        if (DebugHasValidPath)
-        {
-            FollowPath();
-        }
-
-        float distNow = Vector3.Distance(transform.position, best.transform.position);
-        if (distNow <= mergeDistance)
-        {
-            transform.localScale *= mergeScaleMultiplier;
-            Destroy(best.gameObject);
+            MarkPlayerUnreachable();
         }
     }
+    #endregion
 
-    private void DoHoldPlayer()
+    #region Focused debug.
+
+    public string DebugDisplayName => name;
+    public Transform DebugTransform => transform;
+
+    public string GetDebugText()
     {
-        if (!PlayerAlive)
-        {
-            _isHoldingPlayer = false;
-            return;
-        }
+        StringBuilder stringBuilder = new StringBuilder(256);
 
-        currentState = EnemyState.Attacking;
+        stringBuilder.AppendLine($"Name: {name}");
+        stringBuilder.AppendLine($"State: {CurrentState}");
+        stringBuilder.AppendLine($"Goal: {currentGoalName}");
+        stringBuilder.AppendLine($"Action: {currentActionName}");
+        stringBuilder.AppendLine("");
+        stringBuilder.AppendLine(worldStateDump);
 
-        _holdTimer += Time.deltaTime;
-
-        Vector3 playerPos = playerTarget.position;
-        Vector3 direction = (playerPos - transform.position).normalized;
-        transform.position = Vector3.Lerp(transform.position, playerPos - direction * 0.8f, Time.deltaTime * 3f);
-
-        // TODO: call into a PlayerController actually restrict movement.
-
-        if (_holdTimer >= holdDuration)
-        {
-            _isHoldingPlayer = false;
-        }
+        return stringBuilder.ToString();
     }
 
-    private void DoSwallowPlayer()
-    {
-        if (!PlayerAlive)
-        {
-            return;
-        }
-
-        currentState = EnemyState.Attacking;
-
-        Debug.Log("[LiquidEnemy] Swallowing the player.", this);
-
-        // TODO:
-        // PlayerHealth hp = playerTarget.GetComponent<PlayerHealth>();
-        // if (hp != null) hp.Kill();
-        _currentGoal = LiquidGoalType.GoToPond;
-    }
     #endregion
 }
