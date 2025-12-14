@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using TMPro;
 using UnityEngine;
 
 namespace _Scripts.Core.Managers
@@ -44,14 +45,38 @@ namespace _Scripts.Core.Managers
             _instance = this;
             DontDestroyOnLoad(gameObject);
 
+            // Subscribe to scene loaded to handle pending seed overrides
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+
             // Auto-initialize if configured (for Play Mode and runtime builds)
             if (_autoInitializeOnAwake && !_isInitialized)
             {
-                Initialize(_worldSeed); // Use serialized seed (0 = random)
-                if (_showDebugLogs)
+                // Check for pending seed override (set by SeedControlUI)
+                if (_pendingSeedOverride.HasValue)
                 {
-                    Debug.Log($"[FloorStateManager] Auto-initialized on Awake with seed: {_worldSeed}");
+                    Initialize(_pendingSeedOverride.Value);
+                    _pendingSeedOverride = null;
                 }
+                else
+                {
+                    int seedToUse = _useRandomSeed ? 0 : _worldSeed;
+                    Initialize(seedToUse);
+                }
+            }
+        }
+
+        private void OnDestroy()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            // Handle pending seed override on scene reload
+            if (_pendingSeedOverride.HasValue)
+            {
+                Initialize(_pendingSeedOverride.Value);
+                _pendingSeedOverride = null;
             }
         }
 
@@ -64,11 +89,20 @@ namespace _Scripts.Core.Managers
         [SerializeField] private bool _autoInitializeOnAwake = false;
 
         [Header("Configuration")]
-        [Tooltip("Master seed for the entire game world. All floor seeds derive from this. Set to 0 for random seed.")]
+        [Tooltip("Generate a random seed each time the game starts.")]
+        [SerializeField] private bool _useRandomSeed = true;
+
+        [Tooltip("Master seed for the entire game world. All floor seeds derive from this. Ignored if Use Random Seed is enabled.")]
         [SerializeField] private int _worldSeed;
 
         [Tooltip("Prime number multiplier for floor seed generation. Ensures good distribution.")]
         [SerializeField] private int _seedMultiplier = 7919;
+
+        [Header("UI Display")]
+        [Tooltip("Optional TextMeshProUGUI to display the current seed. For cross-scene persistence, use SeedControlUI instead.")]
+        [SerializeField] private TextMeshProUGUI _seedDisplayText;
+
+        private SeedControlUI _seedControlUI;
 
         [Header("Runtime State")]
         [Tooltip("Current floor number the player is on.")]
@@ -86,6 +120,9 @@ namespace _Scripts.Core.Managers
         private bool _isInitialized = false;
 
         private const string SAVE_FILE_NAME = "floor_states.json";
+
+        // Static field to persist seed override across scene reloads
+        private static int? _pendingSeedOverride = null;
 
         #endregion
 
@@ -134,7 +171,7 @@ namespace _Scripts.Core.Managers
         {
             if (worldSeed == 0)
             {
-                _worldSeed = UnityEngine.Random.Range(int.MinValue, int.MaxValue);
+                _worldSeed = UnityEngine.Random.Range(1, int.MaxValue);
             }
             else
             {
@@ -145,10 +182,57 @@ namespace _Scripts.Core.Managers
             _currentFloorNumber = 1;
             _isInitialized = true;
 
+            UpdateSeedDisplay();
+
             if (_showDebugLogs)
             {
                 Debug.Log($"[FloorStateManager] Initialized with world seed: {_worldSeed}");
             }
+        }
+
+        /// <summary>
+        /// Updates the seed display UI if assigned.
+        /// </summary>
+        private void UpdateSeedDisplay()
+        {
+            if (_seedDisplayText != null)
+            {
+                _seedDisplayText.text = $"Seed: {_worldSeed}";
+            }
+
+            if (_seedControlUI != null)
+            {
+                _seedControlUI.UpdateSeedDisplay(_worldSeed);
+            }
+        }
+
+        /// <summary>
+        /// Sets the seed display text reference and updates it immediately.
+        /// Called by SeedDisplayText component on scene load.
+        /// </summary>
+        public void SetSeedDisplayText(TextMeshProUGUI text)
+        {
+            _seedDisplayText = text;
+            UpdateSeedDisplay();
+        }
+
+        /// <summary>
+        /// Sets the seed control UI reference and updates it immediately.
+        /// Called by SeedControlUI component on scene load.
+        /// </summary>
+        public void SetSeedControlUI(SeedControlUI controlUI)
+        {
+            _seedControlUI = controlUI;
+            UpdateSeedDisplay();
+        }
+
+        /// <summary>
+        /// Sets a specific seed to be used on next scene load.
+        /// Call this before reloading the scene.
+        /// </summary>
+        public void SetSpecificSeed(int seed)
+        {
+            _pendingSeedOverride = seed;
         }
 
         #endregion
@@ -326,6 +410,8 @@ namespace _Scripts.Core.Managers
                 }
 
                 _isInitialized = true;
+
+                UpdateSeedDisplay();
 
                 if (_showDebugLogs)
                 {

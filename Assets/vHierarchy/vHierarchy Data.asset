@@ -60,4 +60,6 @@ MonoBehaviour:
           isIconRecursive: 0
           isColorRecursive: 0
   bookmarks: []
-  bookmarkedScenePaths: []
+  bookmarkedScenePaths:
+  - Assets/Scenes/Menu.unity
+  - Assets/Scenes/Dev_Scenes/Dev_Procedural_Generation.unity
