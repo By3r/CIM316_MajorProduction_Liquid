@@ -38,6 +38,7 @@ namespace _Scripts.Core.Managers
         private InputAction _submitAction;
         private InputAction _cancelAction;
         private InputAction _walkToggleAction;
+        private InputAction _inventoryToggleAction;
 
         private bool _isInitialized = false;
 
@@ -58,6 +59,7 @@ namespace _Scripts.Core.Managers
         public bool SubmitPressed => _isInitialized && _submitAction != null && _submitAction.WasPressedThisFrame();
         public bool CancelPressed => _isInitialized && _cancelAction != null && _cancelAction.WasPressedThisFrame();
         public bool WalkTogglePressed => _isInitialized && _walkToggleAction != null && _walkToggleAction.WasPressedThisFrame();
+        public bool InventoryTogglePressed => _isInitialized && _inventoryToggleAction != null && _inventoryToggleAction.WasPressedThisFrame();
 
         private void Awake()
         {
@@ -102,6 +104,7 @@ namespace _Scripts.Core.Managers
             _reloadAction = _playerActionMap.FindAction("Reload");
             _switchWeaponAction = _playerActionMap.FindAction("SwitchWeapon");
             _walkToggleAction = _playerActionMap.FindAction("WalkToggle");
+            _inventoryToggleAction = _playerActionMap.FindAction("InventoryToggle");
 
             _pauseAction = _uiActionMap.FindAction("Pause");
             _navigateAction = _uiActionMap.FindAction("Navigate");
@@ -121,6 +124,14 @@ namespace _Scripts.Core.Managers
         private void OnPausePerformed(InputAction.CallbackContext context)
         {
             if (GameManager.Instance == null) return;
+
+            // If inventory is open, let InventoryUI handle ESC (it closes inventory)
+            // Don't toggle pause while inventory is open
+            var inventoryUI = _Scripts.Systems.Inventory.UI.InventoryUI.Instance;
+            if (inventoryUI != null && inventoryUI.IsOpen)
+            {
+                return;
+            }
 
             if (GameManager.Instance.CurrentState == GameState.Gameplay)
             {

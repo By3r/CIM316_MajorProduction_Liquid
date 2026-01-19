@@ -5,6 +5,7 @@ TagManager:
   serializedVersion: 3
   tags:
   - Obstacle
+  - Pickup
   layers:
   - Default
   - TransparentFX
@@ -13,7 +14,7 @@ TagManager:
   - Water
   - UI
   - Interactable
-  - Pickupable
+  - Pickup
   - WalkableCeiling
   - Obstacle
   - Pond

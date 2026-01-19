@@ -1,5 +1,7 @@
 using _Scripts.Core.Managers;
 using _Scripts.Systems.ProceduralGeneration.Doors;
+using _Scripts.Systems.Inventory;
+using _Scripts.Systems.Inventory.Pickups;
 using UnityEngine;
 
 namespace _Scripts.Systems.Player
@@ -28,7 +30,9 @@ namespace _Scripts.Systems.Player
 
         private Camera _playerCamera;
         private Door _currentDoor;
+        private Pickup _currentPickup;
         private bool _isLookingAtDoor;
+        private bool _isLookingAtPickup;
 
         #endregion
 
@@ -40,9 +44,24 @@ namespace _Scripts.Systems.Player
         public Door CurrentDoor => _currentDoor;
 
         /// <summary>
+        /// Gets the pickup the player is currently looking at (null if none).
+        /// </summary>
+        public Pickup CurrentPickup => _currentPickup;
+
+        /// <summary>
         /// Gets whether the player is currently looking at an interactable door.
         /// </summary>
-        public bool IsLookingAtDoor => _isLookingAtDoor;        
+        public bool IsLookingAtDoor => _isLookingAtDoor;
+
+        /// <summary>
+        /// Gets whether the player is currently looking at a pickup.
+        /// </summary>
+        public bool IsLookingAtPickup => _isLookingAtPickup;
+
+        /// <summary>
+        /// Gets whether the player is looking at any interactable (door or pickup).
+        /// </summary>
+        public bool IsLookingAtInteractable => _isLookingAtDoor || _isLookingAtPickup;
         #endregion
 
         #region Initialization
@@ -106,14 +125,13 @@ namespace _Scripts.Systems.Player
 
         /// <summary>
         /// Checks for interactable objects in front of the player using raycasting.
-        /// Updates the current door reference and interaction state.
+        /// Updates the current door/pickup reference and interaction state.
         /// </summary>
         private void CheckForInteractables()
         {
             if (_playerCamera == null)
             {
-                _isLookingAtDoor = false;
-                _currentDoor = null;
+                ClearAllTargets();
                 return;
             }
 
@@ -127,36 +145,54 @@ namespace _Scripts.Systems.Player
 
             if (Physics.Raycast(ray, out hit, _interactionDistance, _interactionLayerMask))
             {
+                // Check for Door
                 Door door = hit.collider.GetComponent<Door>();
-                
+                if (door == null) door = hit.collider.GetComponentInParent<Door>();
+
                 if (door != null)
                 {
-                    _isLookingAtDoor = true;
-                    _currentDoor = door;
-
-                    if (_showDebugRays)
-                    {
-                        Debug.DrawRay(ray.origin, ray.direction * hit.distance, Color.green);
-                    }
+                    SetDoorTarget(door);
+                    if (_showDebugRays) Debug.DrawRay(ray.origin, ray.direction * hit.distance, Color.green);
                     return;
                 }
 
-                door = hit.collider.GetComponentInParent<Door>();
-                if (door != null)
-                {
-                    _isLookingAtDoor = true;
-                    _currentDoor = door;
+                // Check for Pickup
+                Pickup pickup = hit.collider.GetComponent<Pickup>();
+                if (pickup == null) pickup = hit.collider.GetComponentInParent<Pickup>();
 
-                    if (_showDebugRays)
-                    {
-                        Debug.DrawRay(ray.origin, ray.direction * hit.distance, Color.green);
-                    }
+                if (pickup != null && !pickup.IsCollected)
+                {
+                    SetPickupTarget(pickup);
+                    if (_showDebugRays) Debug.DrawRay(ray.origin, ray.direction * hit.distance, Color.cyan);
                     return;
                 }
             }
 
+            ClearAllTargets();
+        }
+
+        private void SetDoorTarget(Door door)
+        {
+            _isLookingAtDoor = true;
+            _currentDoor = door;
+            _isLookingAtPickup = false;
+            _currentPickup = null;
+        }
+
+        private void SetPickupTarget(Pickup pickup)
+        {
+            _isLookingAtPickup = true;
+            _currentPickup = pickup;
             _isLookingAtDoor = false;
             _currentDoor = null;
+        }
+
+        private void ClearAllTargets()
+        {
+            _isLookingAtDoor = false;
+            _currentDoor = null;
+            _isLookingAtPickup = false;
+            _currentPickup = null;
         }
 
         /// <summary>
@@ -178,24 +214,38 @@ namespace _Scripts.Systems.Player
         }
 
         /// <summary>
-        /// Attempts to interact with the current door if one is targeted.
+        /// Attempts to interact with the current target (door or pickup).
         /// </summary>
         private void AttemptInteraction()
         {
-            if (!_isLookingAtDoor || _currentDoor == null)
+            // Try door interaction
+            if (_isLookingAtDoor && _currentDoor != null)
             {
+                bool success = _currentDoor.Interact();
+
+                if (success)
+                {
+                    OnSuccessfulInteraction(_currentDoor);
+                }
+                else
+                {
+                    OnFailedInteraction(_currentDoor);
+                }
                 return;
             }
 
-            bool success = _currentDoor.Interact();
-
-            if (success)
+            // Try pickup interaction
+            if (_isLookingAtPickup && _currentPickup != null)
             {
-                OnSuccessfulInteraction(_currentDoor);
-            }
-            else
-            {
-                OnFailedInteraction(_currentDoor);
+                var inventory = PlayerInventory.Instance;
+                if (inventory != null && _currentPickup.TryPickup(inventory))
+                {
+                    OnSuccessfulPickup(_currentPickup);
+                }
+                else
+                {
+                    OnFailedPickup(_currentPickup);
+                }
             }
         }
 
@@ -241,6 +291,24 @@ namespace _Scripts.Systems.Player
             {
                 Debug.Log("[InteractionController] Interaction failed for unknown reason.");
             }
+        }
+
+        /// <summary>
+        /// Called when a pickup is successfully collected.
+        /// </summary>
+        private void OnSuccessfulPickup(Pickup pickup)
+        {
+            Debug.Log($"[InteractionController] Picked up '{pickup.gameObject.name}'");
+            _currentPickup = null;
+            _isLookingAtPickup = false;
+        }
+
+        /// <summary>
+        /// Called when a pickup cannot be collected (inventory full, etc).
+        /// </summary>
+        private void OnFailedPickup(Pickup pickup)
+        {
+            Debug.Log($"[InteractionController] Cannot pick up '{pickup.gameObject.name}' - inventory full or invalid");
         }
 
         #endregion

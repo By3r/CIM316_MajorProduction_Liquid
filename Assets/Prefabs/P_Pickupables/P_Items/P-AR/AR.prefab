@@ -511,7 +511,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 2607ff8dae1885c40b5f9961e89910db, type: 2}
     - target: {fileID: 919132149155446097, guid: 03e7fd16805847841aadefbe1756c39a, type: 3}
       propertyPath: m_Name
-      value: Purified-Aneutronic-Rock
+      value: AR
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 03e7fd16805847841aadefbe1756c39a, type: 3}
       propertyPath: m_Layer
@@ -537,6 +537,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 03e7fd16805847841aadefbe1756c39a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7216756566568350278}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 03e7fd16805847841aadefbe1756c39a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -6528044466837144638}
   m_SourcePrefab: {fileID: 100100000, guid: 03e7fd16805847841aadefbe1756c39a, type: 3}
 --- !u!4 &4917181286649007772 stripped
 Transform:
@@ -596,3 +599,24 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 0
   m_CollisionDetection: 0
+--- !u!114 &-6528044466837144638
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5725912407974990886}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7caf5f8802cc13145a8b321037f80ab3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Inventory.Pickups.PhysicalItemPickup
+  _pickupId: 
+  _autoPickup: 0
+  _interactionRange: 2
+  _highlightEffect: {fileID: 0}
+  _bobSpeed: 2
+  _bobHeight: 0.1
+  _rotateSpeed: 45
+  _itemData: {fileID: 11400000, guid: aef0896ffcf7cba49834aa16bce84b1d, type: 2}
+  _quantity: 1

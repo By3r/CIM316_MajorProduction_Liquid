@@ -100,6 +100,7 @@ GameObject:
   - component: {fileID: 6878051826436194063}
   - component: {fileID: 6052384310497280585}
   - component: {fileID: 7321215982710978654}
+  - component: {fileID: -4190043046376927921}
   m_Layer: 7
   m_Name: AGEU-Supply-CrateV2
   m_TagString: Untagged
@@ -171,3 +172,21 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1.7312522, y: 1, z: 1}
   m_Center: {x: 0.3656261, y: 0, z: 0}
+--- !u!114 &-4190043046376927921
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4870821793472388967}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7caf5f8802cc13145a8b321037f80ab3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Inventory.Pickups.PhysicalItemPickup
+  _pickupId: 
+  _autoPickup: 0
+  _interactionRange: 2
+  _highlightEffect: {fileID: 0}
+  _itemData: {fileID: 11400000, guid: fc0f4838129cbea419dcfe27efdb4121, type: 2}
+  _quantity: 1

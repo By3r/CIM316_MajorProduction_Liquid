@@ -48,6 +48,38 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
 
         private GameObject _spawnedItem;
 
+        // Static container for all spawned pickups to keep hierarchy clean
+        private static Transform _pickupsContainer;
+
+        #endregion
+
+        #region Static Methods
+
+        /// <summary>
+        /// Gets or creates the container for spawned pickups.
+        /// </summary>
+        private static Transform GetPickupsContainer()
+        {
+            if (_pickupsContainer == null)
+            {
+                GameObject container = GameObject.Find("--- PICKUPS ---");
+                if (container == null)
+                {
+                    container = new GameObject("--- PICKUPS ---");
+                }
+                _pickupsContainer = container.transform;
+            }
+            return _pickupsContainer;
+        }
+
+        /// <summary>
+        /// Clears the static container reference (call when reloading scene).
+        /// </summary>
+        public static void ClearContainerReference()
+        {
+            _pickupsContainer = null;
+        }
+
         #endregion
 
         #region Public Properties
@@ -147,7 +179,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
             Vector3 spawnPosition = transform.position;
             Quaternion spawnRotation = transform.rotation;
 
-            GameObject spawnedObject = Instantiate(prefab, spawnPosition, spawnRotation);
+            GameObject spawnedObject = Instantiate(prefab, spawnPosition, spawnRotation, GetPickupsContainer());
             spawnedObject.name = $"{prefab.name}";
 
             // SNAP TO GROUND ONCE - no continuous updates
