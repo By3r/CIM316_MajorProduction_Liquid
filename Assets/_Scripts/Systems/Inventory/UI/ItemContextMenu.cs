@@ -7,7 +7,7 @@ namespace _Scripts.Systems.Inventory.UI
 {
     /// <summary>
     /// Windows-style right-click context menu for inventory items.
-    /// Shows options like Drop, Examine, etc.
+    /// Shows options like Drop and Examine.
     /// </summary>
     public class ItemContextMenu : MonoBehaviour
     {

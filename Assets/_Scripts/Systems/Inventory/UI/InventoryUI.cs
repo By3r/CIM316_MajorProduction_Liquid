@@ -27,7 +27,7 @@ namespace _Scripts.Systems.Inventory.UI
 
         [Header("Context Menu & Examination")]
         [SerializeField] private ItemContextMenu _contextMenu;
-        [SerializeField] private HolographicItemExaminer _holographicExaminer;
+        [SerializeField] private ItemExaminer _itemExaminer;
 
         [Header("Drop Settings")]
         [Tooltip("Prefab spawns this far in front of the player when dropping.")]
@@ -257,9 +257,9 @@ namespace _Scripts.Systems.Inventory.UI
                 _contextMenu.Hide();
             }
 
-            if (_holographicExaminer != null)
+            if (_itemExaminer != null && _itemExaminer.IsOpen)
             {
-                _holographicExaminer.Hide();
+                _itemExaminer.Hide();
             }
 
             if (_inventoryPanel != null)
@@ -358,9 +358,9 @@ namespace _Scripts.Systems.Inventory.UI
         private void HandleSlotRightClicked(int slotIndex, Vector2 screenPosition)
         {
             // Close examiner if open
-            if (_holographicExaminer != null && _holographicExaminer.IsOpen)
+            if (_itemExaminer != null && _itemExaminer.IsOpen)
             {
-                _holographicExaminer.Hide();
+                _itemExaminer.Hide();
             }
 
             // Show context menu at click position
@@ -368,6 +368,22 @@ namespace _Scripts.Systems.Inventory.UI
             {
                 _contextMenu.Show(slotIndex, screenPosition);
             }
+        }
+
+        private void HandleExamineRequested(int slotIndex)
+        {
+            if (_playerInventory == null || _itemExaminer == null) return;
+
+            InventorySlot slot = _playerInventory.GetSlot(slotIndex);
+            if (slot == null || slot.IsEmpty) return;
+
+            // Close inventory panel while examining
+            if (_inventoryPanel != null)
+            {
+                _inventoryPanel.SetActive(false);
+            }
+
+            _itemExaminer.Show(slot.ItemData);
         }
 
         private void HandleDropRequested(int slotIndex)
@@ -386,40 +402,6 @@ namespace _Scripts.Systems.Inventory.UI
             SpawnDroppedItem(itemData);
 
             Debug.Log($"[InventoryUI] Dropped {itemData.displayName}");
-        }
-
-        private void HandleExamineRequested(int slotIndex)
-        {
-            Debug.Log($"[InventoryUI] Examine requested for slot {slotIndex}");
-
-            if (_playerInventory == null)
-            {
-                Debug.LogWarning("[InventoryUI] PlayerInventory is null!");
-                return;
-            }
-
-            if (_holographicExaminer == null)
-            {
-                Debug.LogWarning("[InventoryUI] HolographicExaminer is not assigned!");
-                return;
-            }
-
-            InventorySlot slot = _playerInventory.GetSlot(slotIndex);
-            if (slot == null || slot.IsEmpty)
-            {
-                Debug.LogWarning($"[InventoryUI] Slot {slotIndex} is null or empty!");
-                return;
-            }
-
-            Debug.Log($"[InventoryUI] Opening holographic examiner for: {slot.ItemData.displayName}");
-
-            // Close inventory panel while examining
-            if (_inventoryPanel != null)
-            {
-                _inventoryPanel.SetActive(false);
-            }
-
-            _holographicExaminer.Show(slot.ItemData);
         }
 
         private void SpawnDroppedItem(InventoryItemData itemData)
