@@ -222,7 +222,7 @@ namespace _Scripts.Systems.Machines
             // Play elevator movement sound
             PlaySound(_elevatorMoveSound);
 
-            // Wait for transition
+            // Wait for transition (elevator moving simulation)
             yield return new WaitForSeconds(_transitionDelay);
 
             // Update floor state
@@ -256,6 +256,9 @@ namespace _Scripts.Systems.Machines
             {
                 GameManager.Instance.EventManager.Publish("OnFloorTransitionRequested", targetFloor);
             }
+
+            // Wait a frame for floor generation to complete
+            yield return null;
 
             OnFloorTransitionComplete?.Invoke(targetFloor);
             _onTransitionComplete?.Invoke();
