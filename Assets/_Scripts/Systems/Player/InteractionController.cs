@@ -365,7 +365,6 @@ namespace _Scripts.Systems.Player
                 if (!_currentElevator.IsTransitioning && !_currentElevator.IsUIOpen)
                 {
                     _currentElevator.OpenFloorUI();
-                    Debug.Log("[InteractionController] Opened elevator floor UI");
                 }
             }
         }
@@ -380,9 +379,6 @@ namespace _Scripts.Systems.Player
         /// </summary>
         private void OnSuccessfulInteraction(Door door)
         {
-            string action = door.IsOpen ? "opened" : "closed";
-            Debug.Log($"[InteractionController] Successfully {action} door '{door.gameObject.name}'");
-
             if (GameManager.Instance?.EventManager != null)
             {
                 GameManager.Instance.EventManager.Publish("OnPlayerInteractedWithDoor", new DoorInteractionData
@@ -400,18 +396,7 @@ namespace _Scripts.Systems.Player
         /// </summary>
         private void OnFailedInteraction(Door door)
         {
-            if (door.IsOpen && !door.AllowManualClose)
-            {
-                Debug.Log("[InteractionController] Cannot close this door - manual closing is disabled.");
-            }
-            else if (door.IsAnimating)
-            {
-                Debug.Log("[InteractionController] Door is currently animating.");
-            }
-            else
-            {
-                Debug.Log("[InteractionController] Interaction failed for unknown reason.");
-            }
+            // Door interaction failed - could show UI feedback here if needed
         }
 
         /// <summary>
@@ -419,7 +404,6 @@ namespace _Scripts.Systems.Player
         /// </summary>
         private void OnSuccessfulPickup(Pickup pickup)
         {
-            Debug.Log($"[InteractionController] Picked up '{pickup.gameObject.name}'");
             _currentPickup = null;
             _isLookingAtPickup = false;
         }
@@ -429,7 +413,7 @@ namespace _Scripts.Systems.Player
         /// </summary>
         private void OnFailedPickup(Pickup pickup)
         {
-            Debug.Log($"[InteractionController] Cannot pick up '{pickup.gameObject.name}' - inventory full or invalid");
+            // Pickup failed - could show UI feedback here if needed
         }
 
         /// <summary>
@@ -437,8 +421,7 @@ namespace _Scripts.Systems.Player
         /// </summary>
         private void OnSuccessfulPowerCellSlotInteraction(PowerCellSlot slot)
         {
-            string action = slot.IsPowered ? "inserted PowerCell into" : "removed PowerCell from";
-            Debug.Log($"[InteractionController] Successfully {action} '{slot.gameObject.name}'");
+            // PowerCell slot interaction succeeded - could trigger UI feedback here
         }
 
         /// <summary>
@@ -446,14 +429,7 @@ namespace _Scripts.Systems.Player
         /// </summary>
         private void OnFailedPowerCellSlotInteraction(PowerCellSlot slot)
         {
-            if (slot.IsPowered)
-            {
-                Debug.Log($"[InteractionController] Cannot remove PowerCell from '{slot.gameObject.name}' - inventory full");
-            }
-            else
-            {
-                Debug.Log($"[InteractionController] Cannot insert PowerCell into '{slot.gameObject.name}' - no PowerCell in inventory");
-            }
+            // PowerCell slot interaction failed - could show UI feedback here if needed
         }
 
         #endregion

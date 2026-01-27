@@ -378,7 +378,7 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener, IEnemyDebugTarget
             return;
         }
 
-        Debug.Log($"{name} tries to KILL the player.");
+        // TODO: Actual player death logic
     }
 
     private void ExecuteChasePlayer()
@@ -428,7 +428,6 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener, IEnemyDebugTarget
             bool success = RequestPath(targetPos);
             if (!success)
             {
-                Debug.LogWarning($"{name} could not reach patrol point {_patrolIndex} ({targetPoint.name}). Skipping.");
                 AdvancePatrolIndex();
                 currentPath = null;
                 currentPathIndex = 0;
@@ -497,17 +496,14 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener, IEnemyDebugTarget
 
         if (threatenMessages == null || threatenMessages.Length == 0)
         {
-            Debug.Log($"{name} threatens the player.");
             return;
         }
 
         int index = Random.Range(0, threatenMessages.Length);
-        string msg = threatenMessages[index];
         if (threatenMessage != null)
         {
             threatenMessage.text = threatenMessages[index];
         }
-        Debug.Log($"{name} threatens: \"{msg}\"");
     }
 
     #endregion
@@ -561,8 +557,6 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener, IEnemyDebugTarget
         {
             _patrolIndex = (_patrolIndex + 1) % patrolPoints.Count;
         }
-
-        Debug.Log($"{name} switching patrol target to index: {_patrolIndex} ({patrolPoints[_patrolIndex].name})");
     }
 
     #endregion

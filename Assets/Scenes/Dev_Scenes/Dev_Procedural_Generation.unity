@@ -2633,11 +2633,13 @@ MonoBehaviour:
   _floorButtonPrefab: {fileID: 3395958899024197653, guid: d3e3fcfb18eb1204daddd28ccdd18109, type: 3}
   _currentFloorColor: {r: 0.5, g: 1, b: 1, a: 1}
   _unlockedFloorColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  _nextFloorColor: {r: 1, g: 1, b: 0.3, a: 1}
   _lockedFloorColor: {r: 1, g: 1, b: 0.3, a: 1}
+  _blockedFloorColor: {r: 0.8, g: 0.2, b: 0.2, a: 1}
   _currentFloorTextColor: {r: 0, g: 0, b: 0, a: 1}
   _defaultTextColor: {r: 1, g: 1, b: 1, a: 1}
+  _blockedTextColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   _totalFloors: 30
-  _showFloorZero: 1
 --- !u!1 &385967613
 GameObject:
   m_ObjectHideFlags: 0
@@ -11455,7 +11457,6 @@ GameObject:
   m_Component:
   - component: {fileID: 1898024860}
   - component: {fileID: 1898024863}
-  - component: {fileID: 1898024862}
   - component: {fileID: 1898024861}
   m_Layer: 0
   m_Name: Camera
@@ -11524,14 +11525,6 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!81 &1898024862
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1898024859}
-  m_Enabled: 1
 --- !u!20 &1898024863
 Camera:
   m_ObjectHideFlags: 0

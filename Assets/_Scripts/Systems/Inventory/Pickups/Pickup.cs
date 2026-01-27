@@ -20,16 +20,29 @@ namespace _Scripts.Systems.Inventory.Pickups
         public string PickupId => _pickupId;
         public bool IsCollected => _isCollected;
 
+        /// <summary>
+        /// Sets the pickup ID. Called by ItemSpawnPoint to assign deterministic IDs for persistence.
+        /// Must be called before Start() to work correctly with collection tracking.
+        /// </summary>
+        public void SetPickupId(string id)
+        {
+            _pickupId = id;
+        }
+
         protected virtual void Awake()
         {
-            if (string.IsNullOrEmpty(_pickupId))
-            {
-                _pickupId = System.Guid.NewGuid().ToString();
-            }
+            // Only generate a GUID if no ID was assigned by a spawn point
+            // This check happens in Start after spawn points have had a chance to set IDs
         }
 
         protected virtual void Start()
         {
+            // Generate ID if not set by spawn point
+            if (string.IsNullOrEmpty(_pickupId))
+            {
+                _pickupId = System.Guid.NewGuid().ToString();
+            }
+
             // Check if already collected this floor session
             CheckIfAlreadyCollected();
         }

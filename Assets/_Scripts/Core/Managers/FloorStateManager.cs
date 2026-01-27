@@ -43,6 +43,9 @@ namespace _Scripts.Core.Managers
             }
 
             _instance = this;
+
+            // DontDestroyOnLoad only works on root GameObjects, so unparent first
+            transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
 
             // Subscribe to scene loaded to handle pending seed overrides
@@ -290,6 +293,7 @@ namespace _Scripts.Core.Managers
                     isVisited = false,
                     isCleared = false,
                     collectedItems = new Dictionary<string, bool>(),
+                    spawnPointResults = new Dictionary<string, string>(),
                     defeatedEnemies = new List<string>(),
                     openedDoors = new Dictionary<string, bool>(),
                     lastPlayerPosition = Vector3.zero,
@@ -342,6 +346,23 @@ namespace _Scripts.Core.Managers
             if (_showDebugLogs)
             {
                 Debug.Log($"[FloorStateManager] Marked floor {_currentFloorNumber} as visited");
+            }
+        }
+
+        /// <summary>
+        /// Saves the working generation seed for the current floor.
+        /// Call this right before transitioning to another floor to ensure
+        /// the correct seed (that successfully generated the floor) is preserved.
+        /// </summary>
+        /// <param name="workingSeed">The seed that was used to successfully generate the floor.</param>
+        public void SaveCurrentFloorGenerationSeed(int workingSeed)
+        {
+            FloorState currentState = GetCurrentFloorState();
+            currentState.generationSeed = workingSeed;
+
+            if (_showDebugLogs)
+            {
+                Debug.Log($"[FloorStateManager] Saved generation seed {workingSeed} for floor {_currentFloorNumber}");
             }
         }
 
@@ -503,6 +524,9 @@ namespace _Scripts.Core.Managers
         [Tooltip("Items collected on this floor. Key: itemID, Value: collected status.")]
         public Dictionary<string, bool> collectedItems = new Dictionary<string, bool>();
 
+        [Tooltip("Spawn point results. Key: spawnPointId, Value: prefab name that spawned (empty string if nothing spawned).")]
+        public Dictionary<string, string> spawnPointResults = new Dictionary<string, string>();
+
         [Tooltip("List of defeated enemy instance IDs.")]
         public List<string> defeatedEnemies = new List<string>();
 
@@ -514,6 +538,48 @@ namespace _Scripts.Core.Managers
 
         [Tooltip("Total time spent on this floor in seconds.")]
         public float timeSpentOnFloor;
+
+        [Tooltip("Cached room layout for Delver-style floor persistence.")]
+        public CachedFloorLayout cachedLayout;
+
+        /// <summary>
+        /// Returns true if this floor has a valid cached layout that can be replayed.
+        /// </summary>
+        public bool HasCachedLayout => cachedLayout != null && cachedLayout.isValid;
+    }
+
+    /// <summary>
+    /// Stores the exact position and rotation of a room for layout caching.
+    /// Used for Delver-style floor persistence where floors are "frozen in time".
+    /// </summary>
+    [Serializable]
+    public class CachedRoomPlacement
+    {
+        [Tooltip("Room's display name for prefab lookup.")]
+        public string prefabDisplayName;
+
+        [Tooltip("World position of the room.")]
+        public Vector3 position;
+
+        [Tooltip("Rotation euler angles of the room.")]
+        public Vector3 rotationEuler;
+
+        [Tooltip("Instance name for tracking connections and references.")]
+        public string roomInstanceName;
+    }
+
+    /// <summary>
+    /// Stores the complete layout of a floor for exact replay on revisit.
+    /// Enables Delver-style persistence where floors look identical when returned to.
+    /// </summary>
+    [Serializable]
+    public class CachedFloorLayout
+    {
+        [Tooltip("Whether this cached layout is valid and can be used.")]
+        public bool isValid;
+
+        [Tooltip("List of all room placements in this floor layout.")]
+        public List<CachedRoomPlacement> roomPlacements = new List<CachedRoomPlacement>();
     }
 
     /// <summary>

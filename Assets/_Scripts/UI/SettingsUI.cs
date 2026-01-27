@@ -134,8 +134,6 @@ namespace _Scripts.UI
             {
                 _playerController.OnSettingsUpdated();
             }
-
-            Debug.Log("[SettingsUI] Settings applied and saved.");
         }
 
         private void OnResetClicked()

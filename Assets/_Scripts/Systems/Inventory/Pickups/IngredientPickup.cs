@@ -32,13 +32,10 @@ namespace _Scripts.Systems.Inventory.Pickups
 
             if (added > 0)
             {
-                Debug.Log($"[IngredientPickup] Picked up {added} {_ingredientType}");
-
                 // If we couldn't add all, keep remaining
                 if (added < _amount)
                 {
                     _amount -= added;
-                    Debug.Log($"[IngredientPickup] Ingredient cap reached. {_amount} {_ingredientType} left on ground.");
                     return false;
                 }
 
@@ -46,7 +43,6 @@ namespace _Scripts.Systems.Inventory.Pickups
                 return true;
             }
 
-            Debug.Log($"[IngredientPickup] Cannot pick up {_ingredientType} - at capacity");
             return false;
         }
     }

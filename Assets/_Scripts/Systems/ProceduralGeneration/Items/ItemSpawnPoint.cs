@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using _Scripts.Core.Managers;
+using _Scripts.Systems.Inventory.Pickups;
 
 namespace _Scripts.Systems.ProceduralGeneration.Items
 {
@@ -47,6 +49,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
         #region Private Fields
 
         private GameObject _spawnedItem;
+        private string _spawnPointId;
 
         // Static container for all spawned pickups to keep hierarchy clean
         private static Transform _pickupsContainer;
@@ -99,6 +102,49 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
         /// </summary>
         public List<SpawnableItem> SpawnableItems => _spawnableItems;
 
+        /// <summary>
+        /// Gets the unique ID for this spawn point (generated from hierarchy path).
+        /// </summary>
+        public string SpawnPointId => _spawnPointId;
+
+        #endregion
+
+        #region Spawn Point ID Generation
+
+        /// <summary>
+        /// Generates a deterministic ID based on the spawn point's hierarchy path.
+        /// This ensures the same spawn point always has the same ID across regenerations.
+        /// </summary>
+        private void GenerateSpawnPointId()
+        {
+            // Build path from this object up to the room root
+            // Format: "RoomPrefabName/ChildPath/SpawnPointName"
+            List<string> pathParts = new List<string>();
+            Transform current = transform;
+
+            while (current != null)
+            {
+                pathParts.Insert(0, current.name);
+
+                // Stop at the room root (look for common room markers)
+                if (current.name.StartsWith("Room_") ||
+                    current.GetComponent<RoomItemSpawner>() != null ||
+                    current.parent == null)
+                {
+                    break;
+                }
+
+                current = current.parent;
+            }
+
+            _spawnPointId = string.Join("/", pathParts);
+
+            if (_showDebugLogs)
+            {
+                Debug.Log($"[ItemSpawnPoint] Generated ID: {_spawnPointId}");
+            }
+        }
+
         #endregion
 
         #region Spawning Logic
@@ -107,9 +153,16 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
         /// Attempts to spawn an item at this point based on spawn chances.
         /// Called by the room spawner or level generator.
         /// OPTIMIZED: Only does raycast once during this call.
+        /// On revisited floors, spawns the same item that was spawned before (deterministic).
         /// </summary>
         public void SpawnItem()
         {
+            // Generate ID if not already done
+            if (string.IsNullOrEmpty(_spawnPointId))
+            {
+                GenerateSpawnPointId();
+            }
+
             if (_spawnableItems == null || _spawnableItems.Count == 0)
             {
                 if (_showDebugLogs)
@@ -117,35 +170,148 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
                 return;
             }
 
+            // Check if we have a cached result for this spawn point
+            var floorManager = FloorStateManager.Instance;
+            FloorState floorState = null;
+            string cachedPrefabName = null;
+            bool hasCachedResult = false;
+
+            if (floorManager != null && floorManager.IsInitialized)
+            {
+                floorState = floorManager.GetCurrentFloorState();
+                if (floorState.spawnPointResults.TryGetValue(_spawnPointId, out cachedPrefabName))
+                {
+                    hasCachedResult = true;
+                }
+            }
+
+            if (hasCachedResult)
+            {
+                // Revisit: spawn the exact same item (or nothing if empty)
+                _spawnedItem = SpawnFromCachedResult(cachedPrefabName, floorState);
+            }
+            else
+            {
+                // First visit: roll normally and cache the result
+                _spawnedItem = SpawnAndCacheResult(floorState);
+            }
+
+            if (_spawnedItem != null && _showDebugLogs)
+            {
+                Debug.Log($"[ItemSpawnPoint] Spawned '{_spawnedItem.name}' at '{gameObject.name}' (cached: {hasCachedResult})");
+            }
+        }
+
+        /// <summary>
+        /// Spawns an item based on cached result from a previous visit.
+        /// </summary>
+        private GameObject SpawnFromCachedResult(string prefabName, FloorState floorState)
+        {
+            // Empty string means nothing spawned originally
+            if (string.IsNullOrEmpty(prefabName))
+            {
+                if (_showDebugLogs)
+                    Debug.Log($"[ItemSpawnPoint] Cached result: nothing spawned at '{_spawnPointId}'");
+                return null;
+            }
+
+            // Check if this item was already collected
+            string pickupId = GetPickupIdForSpawnPoint();
+            if (floorState != null && floorState.collectedItems.TryGetValue(pickupId, out bool collected) && collected)
+            {
+                if (_showDebugLogs)
+                    Debug.Log($"[ItemSpawnPoint] Item at '{_spawnPointId}' was already collected, not spawning");
+                return null;
+            }
+
+            // Find the prefab by name
+            GameObject prefabToSpawn = FindPrefabByName(prefabName);
+            if (prefabToSpawn == null)
+            {
+                Debug.LogWarning($"[ItemSpawnPoint] Could not find cached prefab '{prefabName}' for spawn point '{_spawnPointId}'");
+                return null;
+            }
+
+            return SpawnSpecificItem(prefabToSpawn, pickupId);
+        }
+
+        /// <summary>
+        /// Spawns an item using normal random logic and caches the result.
+        /// </summary>
+        private GameObject SpawnAndCacheResult(FloorState floorState)
+        {
+            GameObject spawned = null;
+            string spawnedPrefabName = "";
+
             // If guaranteed spawn, keep trying until something spawns
             if (_guaranteedSpawn)
             {
-                _spawnedItem = TrySpawnRandomItem();
+                spawned = TrySpawnRandomItem(out spawnedPrefabName);
 
                 // If still nothing spawned and we have a fallback, use it
-                if (_spawnedItem == null && _useFallbackItem && _fallbackItemPrefab != null)
+                if (spawned == null && _useFallbackItem && _fallbackItemPrefab != null)
                 {
-                    _spawnedItem = SpawnSpecificItem(_fallbackItemPrefab);
+                    string pickupId = GetPickupIdForSpawnPoint();
+                    spawned = SpawnSpecificItem(_fallbackItemPrefab, pickupId);
+                    spawnedPrefabName = _fallbackItemPrefab.name;
                 }
             }
             else
             {
                 // Normal spawn - respect individual chances
-                _spawnedItem = TrySpawnRandomItem();
+                spawned = TrySpawnRandomItem(out spawnedPrefabName);
             }
 
-            if (_spawnedItem != null && _showDebugLogs)
+            // Cache the result (even if nothing spawned)
+            if (floorState != null)
             {
-                Debug.Log($"[ItemSpawnPoint] Spawned '{_spawnedItem.name}' at '{gameObject.name}'");
+                floorState.spawnPointResults[_spawnPointId] = spawnedPrefabName;
+
+                if (_showDebugLogs)
+                    Debug.Log($"[ItemSpawnPoint] Cached spawn result for '{_spawnPointId}': '{spawnedPrefabName}'");
             }
+
+            return spawned;
+        }
+
+        /// <summary>
+        /// Finds a prefab by name from the spawnable items list.
+        /// </summary>
+        private GameObject FindPrefabByName(string prefabName)
+        {
+            foreach (var item in _spawnableItems)
+            {
+                if (item.itemPrefab != null && item.itemPrefab.name == prefabName)
+                {
+                    return item.itemPrefab;
+                }
+            }
+
+            // Also check fallback
+            if (_fallbackItemPrefab != null && _fallbackItemPrefab.name == prefabName)
+            {
+                return _fallbackItemPrefab;
+            }
+
+            return null;
+        }
+
+        /// <summary>
+        /// Gets the pickup ID that will be assigned to items spawned at this point.
+        /// </summary>
+        private string GetPickupIdForSpawnPoint()
+        {
+            return $"{_spawnPointId}_pickup";
         }
 
         /// <summary>
         /// Tries to spawn a random item from the list based on spawn chances.
         /// Returns null if no item was selected.
         /// </summary>
-        private GameObject TrySpawnRandomItem()
+        private GameObject TrySpawnRandomItem(out string spawnedPrefabName)
         {
+            spawnedPrefabName = "";
+
             // Shuffle the list to add randomness
             List<SpawnableItem> shuffledItems = new List<SpawnableItem>(_spawnableItems);
             ShuffleList(shuffledItems);
@@ -160,7 +326,9 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
 
                 if (roll <= spawnableItem.spawnChance)
                 {
-                    return SpawnSpecificItem(spawnableItem.itemPrefab);
+                    string pickupId = GetPickupIdForSpawnPoint();
+                    spawnedPrefabName = spawnableItem.itemPrefab.name;
+                    return SpawnSpecificItem(spawnableItem.itemPrefab, pickupId);
                 }
             }
 
@@ -171,7 +339,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
         /// Spawns a specific item prefab at this spawn point.
         /// OPTIMIZED: Does ONE raycast to snap to ground, then done.
         /// </summary>
-        private GameObject SpawnSpecificItem(GameObject prefab)
+        private GameObject SpawnSpecificItem(GameObject prefab, string pickupId = null)
         {
             if (prefab == null)
                 return null;
@@ -181,6 +349,16 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
 
             GameObject spawnedObject = Instantiate(prefab, spawnPosition, spawnRotation, GetPickupsContainer());
             spawnedObject.name = $"{prefab.name}";
+
+            // Assign pickup ID for persistence tracking
+            if (!string.IsNullOrEmpty(pickupId))
+            {
+                Pickup pickup = spawnedObject.GetComponent<Pickup>();
+                if (pickup != null)
+                {
+                    pickup.SetPickupId(pickupId);
+                }
+            }
 
             // SNAP TO GROUND ONCE - no continuous updates
             if (_snapToGround)

@@ -265,6 +265,65 @@ namespace _Scripts.Systems.ProceduralGeneration
             return GetWeightedRandomRoom(matchingRooms);
         }
 
+        /// <summary>
+        /// Gets a room entry by its display name, roomID, or prefab name.
+        /// Used for layout caching to replay exact room placements.
+        /// </summary>
+        /// <param name="identifier">The display name, roomID, or prefab name of the room to find.</param>
+        /// <returns>The matching room entry, or null if not found.</returns>
+        public RoomEntry GetRoomByDisplayName(string identifier)
+        {
+            if (string.IsNullOrEmpty(identifier))
+                return null;
+
+            // Check special rooms first (by displayName, then prefab name)
+            if (_entryElevatorRoom != null)
+            {
+                if (_entryElevatorRoom.displayName == identifier ||
+                    (_entryElevatorRoom.prefab != null && _entryElevatorRoom.prefab.name == identifier) ||
+                    identifier == "EntryElevatorRoom")
+                    return _entryElevatorRoom;
+            }
+
+            if (_exitElevatorRoom != null)
+            {
+                if (_exitElevatorRoom.displayName == identifier ||
+                    (_exitElevatorRoom.prefab != null && _exitElevatorRoom.prefab.name == identifier) ||
+                    identifier == "ExitElevatorRoom")
+                    return _exitElevatorRoom;
+            }
+
+            if (_safeRoom != null)
+            {
+                if (_safeRoom.displayName == identifier ||
+                    (_safeRoom.prefab != null && _safeRoom.prefab.name == identifier))
+                    return _safeRoom;
+            }
+
+            // Search all rooms by displayName first
+            foreach (var room in _rooms)
+            {
+                if (room.displayName == identifier)
+                    return room;
+            }
+
+            // Then try by roomID
+            foreach (var room in _rooms)
+            {
+                if (room.roomID == identifier)
+                    return room;
+            }
+
+            // Finally try by prefab name
+            foreach (var room in _rooms)
+            {
+                if (room.prefab != null && room.prefab.name == identifier)
+                    return room;
+            }
+
+            return null;
+        }
+
         #endregion
 
         #region Public Methods - Validation

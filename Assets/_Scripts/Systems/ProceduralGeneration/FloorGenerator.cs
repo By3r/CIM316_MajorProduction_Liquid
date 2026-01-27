@@ -1,5 +1,6 @@
 using _Scripts.Core.Managers;
 using _Scripts.Systems.ProceduralGeneration.Doors;
+using _Scripts.Systems.ProceduralGeneration.Items;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -134,8 +135,6 @@ namespace _Scripts.Systems.ProceduralGeneration
         /// </summary>
         private void HandleFloorTransition(int targetFloor)
         {
-            Debug.Log($"[FloorGenerator] Received floor transition request to floor {targetFloor}");
-
             // Update the floor number
             _currentFloorNumber = targetFloor;
 
@@ -157,6 +156,7 @@ namespace _Scripts.Systems.ProceduralGeneration
 
         /// <summary>
         /// Generates a procedural floor using the room database with two-phase collision detection.
+        /// On revisited floors, replays the cached layout for Delver-style persistence.
         /// IMPORTANT: Only works in Play mode for deterministic results.
         /// </summary>
         public void GenerateFloor()
@@ -167,8 +167,43 @@ namespace _Scripts.Systems.ProceduralGeneration
                 return;
             }
 
+            // Notify listeners that floor generation is starting (freeze player)
+            GameManager.Instance?.EventManager?.Publish("OnFloorGenerationStarted");
+
             _currentRegenerationAttempt = 0;
 
+            // Check if this is a revisited floor with a cached layout
+            FloorState floorState = null;
+            bool isRevisit = false;
+
+            if (_useSeedBasedGeneration && FloorStateManager.Instance != null && FloorStateManager.Instance.IsInitialized)
+            {
+                floorState = FloorStateManager.Instance.GetOrCreateFloorState(_currentFloorNumber);
+                isRevisit = floorState.isVisited && floorState.HasCachedLayout;
+
+                // If this is a revisit with a cached layout, replay it instead of regenerating
+                if (isRevisit)
+                {
+                    if (_showDebugLogs)
+                    {
+                        Debug.Log($"[FloorGenerator] Replaying cached layout for floor {_currentFloorNumber}");
+                    }
+
+                    if (ReplayCachedLayout(floorState.cachedLayout))
+                    {
+                        // Notify listeners that floor generation is complete (unfreeze player)
+                        GameManager.Instance?.EventManager?.Publish("OnFloorGenerationComplete");
+                        return; // Successfully replayed, no need to generate
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[FloorGenerator] Failed to replay cached layout for floor {_currentFloorNumber}, regenerating...");
+                        isRevisit = false; // Fall back to generation
+                    }
+                }
+            }
+
+            // Procedural generation (first visit or fallback)
             while (true)
             {
                 GenerateFloorInternal();
@@ -207,8 +242,17 @@ namespace _Scripts.Systems.ProceduralGeneration
                 _currentRegenerationAttempt++;
             }
 
+            // Cache the layout for future revisits (Delver-style persistence)
+            if (floorState != null && !floorState.HasCachedLayout)
+            {
+                CacheCurrentLayout(floorState);
+            }
+
             // After the floor is built (and registry populated) rebuild the nav grid once.
             RebuildNavGridFromRegistry();
+
+            // Notify listeners that floor generation is complete (unfreeze player)
+            GameManager.Instance?.EventManager?.Publish("OnFloorGenerationComplete");
         }
 
         /// <summary>
@@ -230,7 +274,11 @@ namespace _Scripts.Systems.ProceduralGeneration
                 return;
             }
 
-            // Seed-Based Generation
+            // Clear floor FIRST before setting seed (to avoid random state pollution)
+            ClearFloor();
+            OccupiedSpaceRegistry.Instance.ClearRegistry();
+
+            // Seed-Based Generation - set seed AFTER clearing to ensure determinism
             if (_useSeedBasedGeneration)
             {
                 if (!FloorStateManager.Instance.IsInitialized)
@@ -242,15 +290,14 @@ namespace _Scripts.Systems.ProceduralGeneration
                 FloorState floorState = FloorStateManager.Instance.GetOrCreateFloorState(_currentFloorNumber);
                 int baseSeed = floorState.generationSeed;
                 _currentSeed = baseSeed + _currentRegenerationAttempt;
+
+                // Set seed immediately before generation starts
                 Random.InitState(_currentSeed);
             }
             else
             {
                 _currentSeed = 0;
             }
-
-            ClearFloor();
-            OccupiedSpaceRegistry.Instance.ClearRegistry();
 
             if (_showDebugLogs)
             {
@@ -293,19 +340,14 @@ namespace _Scripts.Systems.ProceduralGeneration
             SpawnExitRoomAtTerminus();
             SpawnBlockadesOnUnconnectedSockets();
 
-            // Save working seed for floor revisits
-            if (_useSeedBasedGeneration && _exitRoomSpawned)
-            {
-                FloorState floorState = FloorStateManager.Instance.GetCurrentFloorState();
-                if (floorState.generationSeed != _currentSeed)
-                {
-                    floorState.generationSeed = _currentSeed;
-                }
-                FloorStateManager.Instance.MarkCurrentFloorAsVisited();
-            }
+            // Note: The working seed is saved by the Elevator when transitioning away from this floor.
+            // This ensures the correct seed (that successfully generated the floor) is preserved.
 
-            // Summary log
-            Debug.Log($"[FloorGenerator] Floor {_currentFloorNumber} complete: {_spawnedRooms.Count} rooms, {_connectionsMade} connections, {_blockadeSpawnCount} blockades");
+            // Summary log (only in debug mode)
+            if (_showDebugLogs)
+            {
+                Debug.Log($"[FloorGenerator] Floor {_currentFloorNumber} complete: {_spawnedRooms.Count} rooms, {_connectionsMade} connections, {_blockadeSpawnCount} blockades");
+            }
         }
 
         private GameObject SpawnStartingRoom()
@@ -503,8 +545,12 @@ namespace _Scripts.Systems.ProceduralGeneration
                     continue;
                 }
 
+                // Use prefab name for naming if displayName is empty (ensures we can identify rooms for caching)
+                string roomName = !string.IsNullOrEmpty(selectedRoom.displayName)
+                    ? selectedRoom.displayName
+                    : selectedRoom.prefab.name;
                 GameObject newRoom = SpawnRoom(selectedRoom.prefab, proposedPosition, proposedRotation,
-                    $"{selectedRoom.displayName}_{_spawnedRooms.Count}", registerNow: false);
+                    $"{roomName}_{_spawnedRooms.Count}", registerNow: false);
                 _spawnedRooms.Add(newRoom);
 
                 ConnectionSocket newRoomSocket = FindMatchingSocketInInstance(newRoom, targetSocket);
@@ -692,7 +738,274 @@ namespace _Scripts.Systems.ProceduralGeneration
             {
                 OccupiedSpaceRegistry.Instance.ClearRegistry();
             }
+
+            // Clear all spawned pickups
+            ClearAllPickups();
+
+            // Reset the static container reference so it can be recreated
+            ItemSpawnPoint.ClearContainerReference();
         }
+
+        /// <summary>
+        /// Destroys all pickup objects in the pickups container.
+        /// Called during floor transitions to clean up items before regeneration.
+        /// </summary>
+        private void ClearAllPickups()
+        {
+            GameObject pickupsContainer = GameObject.Find("--- PICKUPS ---");
+            if (pickupsContainer != null)
+            {
+                // Destroy all children (the actual pickup items)
+                for (int i = pickupsContainer.transform.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = pickupsContainer.transform.GetChild(i);
+                    if (Application.isPlaying)
+                        Destroy(child.gameObject);
+                    else
+                        DestroyImmediate(child.gameObject);
+                }
+
+                if (_showDebugLogs)
+                    Debug.Log("[FloorGenerator] Cleared all pickups from container");
+            }
+        }
+
+        #region Floor Layout Caching (Delver-style Persistence)
+
+        /// <summary>
+        /// Caches the current floor layout for Delver-style persistence.
+        /// Stores exact room positions and rotations for replay on revisit.
+        /// </summary>
+        /// <param name="floorState">The floor state to cache the layout in.</param>
+        private void CacheCurrentLayout(FloorState floorState)
+        {
+            if (floorState == null) return;
+
+            var layout = new CachedFloorLayout { isValid = true };
+
+            foreach (GameObject room in _spawnedRooms)
+            {
+                if (room == null) continue;
+
+                // Find the matching RoomEntry by comparing prefab structure
+                string displayName = FindRoomDisplayName(room);
+
+                layout.roomPlacements.Add(new CachedRoomPlacement
+                {
+                    prefabDisplayName = displayName,
+                    position = room.transform.position,
+                    rotationEuler = room.transform.rotation.eulerAngles,
+                    roomInstanceName = room.name
+                });
+
+                if (_showDebugLogs)
+                {
+                    Debug.Log($"[FloorGenerator] Cached room '{room.name}' with displayName '{displayName}'");
+                }
+            }
+
+            floorState.cachedLayout = layout;
+
+            if (_showDebugLogs)
+            {
+                Debug.Log($"[FloorGenerator] Cached layout for floor {_currentFloorNumber}: {layout.roomPlacements.Count} rooms");
+            }
+        }
+
+        /// <summary>
+        /// Finds the best identifier for a spawned room by matching it against the database.
+        /// Returns displayName, roomID, or prefab name - whichever is available.
+        /// </summary>
+        private string FindRoomDisplayName(GameObject room)
+        {
+            // Check special rooms first by name prefix - use constant identifiers for reliability
+            if (room.name == "EntryRoom" || room.name.StartsWith("EntryRoom_"))
+            {
+                // Use a constant identifier that GetRoomByDisplayName will recognize
+                return "EntryElevatorRoom";
+            }
+            if (room.name == "ExitRoom" || room.name.StartsWith("ExitRoom_"))
+            {
+                return "ExitElevatorRoom";
+            }
+
+            // For regular rooms, extract the display name from the instance name
+            // Rooms are named "{displayName}_{index}" during spawning
+            string instanceName = room.name;
+            int lastUnderscoreIndex = instanceName.LastIndexOf('_');
+
+            if (lastUnderscoreIndex > 0)
+            {
+                string potentialDisplayName = instanceName.Substring(0, lastUnderscoreIndex);
+
+                // Verify this display name exists in the database
+                var roomEntry = _roomDatabase.GetRoomByDisplayName(potentialDisplayName);
+                if (roomEntry != null)
+                {
+                    // Return the best available identifier for this room
+                    if (!string.IsNullOrEmpty(roomEntry.displayName)) return roomEntry.displayName;
+                    if (!string.IsNullOrEmpty(roomEntry.roomID)) return roomEntry.roomID;
+                    if (roomEntry.prefab != null) return roomEntry.prefab.name;
+                    return potentialDisplayName;
+                }
+            }
+
+            // Fallback: Search all rooms for any match
+            foreach (var entry in _roomDatabase.AllRooms)
+            {
+                if (entry.prefab == null) continue;
+
+                // Check by roomID being in the room name
+                if (!string.IsNullOrEmpty(entry.roomID) && room.name.Contains(entry.roomID))
+                {
+                    if (!string.IsNullOrEmpty(entry.displayName)) return entry.displayName;
+                    return entry.roomID;
+                }
+
+                // Check by displayName being in the room name
+                if (!string.IsNullOrEmpty(entry.displayName) && room.name.StartsWith(entry.displayName))
+                {
+                    return entry.displayName;
+                }
+
+                // Check by prefab name being in the room name
+                if (room.name.StartsWith(entry.prefab.name))
+                {
+                    if (!string.IsNullOrEmpty(entry.displayName)) return entry.displayName;
+                    if (!string.IsNullOrEmpty(entry.roomID)) return entry.roomID;
+                    return entry.prefab.name;
+                }
+            }
+
+            // Last resort: return the instance name itself as identifier
+            Debug.LogWarning($"[FloorGenerator] Could not find display name for room '{room.name}', using instance name");
+            return instanceName;
+        }
+
+        /// <summary>
+        /// Replays a cached floor layout, spawning rooms at their exact saved positions.
+        /// Used for Delver-style persistence where floors look identical when revisited.
+        /// </summary>
+        /// <param name="layout">The cached layout to replay.</param>
+        /// <returns>True if replay was successful.</returns>
+        private bool ReplayCachedLayout(CachedFloorLayout layout)
+        {
+            if (layout == null || !layout.isValid || layout.roomPlacements.Count == 0)
+            {
+                Debug.LogError("[FloorGenerator] Invalid cached layout!");
+                return false;
+            }
+
+            ClearFloor();
+            OccupiedSpaceRegistry.Instance.ClearRegistry();
+
+            if (_showDebugLogs)
+            {
+                Debug.Log($"[FloorGenerator] Replaying cached layout for floor {_currentFloorNumber}: {layout.roomPlacements.Count} rooms");
+            }
+
+            foreach (var placement in layout.roomPlacements)
+            {
+                // Find the room entry by display name
+                RoomPrefabDatabase.RoomEntry roomEntry = _roomDatabase.GetRoomByDisplayName(placement.prefabDisplayName);
+
+                if (roomEntry == null || roomEntry.prefab == null)
+                {
+                    Debug.LogWarning($"[FloorGenerator] Could not find room '{placement.prefabDisplayName}' in database for replay!");
+                    continue;
+                }
+
+                // Spawn the room at its exact cached position and rotation
+                GameObject room = Instantiate(
+                    roomEntry.prefab,
+                    placement.position,
+                    Quaternion.Euler(placement.rotationEuler),
+                    transform
+                );
+                room.name = placement.roomInstanceName;
+
+                // Register with OccupiedSpaceRegistry
+                BoundsChecker boundsChecker = room.GetComponent<BoundsChecker>();
+                if (boundsChecker != null)
+                {
+                    boundsChecker.RegisterWithRegistry();
+                }
+
+                _spawnedRooms.Add(room);
+
+                // Track if exit room was spawned
+                if (placement.roomInstanceName.StartsWith("ExitRoom"))
+                {
+                    _exitRoomSpawned = true;
+                }
+            }
+
+            // After spawning all rooms, connect sockets that are overlapping
+            ConnectOverlappingSockets();
+
+            // Spawn blockades on any remaining unconnected sockets
+            SpawnBlockadesOnUnconnectedSockets();
+
+            // Rebuild navigation grid
+            RebuildNavGridFromRegistry();
+
+            if (_showDebugLogs)
+            {
+                Debug.Log($"[FloorGenerator] Replay complete: {_spawnedRooms.Count} rooms, {_connectionsMade} connections, {_blockadeSpawnCount} blockades");
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Connects overlapping sockets between rooms after replay.
+        /// Finds sockets that are at the same position and connects them.
+        /// </summary>
+        private void ConnectOverlappingSockets()
+        {
+            EnsureConnectionSystemExists();
+
+            // Collect all sockets from all rooms
+            List<ConnectionSocket> allSockets = new List<ConnectionSocket>();
+            foreach (GameObject room in _spawnedRooms)
+            {
+                if (room == null) continue;
+                allSockets.AddRange(room.GetComponentsInChildren<ConnectionSocket>());
+            }
+
+            // Find overlapping socket pairs and connect them
+            float connectionThreshold = 0.5f; // Sockets within this distance are considered overlapping
+            HashSet<ConnectionSocket> connectedSockets = new HashSet<ConnectionSocket>();
+
+            for (int i = 0; i < allSockets.Count; i++)
+            {
+                ConnectionSocket socketA = allSockets[i];
+                if (socketA == null || connectedSockets.Contains(socketA)) continue;
+
+                for (int j = i + 1; j < allSockets.Count; j++)
+                {
+                    ConnectionSocket socketB = allSockets[j];
+                    if (socketB == null || connectedSockets.Contains(socketB)) continue;
+
+                    // Check if sockets are at the same position
+                    float distance = Vector3.Distance(socketA.Position, socketB.Position);
+                    if (distance <= connectionThreshold && socketA.IsCompatibleWith(socketB.SocketType))
+                    {
+                        // Connect these sockets
+                        bool success = _connectionSystem.ConnectRooms(socketA, socketB, socketB.transform.root, _doorPrefab);
+                        if (success)
+                        {
+                            connectedSockets.Add(socketA);
+                            connectedSockets.Add(socketB);
+                            _connectionsMade++;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+
+        #endregion
 
 #if UNITY_EDITOR
         private void OnDrawGizmos()

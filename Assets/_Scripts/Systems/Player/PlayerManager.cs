@@ -32,6 +32,7 @@ namespace _Scripts.Systems.Player
         #region Private Fields
 
         private PlayerController _currentPlayer;
+        private bool _isPlayerFrozen;
 
         #endregion
 
@@ -42,6 +43,11 @@ namespace _Scripts.Systems.Player
         /// Returns null if no player has been spawned yet.
         /// </summary>
         public PlayerController CurrentPlayer => _currentPlayer;
+
+        /// <summary>
+        /// Gets whether the player is currently frozen (during floor transitions).
+        /// </summary>
+        public bool IsPlayerFrozen => _isPlayerFrozen;
 
         #endregion
 
@@ -67,6 +73,8 @@ namespace _Scripts.Systems.Player
             if (GameManager.Instance?.EventManager != null)
             {
                 GameManager.Instance.EventManager.Subscribe(GameEvents.OnPlayerDeath, HandlePlayerDeath);
+                GameManager.Instance.EventManager.Subscribe("OnFloorGenerationStarted", HandleFloorGenerationStarted);
+                GameManager.Instance.EventManager.Subscribe("OnFloorGenerationComplete", HandleFloorGenerationComplete);
             }
         }
 
@@ -163,6 +171,76 @@ namespace _Scripts.Systems.Player
             if (GameManager.Instance?.EventManager != null)
             {
                 GameManager.Instance.EventManager.Unsubscribe(GameEvents.OnPlayerDeath, HandlePlayerDeath);
+                GameManager.Instance.EventManager.Unsubscribe("OnFloorGenerationStarted", HandleFloorGenerationStarted);
+                GameManager.Instance.EventManager.Unsubscribe("OnFloorGenerationComplete", HandleFloorGenerationComplete);
+            }
+        }
+
+        #endregion
+
+        #region Floor Transition Handling
+
+        /// <summary>
+        /// Called when floor generation starts. Freezes the player to prevent falling.
+        /// </summary>
+        private void HandleFloorGenerationStarted()
+        {
+            FreezePlayer();
+        }
+
+        /// <summary>
+        /// Called when floor generation completes. Unfreezes the player.
+        /// </summary>
+        private void HandleFloorGenerationComplete()
+        {
+            UnfreezePlayer();
+        }
+
+        /// <summary>
+        /// Freezes the player in place during floor transitions.
+        /// Disables CharacterController and player input to prevent falling through the world.
+        /// </summary>
+        public void FreezePlayer()
+        {
+            if (_currentPlayer == null || _isPlayerFrozen) return;
+
+            _isPlayerFrozen = true;
+
+            // Disable CharacterController to prevent physics/gravity
+            CharacterController characterController = _currentPlayer.GetComponent<CharacterController>();
+            if (characterController != null)
+            {
+                characterController.enabled = false;
+            }
+
+            // Disable player input
+            if (InputManager.Instance != null)
+            {
+                InputManager.Instance.EnablePlayerInput(false);
+            }
+        }
+
+        /// <summary>
+        /// Unfreezes the player after floor generation is complete.
+        /// Re-enables CharacterController and player input.
+        /// </summary>
+        public void UnfreezePlayer()
+        {
+            if (_currentPlayer == null || !_isPlayerFrozen) return;
+
+            _isPlayerFrozen = false;
+
+            // Re-enable CharacterController
+            CharacterController characterController = _currentPlayer.GetComponent<CharacterController>();
+            if (characterController != null)
+            {
+                characterController.enabled = true;
+            }
+
+            // Re-enable player input
+            if (InputManager.Instance != null)
+            {
+                InputManager.Instance.EnablePlayerInput(true);
             }
         }
 

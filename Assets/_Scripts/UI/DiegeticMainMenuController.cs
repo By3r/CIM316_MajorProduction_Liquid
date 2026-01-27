@@ -289,8 +289,6 @@ namespace MainMenu.UI
 
         private void OnExitPressed()
         {
-            Debug.Log("Exit pressed.");
-
 #if UNITY_EDITOR
             UnityEditor.EditorApplication.isPlaying = false;
 #else

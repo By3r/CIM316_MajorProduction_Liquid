@@ -179,7 +179,6 @@ namespace _Scripts.Systems.Inventory
             InventoryItemData data = slot != null ? slot.ItemData : null;
 
             OnSlotConfirmed?.Invoke(_currentSelectedIndex, data);
-            Debug.Log($"Confirmed slot {_currentSelectedIndex} [{data?.displayName}]");
         }
 
         #endregion
@@ -220,7 +219,6 @@ namespace _Scripts.Systems.Inventory
             if (selectedItem != null)
             {
                 OnWheelClosedWithSelection?.Invoke(selectedIndex, selectedItem);
-                Debug.Log($"Wheel closed with selection {selectedIndex} [{selectedItem.displayName}]");
             }
         }
 

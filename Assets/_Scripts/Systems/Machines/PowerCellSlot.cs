@@ -93,13 +93,11 @@ namespace _Scripts.Systems.Machines
                     {
                         SetPowered(true);
                         PlaySound(_insertSound);
-                        Debug.Log($"[PowerCellSlot] PowerCell inserted into {_slotId}");
                         return true;
                     }
                 }
             }
 
-            Debug.Log($"[PowerCellSlot] No PowerCell in inventory to insert");
             return false;
         }
 
@@ -116,11 +114,9 @@ namespace _Scripts.Systems.Machines
                 _insertedPowerCell = null;
                 SetPowered(false);
                 PlaySound(_removeSound);
-                Debug.Log($"[PowerCellSlot] PowerCell removed from {_slotId}");
                 return true;
             }
 
-            Debug.Log($"[PowerCellSlot] Cannot remove PowerCell - inventory full");
             return false;
         }
 

@@ -20,12 +20,10 @@ namespace _Scripts.Systems.Inventory.Pickups
 
             if (inventory.TryAddItem(_itemData, _quantity))
             {
-                Debug.Log($"[PhysicalItemPickup] Picked up {_quantity}x {_itemData.displayName}");
                 OnPickupSuccess();
                 return true;
             }
 
-            Debug.Log($"[PhysicalItemPickup] Inventory full, cannot pick up {_itemData.displayName}");
             return false;
         }
     }

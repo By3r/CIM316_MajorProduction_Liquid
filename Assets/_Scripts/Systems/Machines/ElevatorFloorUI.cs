@@ -347,7 +347,6 @@ namespace _Scripts.Systems.Machines
             // Don't allow blocked floors (should be caught by interactable = false, but double check)
             if (floor <= 0) return;
 
-            Debug.Log($"[ElevatorFloorUI] Floor {floor} selected");
             OnFloorSelected?.Invoke(floor);
         }
 

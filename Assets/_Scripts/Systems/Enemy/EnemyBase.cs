@@ -110,7 +110,6 @@ public abstract class EnemyBase : MonoBehaviour
         currentState = EnemyState.Dead;
         currentPath = null;
 
-        Debug.Log($"{name} died.");
         Destroy(gameObject, 5f);
     }
 

@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
 using _Scripts.Core.Managers;
+using _Scripts.Systems.ProceduralGeneration;
 
 namespace _Scripts.Systems.Machines
 {
@@ -194,7 +195,6 @@ namespace _Scripts.Systems.Machines
             // Can't go to current floor
             if (floor == currentFloor)
             {
-                Debug.Log("[Elevator] Already on this floor");
                 return;
             }
 
@@ -203,7 +203,6 @@ namespace _Scripts.Systems.Machines
 
             if (isNewFloor && !IsPowered)
             {
-                Debug.Log("[Elevator] Need PowerCell to travel to new floor");
                 return;
             }
 
@@ -230,13 +229,19 @@ namespace _Scripts.Systems.Machines
             var floorManager = FloorStateManager.Instance;
             if (floorManager != null)
             {
+                // Save the working generation seed before leaving this floor
+                // This ensures we can regenerate the exact same layout on return
+                var floorGenerator = FindObjectOfType<FloorGenerator>();
+                if (floorGenerator != null)
+                {
+                    floorManager.SaveCurrentFloorGenerationSeed(floorGenerator.CurrentSeed);
+                }
+
                 // Mark current floor as visited before leaving
                 floorManager.MarkCurrentFloorAsVisited();
 
                 // Set new floor
                 floorManager.CurrentFloorNumber = targetFloor;
-
-                Debug.Log($"[Elevator] Transitioning to floor {targetFloor}");
             }
 
             // Consume power cell if going to new floor
@@ -244,7 +249,6 @@ namespace _Scripts.Systems.Machines
             {
                 // The power cell is consumed - we don't return it to inventory
                 _powerCellSlot.SetPoweredState(false, null);
-                Debug.Log("[Elevator] PowerCell consumed for new floor access");
             }
 
             // Publish event for level regeneration (LevelGenerator listens to this)
@@ -261,8 +265,6 @@ namespace _Scripts.Systems.Machines
 
         private void HandlePowerStateChanged(bool isPowered)
         {
-            Debug.Log($"[Elevator] Power state changed: {isPowered}");
-
             // Refresh UI if open
             if (_isUIOpen && _floorUI != null)
             {

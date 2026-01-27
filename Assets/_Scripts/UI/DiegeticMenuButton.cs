@@ -48,7 +48,7 @@ namespace MainMenu.UI
         /// </summary>
         public void Activate()
         {
-            Debug.Log($"Activate: {_buttonType}", this);
+            // Button activation handled by DiegeticMainMenuController
         }
 
         public void SetSelected(bool isSelected)

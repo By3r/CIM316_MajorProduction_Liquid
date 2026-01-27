@@ -50,6 +50,9 @@ namespace _Scripts.Core.Managers
             }
 
             Instance = this;
+
+            // DontDestroyOnLoad only works on root GameObjects, so unparent first
+            transform.SetParent(null);
             DontDestroyOnLoad(gameObject);
         }
 
