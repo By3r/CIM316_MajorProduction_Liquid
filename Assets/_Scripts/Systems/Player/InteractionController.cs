@@ -2,6 +2,7 @@ using _Scripts.Core.Managers;
 using _Scripts.Systems.ProceduralGeneration.Doors;
 using _Scripts.Systems.Inventory;
 using _Scripts.Systems.Inventory.Pickups;
+using _Scripts.Systems.Machines;
 using UnityEngine;
 
 namespace _Scripts.Systems.Player
@@ -31,8 +32,12 @@ namespace _Scripts.Systems.Player
         private Camera _playerCamera;
         private Door _currentDoor;
         private Pickup _currentPickup;
+        private PowerCellSlot _currentPowerCellSlot;
+        private Elevator _currentElevator;
         private bool _isLookingAtDoor;
         private bool _isLookingAtPickup;
+        private bool _isLookingAtPowerCellSlot;
+        private bool _isLookingAtElevatorPanel;
 
         #endregion
 
@@ -49,6 +54,11 @@ namespace _Scripts.Systems.Player
         public Pickup CurrentPickup => _currentPickup;
 
         /// <summary>
+        /// Gets the PowerCellSlot the player is currently looking at (null if none).
+        /// </summary>
+        public PowerCellSlot CurrentPowerCellSlot => _currentPowerCellSlot;
+
+        /// <summary>
         /// Gets whether the player is currently looking at an interactable door.
         /// </summary>
         public bool IsLookingAtDoor => _isLookingAtDoor;
@@ -59,9 +69,24 @@ namespace _Scripts.Systems.Player
         public bool IsLookingAtPickup => _isLookingAtPickup;
 
         /// <summary>
-        /// Gets whether the player is looking at any interactable (door or pickup).
+        /// Gets whether the player is currently looking at a PowerCellSlot.
         /// </summary>
-        public bool IsLookingAtInteractable => _isLookingAtDoor || _isLookingAtPickup;
+        public bool IsLookingAtPowerCellSlot => _isLookingAtPowerCellSlot;
+
+        /// <summary>
+        /// Gets the Elevator the player is currently looking at (null if none).
+        /// </summary>
+        public Elevator CurrentElevator => _currentElevator;
+
+        /// <summary>
+        /// Gets whether the player is currently looking at an elevator control panel.
+        /// </summary>
+        public bool IsLookingAtElevatorPanel => _isLookingAtElevatorPanel;
+
+        /// <summary>
+        /// Gets whether the player is looking at any interactable.
+        /// </summary>
+        public bool IsLookingAtInteractable => _isLookingAtDoor || _isLookingAtPickup || _isLookingAtPowerCellSlot || _isLookingAtElevatorPanel;
         #endregion
 
         #region Initialization
@@ -166,6 +191,36 @@ namespace _Scripts.Systems.Player
                     if (_showDebugRays) Debug.DrawRay(ray.origin, ray.direction * hit.distance, Color.cyan);
                     return;
                 }
+
+                // Check for PowerCellSlot
+                PowerCellSlot powerCellSlot = hit.collider.GetComponent<PowerCellSlot>();
+                if (powerCellSlot == null) powerCellSlot = hit.collider.GetComponentInParent<PowerCellSlot>();
+
+                if (powerCellSlot != null)
+                {
+                    SetPowerCellSlotTarget(powerCellSlot);
+                    if (_showDebugRays) Debug.DrawRay(ray.origin, ray.direction * hit.distance, Color.magenta);
+                    return;
+                }
+
+                // Check for Elevator control panel
+                Elevator elevator = hit.collider.GetComponent<Elevator>();
+                if (elevator == null) elevator = hit.collider.GetComponentInParent<Elevator>();
+
+                if (elevator != null)
+                {
+                    // Check if we hit the control panel specifically or the elevator in general
+                    bool isControlPanel = elevator.ControlPanel == null ||
+                                          hit.collider.transform == elevator.ControlPanel ||
+                                          hit.collider.transform.IsChildOf(elevator.ControlPanel);
+
+                    if (isControlPanel)
+                    {
+                        SetElevatorTarget(elevator);
+                        if (_showDebugRays) Debug.DrawRay(ray.origin, ray.direction * hit.distance, Color.blue);
+                        return;
+                    }
+                }
             }
 
             ClearAllTargets();
@@ -177,6 +232,10 @@ namespace _Scripts.Systems.Player
             _currentDoor = door;
             _isLookingAtPickup = false;
             _currentPickup = null;
+            _isLookingAtPowerCellSlot = false;
+            _currentPowerCellSlot = null;
+            _isLookingAtElevatorPanel = false;
+            _currentElevator = null;
         }
 
         private void SetPickupTarget(Pickup pickup)
@@ -185,6 +244,34 @@ namespace _Scripts.Systems.Player
             _currentPickup = pickup;
             _isLookingAtDoor = false;
             _currentDoor = null;
+            _isLookingAtPowerCellSlot = false;
+            _currentPowerCellSlot = null;
+            _isLookingAtElevatorPanel = false;
+            _currentElevator = null;
+        }
+
+        private void SetPowerCellSlotTarget(PowerCellSlot slot)
+        {
+            _isLookingAtPowerCellSlot = true;
+            _currentPowerCellSlot = slot;
+            _isLookingAtDoor = false;
+            _currentDoor = null;
+            _isLookingAtPickup = false;
+            _currentPickup = null;
+            _isLookingAtElevatorPanel = false;
+            _currentElevator = null;
+        }
+
+        private void SetElevatorTarget(Elevator elevator)
+        {
+            _isLookingAtElevatorPanel = true;
+            _currentElevator = elevator;
+            _isLookingAtDoor = false;
+            _currentDoor = null;
+            _isLookingAtPickup = false;
+            _currentPickup = null;
+            _isLookingAtPowerCellSlot = false;
+            _currentPowerCellSlot = null;
         }
 
         private void ClearAllTargets()
@@ -193,6 +280,10 @@ namespace _Scripts.Systems.Player
             _currentDoor = null;
             _isLookingAtPickup = false;
             _currentPickup = null;
+            _isLookingAtPowerCellSlot = false;
+            _currentPowerCellSlot = null;
+            _isLookingAtElevatorPanel = false;
+            _currentElevator = null;
         }
 
         /// <summary>
@@ -245,6 +336,36 @@ namespace _Scripts.Systems.Player
                 else
                 {
                     OnFailedPickup(_currentPickup);
+                }
+                return;
+            }
+
+            // Try PowerCellSlot interaction
+            if (_isLookingAtPowerCellSlot && _currentPowerCellSlot != null)
+            {
+                var inventory = PlayerInventory.Instance;
+                if (inventory != null)
+                {
+                    bool success = _currentPowerCellSlot.TogglePowerCell(inventory);
+                    if (success)
+                    {
+                        OnSuccessfulPowerCellSlotInteraction(_currentPowerCellSlot);
+                    }
+                    else
+                    {
+                        OnFailedPowerCellSlotInteraction(_currentPowerCellSlot);
+                    }
+                }
+                return;
+            }
+
+            // Try Elevator panel interaction
+            if (_isLookingAtElevatorPanel && _currentElevator != null)
+            {
+                if (!_currentElevator.IsTransitioning && !_currentElevator.IsUIOpen)
+                {
+                    _currentElevator.OpenFloorUI();
+                    Debug.Log("[InteractionController] Opened elevator floor UI");
                 }
             }
         }
@@ -309,6 +430,30 @@ namespace _Scripts.Systems.Player
         private void OnFailedPickup(Pickup pickup)
         {
             Debug.Log($"[InteractionController] Cannot pick up '{pickup.gameObject.name}' - inventory full or invalid");
+        }
+
+        /// <summary>
+        /// Called when a PowerCellSlot interaction succeeds.
+        /// </summary>
+        private void OnSuccessfulPowerCellSlotInteraction(PowerCellSlot slot)
+        {
+            string action = slot.IsPowered ? "inserted PowerCell into" : "removed PowerCell from";
+            Debug.Log($"[InteractionController] Successfully {action} '{slot.gameObject.name}'");
+        }
+
+        /// <summary>
+        /// Called when a PowerCellSlot interaction fails.
+        /// </summary>
+        private void OnFailedPowerCellSlotInteraction(PowerCellSlot slot)
+        {
+            if (slot.IsPowered)
+            {
+                Debug.Log($"[InteractionController] Cannot remove PowerCell from '{slot.gameObject.name}' - inventory full");
+            }
+            else
+            {
+                Debug.Log($"[InteractionController] Cannot insert PowerCell into '{slot.gameObject.name}' - no PowerCell in inventory");
+            }
         }
 
         #endregion

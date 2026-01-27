@@ -1,9 +1,3 @@
-/*
- * NOT YET INTEGRATED - Commented out for later integration
- * Remove #if false and #endif when ready to integrate PowerCellSlot system
- */
-#if false
-
 using System;
 using UnityEngine;
 using _Scripts.Systems.Inventory;
@@ -204,5 +198,3 @@ namespace _Scripts.Systems.Machines
         #endregion
     }
 }
-
-#endif

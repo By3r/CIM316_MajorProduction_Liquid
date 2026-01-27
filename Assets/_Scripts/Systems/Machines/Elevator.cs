@@ -1,112 +1,73 @@
-/*
- * NOT YET INTEGRATED - Commented out for later integration
- * Remove #if false and #endif when ready to integrate Elevator system
- */
-#if false
-
 using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.SceneManagement;
 using _Scripts.Core.Managers;
-using _Scripts.Systems.Inventory;
 
 namespace _Scripts.Systems.Machines
 {
     /// <summary>
     /// Elevator controller for floor transitions.
-    /// Requires PowerCell to operate. Goes up or down based on type.
+    /// Player interacts with control panel to open floor selection UI.
+    /// Requires PowerCell to travel to new (unvisited) floors.
     /// </summary>
-    public class Elevator : PoweredMachine
+    public class Elevator : MonoBehaviour
     {
         #region Events
 
-        public event Action OnElevatorActivated;
-        public event Action OnTransitionStarted;
-        public event Action OnTransitionComplete;
+        public event Action OnFloorUIOpened;
+        public event Action OnFloorUIClosed;
+        public event Action<int> OnFloorTransitionStarted;
+        public event Action<int> OnFloorTransitionComplete;
 
         #endregion
 
         #region Serialized Fields
 
-        [Header("Elevator Configuration")]
-        [SerializeField] private ElevatorType _elevatorType = ElevatorType.Exit;
-        [SerializeField] private string _gameSceneName = "Game";
+        [Header("References")]
+        [SerializeField] private PowerCellSlot _powerCellSlot;
+        [SerializeField] private ElevatorFloorUI _floorUI;
+        [SerializeField] private Transform _controlPanel;
+
+        [Header("Floor Settings")]
+        [SerializeField] private int _totalFloors = 20;
 
         [Header("Transition Settings")]
         [SerializeField] private float _transitionDelay = 2f;
-        [SerializeField] private bool _requirePowerCell = true;
-
-        [Header("Interaction")]
-        [SerializeField] private float _interactionRange = 3f;
-        [SerializeField] private Transform _playerStandPoint;
-
-        [Header("Visual Feedback")]
-        [SerializeField] private GameObject _doorsClosed;
-        [SerializeField] private GameObject _doorsOpen;
-        [SerializeField] private Animator _doorAnimator;
-        [SerializeField] private string _openDoorsAnimTrigger = "Open";
-        [SerializeField] private string _closeDoorsAnimTrigger = "Close";
 
         [Header("Audio")]
         [SerializeField] private AudioSource _audioSource;
-        [SerializeField] private AudioClip _doorOpenSound;
-        [SerializeField] private AudioClip _doorCloseSound;
         [SerializeField] private AudioClip _elevatorMoveSound;
+        [SerializeField] private AudioClip _uiOpenSound;
 
         [Header("Events")]
-        [SerializeField] private UnityEvent _onElevatorActivated;
-        [SerializeField] private UnityEvent _onDoorsOpened;
-        [SerializeField] private UnityEvent _onDoorsClosed;
+        [SerializeField] private UnityEvent _onTransitionStarted;
+        [SerializeField] private UnityEvent _onTransitionComplete;
 
         #endregion
 
         #region Private Fields
 
-        private bool _isTransitioning = false;
-        private bool _doorsAreOpen = false;
+        private bool _isTransitioning;
+        private bool _isUIOpen;
 
         #endregion
 
         #region Properties
 
-        public ElevatorType ElevatorType => _elevatorType;
+        public bool IsPowered => _powerCellSlot != null && _powerCellSlot.IsPowered;
         public bool IsTransitioning => _isTransitioning;
-        public bool DoorsAreOpen => _doorsAreOpen;
-        public float InteractionRange => _interactionRange;
+        public bool IsUIOpen => _isUIOpen;
+        public Transform ControlPanel => _controlPanel;
 
-        public string InteractionPrompt
+        public string ControlPanelPrompt
         {
             get
             {
-                if (_requirePowerCell && !IsPowered)
-                    return "Requires PowerCell";
-
                 if (_isTransitioning)
-                    return "Transitioning...";
+                    return "Elevator in transit...";
 
-                return _elevatorType == ElevatorType.Exit
-                    ? "Go Down (Next Floor)"
-                    : "Go Up (Previous Floor)";
-            }
-        }
-
-        public bool CanOperate
-        {
-            get
-            {
-                if (_isTransitioning) return false;
-                if (_requirePowerCell && !IsPowered) return false;
-
-                var floorManager = FloorStateManager.Instance;
-                if (floorManager == null) return false;
-
-                // Entry elevator (go up) can't go above floor 1
-                if (_elevatorType == ElevatorType.Entry && floorManager.CurrentFloorNumber <= 1)
-                    return false;
-
-                return true;
+                return "Use Control Panel";
             }
         }
 
@@ -114,16 +75,55 @@ namespace _Scripts.Systems.Machines
 
         #region Unity Lifecycle
 
-        protected override void OnPoweredOn()
+        private void Start()
         {
-            base.OnPoweredOn();
-            OpenDoors();
+            // Find Floor UI at runtime if not assigned (since it's in the scene, not the prefab)
+            if (_floorUI == null)
+            {
+                _floorUI = FindObjectOfType<ElevatorFloorUI>();
+                if (_floorUI == null)
+                {
+                    Debug.LogWarning("[Elevator] ElevatorFloorUI not found in scene!");
+                }
+            }
+
+            // Subscribe to floor selection events
+            if (_floorUI != null)
+            {
+                _floorUI.OnFloorSelected += HandleFloorSelected;
+
+                int currentFloor = GetCurrentFloor();
+                int highestUnlocked = GetHighestUnlockedFloor();
+                _floorUI.Initialize(_totalFloors, currentFloor, highestUnlocked);
+            }
+
+            // Subscribe to power state changes
+            if (_powerCellSlot != null)
+            {
+                _powerCellSlot.OnPowerStateChanged += HandlePowerStateChanged;
+            }
         }
 
-        protected override void OnPoweredOff()
+        private void OnDestroy()
         {
-            base.OnPoweredOff();
-            CloseDoors();
+            if (_floorUI != null)
+            {
+                _floorUI.OnFloorSelected -= HandleFloorSelected;
+            }
+
+            if (_powerCellSlot != null)
+            {
+                _powerCellSlot.OnPowerStateChanged -= HandlePowerStateChanged;
+            }
+        }
+
+        private void Update()
+        {
+            // Close UI on escape
+            if (_isUIOpen && Input.GetKeyDown(KeyCode.Escape))
+            {
+                CloseFloorUI();
+            }
         }
 
         #endregion
@@ -131,77 +131,86 @@ namespace _Scripts.Systems.Machines
         #region Public Methods
 
         /// <summary>
-        /// Attempts to use the elevator to transition floors.
+        /// Opens the floor selection UI.
+        /// Called when player interacts with control panel.
         /// </summary>
-        public bool TryUseElevator()
+        public void OpenFloorUI()
         {
-            if (!CanOperate)
-            {
-                Debug.Log($"[Elevator] Cannot operate. Powered: {IsPowered}, Transitioning: {_isTransitioning}");
-                return false;
-            }
+            if (_isTransitioning || _floorUI == null) return;
 
-            StartCoroutine(TransitionCoroutine());
-            return true;
+            int currentFloor = GetCurrentFloor();
+            int highestUnlocked = GetHighestUnlockedFloor();
+
+            _floorUI.Show(currentFloor, highestUnlocked);
+            _isUIOpen = true;
+
+            PlaySound(_uiOpenSound);
+            OnFloorUIOpened?.Invoke();
+
+            // Disable player input while UI is open
+            if (InputManager.Instance != null)
+            {
+                InputManager.Instance.EnablePlayerInput(false);
+            }
         }
 
         /// <summary>
-        /// Opens the elevator doors.
+        /// Closes the floor selection UI.
         /// </summary>
-        public void OpenDoors()
+        public void CloseFloorUI()
         {
-            if (_doorsAreOpen) return;
-
-            _doorsAreOpen = true;
-
-            if (_doorAnimator != null)
+            if (_floorUI != null)
             {
-                _doorAnimator.SetTrigger(_openDoorsAnimTrigger);
-            }
-            else
-            {
-                if (_doorsClosed != null) _doorsClosed.SetActive(false);
-                if (_doorsOpen != null) _doorsOpen.SetActive(true);
+                _floorUI.Hide();
             }
 
-            PlaySound(_doorOpenSound);
-            _onDoorsOpened?.Invoke();
-        }
+            _isUIOpen = false;
+            OnFloorUIClosed?.Invoke();
 
-        /// <summary>
-        /// Closes the elevator doors.
-        /// </summary>
-        public void CloseDoors()
-        {
-            if (!_doorsAreOpen) return;
-
-            _doorsAreOpen = false;
-
-            if (_doorAnimator != null)
+            // Re-enable player input
+            if (InputManager.Instance != null)
             {
-                _doorAnimator.SetTrigger(_closeDoorsAnimTrigger);
+                InputManager.Instance.EnablePlayerInput(true);
             }
-            else
-            {
-                if (_doorsClosed != null) _doorsClosed.SetActive(true);
-                if (_doorsOpen != null) _doorsOpen.SetActive(false);
-            }
-
-            PlaySound(_doorCloseSound);
-            _onDoorsClosed?.Invoke();
         }
 
         #endregion
 
         #region Private Methods
 
-        private IEnumerator TransitionCoroutine()
+        private void HandleFloorSelected(int floor)
+        {
+            int currentFloor = GetCurrentFloor();
+            int highestUnlocked = GetHighestUnlockedFloor();
+
+            // Can't go to current floor
+            if (floor == currentFloor)
+            {
+                Debug.Log("[Elevator] Already on this floor");
+                return;
+            }
+
+            // Check if floor is accessible
+            bool isNewFloor = floor > highestUnlocked;
+
+            if (isNewFloor && !IsPowered)
+            {
+                Debug.Log("[Elevator] Need PowerCell to travel to new floor");
+                return;
+            }
+
+            // Start transition
+            StartCoroutine(TransitionCoroutine(floor, isNewFloor));
+        }
+
+        private IEnumerator TransitionCoroutine(int targetFloor, bool consumesPower)
         {
             _isTransitioning = true;
-            OnTransitionStarted?.Invoke();
+            OnFloorTransitionStarted?.Invoke(targetFloor);
+            _onTransitionStarted?.Invoke();
 
-            // Close doors
-            CloseDoors();
+            // Close UI
+            CloseFloorUI();
 
             // Play elevator movement sound
             PlaySound(_elevatorMoveSound);
@@ -209,35 +218,76 @@ namespace _Scripts.Systems.Machines
             // Wait for transition
             yield return new WaitForSeconds(_transitionDelay);
 
-            // Update floor number
+            // Update floor state
             var floorManager = FloorStateManager.Instance;
             if (floorManager != null)
             {
-                if (_elevatorType == ElevatorType.Exit)
-                {
-                    // Going down - increase floor number
-                    floorManager.CurrentFloorNumber++;
-                    Debug.Log($"[Elevator] Going DOWN to floor {floorManager.CurrentFloorNumber}");
-                }
-                else
-                {
-                    // Going up - decrease floor number
-                    floorManager.CurrentFloorNumber--;
-                    Debug.Log($"[Elevator] Going UP to floor {floorManager.CurrentFloorNumber}");
-                }
-
-                // Mark current floor as visited
+                // Mark current floor as visited before leaving
                 floorManager.MarkCurrentFloorAsVisited();
+
+                // Set new floor
+                floorManager.CurrentFloorNumber = targetFloor;
+
+                Debug.Log($"[Elevator] Transitioning to floor {targetFloor}");
             }
 
-            OnElevatorActivated?.Invoke();
-            _onElevatorActivated?.Invoke();
+            // Consume power cell if going to new floor
+            if (consumesPower && _powerCellSlot != null && _powerCellSlot.IsPowered)
+            {
+                // The power cell is consumed - we don't return it to inventory
+                _powerCellSlot.SetPoweredState(false, null);
+                Debug.Log("[Elevator] PowerCell consumed for new floor access");
+            }
 
-            // Reload the scene
-            SceneManager.LoadScene(_gameSceneName);
+            // Publish event for level regeneration (LevelGenerator listens to this)
+            if (GameManager.Instance?.EventManager != null)
+            {
+                GameManager.Instance.EventManager.Publish("OnFloorTransitionRequested", targetFloor);
+            }
 
-            OnTransitionComplete?.Invoke();
+            OnFloorTransitionComplete?.Invoke(targetFloor);
+            _onTransitionComplete?.Invoke();
+
             _isTransitioning = false;
+        }
+
+        private void HandlePowerStateChanged(bool isPowered)
+        {
+            Debug.Log($"[Elevator] Power state changed: {isPowered}");
+
+            // Refresh UI if open
+            if (_isUIOpen && _floorUI != null)
+            {
+                int currentFloor = GetCurrentFloor();
+                int highestUnlocked = GetHighestUnlockedFloor();
+                _floorUI.Show(currentFloor, highestUnlocked);
+            }
+        }
+
+        private int GetCurrentFloor()
+        {
+            var floorManager = FloorStateManager.Instance;
+            return floorManager != null ? floorManager.CurrentFloorNumber : 1;
+        }
+
+        private int GetHighestUnlockedFloor()
+        {
+            var floorManager = FloorStateManager.Instance;
+            if (floorManager == null) return 1;
+
+            // Find highest visited floor
+            int highest = floorManager.CurrentFloorNumber;
+
+            // Check all floors up to total
+            for (int i = 1; i <= _totalFloors; i++)
+            {
+                if (floorManager.HasVisitedFloor(i) && i > highest)
+                {
+                    highest = i;
+                }
+            }
+
+            return highest;
         }
 
         private void PlaySound(AudioClip clip)
@@ -254,24 +304,16 @@ namespace _Scripts.Systems.Machines
 
         private void OnDrawGizmosSelected()
         {
-            Gizmos.color = _elevatorType == ElevatorType.Exit ? Color.red : Color.blue;
-            Gizmos.DrawWireSphere(transform.position, _interactionRange);
+            Gizmos.color = IsPowered ? Color.green : Color.yellow;
+            Gizmos.DrawWireCube(transform.position, Vector3.one * 2f);
 
-            if (_playerStandPoint != null)
+            if (_controlPanel != null)
             {
-                Gizmos.color = Color.green;
-                Gizmos.DrawWireCube(_playerStandPoint.position, Vector3.one * 0.5f);
+                Gizmos.color = Color.cyan;
+                Gizmos.DrawWireSphere(_controlPanel.position, 0.3f);
             }
         }
 
         #endregion
     }
-
-    public enum ElevatorType
-    {
-        Entry,  // Player enters floor here (go UP to previous floor)
-        Exit    // Player exits floor here (go DOWN to next floor)
-    }
 }
-
-#endif

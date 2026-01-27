@@ -98,6 +98,12 @@ namespace _Scripts.Systems.ProceduralGeneration
 
         private void Start()
         {
+            // Subscribe to floor transition events from elevator
+            if (GameManager.Instance?.EventManager != null)
+            {
+                GameManager.Instance.EventManager.Subscribe<int>("OnFloorTransitionRequested", HandleFloorTransition);
+            }
+
             // If we generate procedurally, the nav grid will be rebuilt
             // at the end of GenerateFloor().
             if (_generateOnStart)
@@ -111,6 +117,30 @@ namespace _Scripts.Systems.ProceduralGeneration
                 // on startup based on the current OccupiedSpaceRegistry.
                 RebuildNavGridFromRegistry();
             }
+        }
+
+        private void OnDestroy()
+        {
+            // Unsubscribe from events
+            if (GameManager.Instance?.EventManager != null)
+            {
+                GameManager.Instance.EventManager.Unsubscribe<int>("OnFloorTransitionRequested", HandleFloorTransition);
+            }
+        }
+
+        /// <summary>
+        /// Handles floor transition requests from the elevator.
+        /// Regenerates the floor with the new floor number.
+        /// </summary>
+        private void HandleFloorTransition(int targetFloor)
+        {
+            Debug.Log($"[FloorGenerator] Received floor transition request to floor {targetFloor}");
+
+            // Update the floor number
+            _currentFloorNumber = targetFloor;
+
+            // Regenerate the floor
+            GenerateFloor();
         }
 
         private void EnsureConnectionSystemExists()

@@ -5363,7 +5363,7 @@ Light:
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 2
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -5549,6 +5549,10 @@ MonoBehaviour:
     spawnChance: 40
   - itemPrefab: {fileID: 4870821793472388967, guid: 0257e21cc11f5d84aa2391dd6dcb233a, type: 3}
     spawnChance: 40
+  - itemPrefab: {fileID: 3830017084925534690, guid: fb166139c38ac994a972b389d0246706, type: 3}
+    spawnChance: 40
+  - itemPrefab: {fileID: 3840893123260641202, guid: 3f88ba6bbeed69746938efaafbf6eab6, type: 3}
+    spawnChance: 40
   _guaranteedSpawn: 0
   _useFallbackItem: 0
   _fallbackItemPrefab: {fileID: 0}
@@ -5613,6 +5617,10 @@ MonoBehaviour:
   - itemPrefab: {fileID: 5736715821296530898, guid: 9b4e94311a64edf40af84660c114a117, type: 3}
     spawnChance: 40
   - itemPrefab: {fileID: 4870821793472388967, guid: 0257e21cc11f5d84aa2391dd6dcb233a, type: 3}
+    spawnChance: 40
+  - itemPrefab: {fileID: 3830017084925534690, guid: fb166139c38ac994a972b389d0246706, type: 3}
+    spawnChance: 40
+  - itemPrefab: {fileID: 3840893123260641202, guid: 3f88ba6bbeed69746938efaafbf6eab6, type: 3}
     spawnChance: 40
   _guaranteedSpawn: 0
   _useFallbackItem: 0

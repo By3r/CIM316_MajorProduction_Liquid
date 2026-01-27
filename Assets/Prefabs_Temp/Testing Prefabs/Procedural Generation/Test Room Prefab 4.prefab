@@ -5363,7 +5363,7 @@ Light:
   m_InnerSpotAngle: 21.80208
   m_CookieSize: 10
   m_Shadows:
-    m_Type: 2
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -5628,7 +5628,7 @@ Transform:
   m_GameObject: {fileID: 7873030236629428107}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1.43, y: 0.1, z: 0.59}
+  m_LocalPosition: {x: 1.43, y: 1.46, z: 0.59}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -5648,15 +5648,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.ProceduralGeneration.Items.ItemSpawnPoint
   _spawnableItems:
   - itemPrefab: {fileID: 7530650875717680049, guid: 49064cc34d3dfd642b81ba1df9a04e4e, type: 3}
-    spawnChance: 15
+    spawnChance: 0
   - itemPrefab: {fileID: 5333549429777282362, guid: 02ec34fcc660b014b97dc84df06c297e, type: 3}
-    spawnChance: 5
+    spawnChance: 0
   - itemPrefab: {fileID: 5725912407974990886, guid: 2e20fe3f0d4cc8340959434f13ddeabf, type: 3}
-    spawnChance: 40
+    spawnChance: 0
   - itemPrefab: {fileID: 5736715821296530898, guid: 9b4e94311a64edf40af84660c114a117, type: 3}
-    spawnChance: 40
+    spawnChance: 0
   - itemPrefab: {fileID: 4870821793472388967, guid: 0257e21cc11f5d84aa2391dd6dcb233a, type: 3}
-    spawnChance: 40
+    spawnChance: 0
+  - itemPrefab: {fileID: 569574005221879927, guid: 9d1ab7475d4d2b34daea1b2fe36f3b2d, type: 3}
+    spawnChance: 100
   _guaranteedSpawn: 0
   _useFallbackItem: 0
   _fallbackItemPrefab: {fileID: 0}

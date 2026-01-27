@@ -74,7 +74,7 @@ MonoBehaviour:
     isEnabled: 1
     previewImage: {fileID: 0}
   _entryElevatorRoom:
-    prefab: {fileID: 5138822047483153816, guid: d69b80f8000253c489acefcbff8e994c, type: 3}
+    prefab: {fileID: 5905477482315762008, guid: 8cc30a3974b42ed4e90fd99f03f611d6, type: 3}
     roomID: 1
     displayName: 
     category: 100
