@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace _Scripts.Systems.ProceduralGeneration.Items
@@ -121,7 +121,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
             if (_guaranteedSpawn)
             {
                 _spawnedItem = TrySpawnRandomItem();
-                
+
                 // If still nothing spawned and we have a fallback, use it
                 if (_spawnedItem == null && _useFallbackItem && _fallbackItemPrefab != null)
                 {
@@ -157,7 +157,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
                     continue;
 
                 float roll = Random.Range(0f, 100f);
-                
+
                 if (roll <= spawnableItem.spawnChance)
                 {
                     return SpawnSpecificItem(spawnableItem.itemPrefab);
@@ -204,7 +204,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
         private void SnapItemToGroundOnce(GameObject item)
         {
             Collider itemCollider = item.GetComponent<Collider>();
-            
+
             if (itemCollider == null)
             {
                 if (_showDebugLogs)

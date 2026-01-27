@@ -91,6 +91,7 @@ namespace _Scripts.Systems.Machines
             if (_floorUI != null)
             {
                 _floorUI.OnFloorSelected += HandleFloorSelected;
+                _floorUI.OnUIClosed += HandleUIClosedByKeyboard;
 
                 int currentFloor = GetCurrentFloor();
                 int highestUnlocked = GetHighestUnlockedFloor();
@@ -109,6 +110,7 @@ namespace _Scripts.Systems.Machines
             if (_floorUI != null)
             {
                 _floorUI.OnFloorSelected -= HandleFloorSelected;
+                _floorUI.OnUIClosed -= HandleUIClosedByKeyboard;
             }
 
             if (_powerCellSlot != null)
@@ -117,12 +119,18 @@ namespace _Scripts.Systems.Machines
             }
         }
 
-        private void Update()
+        /// <summary>
+        /// Called when the UI is closed via keyboard (TAB, E, or Escape).
+        /// </summary>
+        private void HandleUIClosedByKeyboard()
         {
-            // Close UI on escape
-            if (_isUIOpen && Input.GetKeyDown(KeyCode.Escape))
+            _isUIOpen = false;
+            OnFloorUIClosed?.Invoke();
+
+            // Re-enable player input
+            if (InputManager.Instance != null)
             {
-                CloseFloorUI();
+                InputManager.Instance.EnablePlayerInput(true);
             }
         }
 
