@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using _Scripts.Core.Managers;
+using _Scripts.UI;
 
 namespace _Scripts.Systems.Machines
 {
@@ -35,26 +36,31 @@ namespace _Scripts.Systems.Machines
         [SerializeField] private Transform _buttonContainer;
         [SerializeField] private GameObject _floorButtonPrefab;
 
-        [Header("Colors")]
-        [Tooltip("Current floor the player is on.")]
-        [SerializeField] private Color _currentFloorColor = new Color(0.5f, 1f, 1f, 1f); // Light cyan
-        [Tooltip("Floors already visited/unlocked.")]
-        [SerializeField] private Color _unlockedFloorColor = new Color(0.5f, 0.5f, 0.5f, 1f); // Grey
-        [Tooltip("Next floor that needs to be unlocked (requires PowerCell).")]
-        [SerializeField] private Color _nextFloorColor = new Color(1f, 1f, 0.3f, 1f); // Yellow
-        [Tooltip("Floors beyond the next one (locked).")]
-        [SerializeField] private Color _lockedFloorColor = new Color(1f, 1f, 0.3f, 0.5f); // Yellow faded
-        [Tooltip("Blocked floors (Floor X, Floor 0) - permanently inaccessible.")]
-        [SerializeField] private Color _blockedFloorColor = new Color(0.8f, 0.2f, 0.2f, 1f); // Red
-        [Tooltip("Text color for current floor.")]
-        [SerializeField] private Color _currentFloorTextColor = Color.black;
-        [Tooltip("Text color for other floors.")]
-        [SerializeField] private Color _defaultTextColor = Color.white;
-        [Tooltip("Text color for blocked floors.")]
-        [SerializeField] private Color _blockedTextColor = new Color(0.5f, 0.5f, 0.5f, 1f); // Dark grey
+        [Header("Current Floor Colors")]
+        [SerializeField] private Color _currentFloorOutline = new Color(0.5f, 1f, 1f, 1f); // Light cyan
+        [SerializeField] private Color _currentFloorBackground = new Color(0.3f, 0.8f, 0.8f, 1f);
+        [SerializeField] private Color _currentFloorText = Color.black;
+
+        [Header("Other Floor Colors")]
+        [SerializeField] private Color _otherFloorOutline = new Color(0.5f, 0.5f, 0.5f, 1f); // Grey
+        [SerializeField] private Color _otherFloorBackground = new Color(0.3f, 0.3f, 0.3f, 1f);
+        [SerializeField] private Color _otherFloorText = Color.white;
+
+        [Header("Opacity")]
+        [Tooltip("Opacity for unvisited floors.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float _unvisitedFloorOpacity = 0.5f;
 
         [Header("Settings")]
         [SerializeField] private int _totalFloors = 20;
+
+        [Header("PowerCell Status")]
+        [Tooltip("Icon that shows PowerCell status (green = has PowerCell, grey = no PowerCell).")]
+        [SerializeField] private Image _powerCellIcon;
+        [Tooltip("Text that shows PowerCell status message.")]
+        [SerializeField] private TextMeshProUGUI _powerCellStatusText;
+        [SerializeField] private Color _powerCellAvailableColor = Color.green;
+        [SerializeField] private Color _powerCellUnavailableColor = Color.grey;
 
         #endregion
 
@@ -62,9 +68,10 @@ namespace _Scripts.Systems.Machines
 
         private int _currentFloor;
         private int _highestUnlockedFloor;
-        private FloorButton[] _floorButtons;
+        private FloorButtonData[] _floorButtons;
         private bool _isOpen;
         private bool _justOpened; // Prevents closing on the same frame as opening
+        private bool _isPowered;
 
         #endregion
 
@@ -145,26 +152,18 @@ namespace _Scripts.Systems.Machines
         /// <summary>
         /// Opens the floor selection UI.
         /// </summary>
-        public void Show(int currentFloor, int highestUnlockedFloor)
+        public void Show(int currentFloor, int highestUnlockedFloor, bool isPowered = false)
         {
-            Debug.Log($"[ElevatorFloorUI] Show() called. currentFloor: {currentFloor}, highestUnlockedFloor: {highestUnlockedFloor}");
-
             _currentFloor = currentFloor;
             _highestUnlockedFloor = highestUnlockedFloor;
+            _isPowered = isPowered;
 
-            Debug.Log($"[ElevatorFloorUI] _floorButtons: {_floorButtons}, count: {(_floorButtons != null ? _floorButtons.Length : 0)}");
             RefreshButtonStates();
-
-            Debug.Log($"[ElevatorFloorUI] _panel: {_panel}, _panel null: {_panel == null}");
+            UpdatePowerCellStatus();
 
             if (_panel != null)
             {
                 _panel.SetActive(true);
-                Debug.Log($"[ElevatorFloorUI] Panel activated. _panel.activeSelf: {_panel.activeSelf}, _panel.activeInHierarchy: {_panel.activeInHierarchy}");
-            }
-            else
-            {
-                Debug.LogError("[ElevatorFloorUI] _panel is NULL! Cannot show UI.");
             }
 
             _isOpen = true;
@@ -172,8 +171,6 @@ namespace _Scripts.Systems.Machines
 
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
-
-            Debug.Log($"[ElevatorFloorUI] Show() complete. _isOpen: {_isOpen}");
         }
 
         /// <summary>
@@ -210,9 +207,31 @@ namespace _Scripts.Systems.Machines
             RefreshButtonStates();
         }
 
+        /// <summary>
+        /// Updates the PowerCell status display.
+        /// </summary>
+        public void SetPoweredState(bool isPowered)
+        {
+            _isPowered = isPowered;
+            UpdatePowerCellStatus();
+        }
+
         #endregion
 
         #region Private Methods
+
+        private void UpdatePowerCellStatus()
+        {
+            if (_powerCellIcon != null)
+            {
+                _powerCellIcon.color = _isPowered ? _powerCellAvailableColor : _powerCellUnavailableColor;
+            }
+
+            if (_powerCellStatusText != null)
+            {
+                _powerCellStatusText.text = _isPowered ? "PowerCell Ready" : "PowerCell Required";
+            }
+        }
 
         private void CreateFloorButtons()
         {
@@ -221,9 +240,9 @@ namespace _Scripts.Systems.Machines
             {
                 foreach (var btn in _floorButtons)
                 {
-                    if (btn != null && btn.Button != null)
+                    if (btn?.ButtonComponent != null)
                     {
-                        Destroy(btn.Button.gameObject);
+                        Destroy(btn.ButtonComponent.gameObject);
                     }
                 }
             }
@@ -231,7 +250,7 @@ namespace _Scripts.Systems.Machines
             // Create buttons: Floor X, Floor 0, then Floor 1 to _totalFloors
             // Total buttons = 2 (X and 0) + _totalFloors
             int buttonCount = 2 + _totalFloors;
-            _floorButtons = new FloorButton[buttonCount];
+            _floorButtons = new FloorButtonData[buttonCount];
 
             // Floor X (index 0)
             CreateSpecialFloorButton(0, "X", -2); // -2 represents Floor X internally
@@ -248,25 +267,24 @@ namespace _Scripts.Systems.Machines
                 GameObject buttonObj = Instantiate(_floorButtonPrefab, _buttonContainer);
                 buttonObj.name = $"Floor_{floorNumber}";
 
-                Button button = buttonObj.GetComponent<Button>();
-                TextMeshProUGUI text = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
-
-                if (text != null)
+                ElevatorFloorButton btnComponent = buttonObj.GetComponent<ElevatorFloorButton>();
+                if (btnComponent == null)
                 {
-                    text.text = floorNumber.ToString();
+                    Debug.LogError($"[ElevatorFloorUI] Floor button prefab missing ElevatorFloorButton component!");
+                    continue;
                 }
 
-                _floorButtons[buttonIndex] = new FloorButton
+                btnComponent.SetFloorNumber(floorNumber.ToString());
+
+                _floorButtons[buttonIndex] = new FloorButtonData
                 {
                     FloorNumber = floorNumber,
-                    Button = button,
-                    Text = text,
-                    Image = button.GetComponent<Image>(),
+                    ButtonComponent = btnComponent,
                     IsBlocked = false
                 };
 
                 int floor = floorNumber; // Capture for closure
-                button.onClick.AddListener(() => OnFloorButtonClicked(floor));
+                btnComponent.Button.onClick.AddListener(() => OnFloorButtonClicked(floor));
             }
         }
 
@@ -275,25 +293,22 @@ namespace _Scripts.Systems.Machines
             GameObject buttonObj = Instantiate(_floorButtonPrefab, _buttonContainer);
             buttonObj.name = $"Floor_{displayText}";
 
-            Button button = buttonObj.GetComponent<Button>();
-            TextMeshProUGUI text = buttonObj.GetComponentInChildren<TextMeshProUGUI>();
-
-            if (text != null)
+            ElevatorFloorButton btnComponent = buttonObj.GetComponent<ElevatorFloorButton>();
+            if (btnComponent == null)
             {
-                text.text = displayText;
+                Debug.LogError($"[ElevatorFloorUI] Floor button prefab missing ElevatorFloorButton component!");
+                return;
             }
 
-            _floorButtons[buttonIndex] = new FloorButton
+            btnComponent.SetFloorNumber(displayText);
+            btnComponent.SetInteractable(false);
+
+            _floorButtons[buttonIndex] = new FloorButtonData
             {
                 FloorNumber = internalFloorNumber,
-                Button = button,
-                Text = text,
-                Image = button.GetComponent<Image>(),
+                ButtonComponent = btnComponent,
                 IsBlocked = true // Floor X and Floor 0 are blocked
             };
-
-            // Blocked floors don't have click handlers
-            button.interactable = false;
         }
 
         private void RefreshButtonStates()
@@ -302,14 +317,14 @@ namespace _Scripts.Systems.Machines
 
             foreach (var floorBtn in _floorButtons)
             {
-                if (floorBtn == null || floorBtn.Button == null) continue;
+                if (floorBtn?.ButtonComponent == null) continue;
 
                 FloorState state = GetFloorState(floorBtn);
                 ApplyButtonStyle(floorBtn, state);
             }
         }
 
-        private FloorState GetFloorState(FloorButton floorBtn)
+        private FloorState GetFloorState(FloorButtonData floorBtn)
         {
             // Blocked floors (Floor X and Floor 0)
             if (floorBtn.IsBlocked)
@@ -325,62 +340,47 @@ namespace _Scripts.Systems.Machines
             }
             else if (floor <= _highestUnlockedFloor)
             {
-                return FloorState.Unlocked;
-            }
-            else if (floor == _highestUnlockedFloor + 1)
-            {
-                return FloorState.NextToUnlock;
+                return FloorState.Visited;
             }
             else
             {
-                return FloorState.Locked;
+                return FloorState.Unvisited;
             }
         }
 
-        private void ApplyButtonStyle(FloorButton floorBtn, FloorState state)
+        private void ApplyButtonStyle(FloorButtonData floorBtn, FloorState state)
         {
-            Color buttonColor;
-            Color textColor = _defaultTextColor;
+            var btn = floorBtn.ButtonComponent;
             bool interactable = true;
 
             switch (state)
             {
                 case FloorState.Blocked:
-                    buttonColor = _blockedFloorColor;
-                    textColor = _blockedTextColor;
+                    // Blocked floors (Floor X, Floor 0) use other floor colors with unvisited opacity
+                    btn.ApplyOtherFloorStyle(_otherFloorOutline, _otherFloorBackground, _otherFloorText, _unvisitedFloorOpacity);
                     interactable = false;
                     break;
+
                 case FloorState.Current:
-                    buttonColor = _currentFloorColor;
-                    textColor = _currentFloorTextColor;
+                    btn.ApplyCurrentFloorStyle(_currentFloorOutline, _currentFloorBackground, _currentFloorText);
                     interactable = false; // Can't travel to current floor
                     break;
-                case FloorState.Unlocked:
-                    buttonColor = _unlockedFloorColor;
+
+                case FloorState.Visited:
+                    btn.ApplyOtherFloorStyle(_otherFloorOutline, _otherFloorBackground, _otherFloorText, 1f);
                     break;
-                case FloorState.NextToUnlock:
-                    buttonColor = _nextFloorColor;
-                    textColor = Color.black;
-                    break;
-                case FloorState.Locked:
+
+                case FloorState.Unvisited:
                 default:
-                    buttonColor = _lockedFloorColor;
-                    textColor = Color.black;
-                    interactable = false; // Can't travel to floors beyond next
+                    // Unvisited floors use reduced opacity
+                    // Only the next floor (highestUnlocked + 1) is interactable
+                    bool isNextFloor = floorBtn.FloorNumber == _highestUnlockedFloor + 1;
+                    btn.ApplyOtherFloorStyle(_otherFloorOutline, _otherFloorBackground, _otherFloorText, _unvisitedFloorOpacity);
+                    interactable = isNextFloor;
                     break;
             }
 
-            if (floorBtn.Image != null)
-            {
-                floorBtn.Image.color = buttonColor;
-            }
-
-            if (floorBtn.Text != null)
-            {
-                floorBtn.Text.color = textColor;
-            }
-
-            floorBtn.Button.interactable = interactable;
+            btn.SetInteractable(interactable);
         }
 
         private void OnFloorButtonClicked(int floor)
@@ -401,12 +401,10 @@ namespace _Scripts.Systems.Machines
 
         #region Helper Classes
 
-        private class FloorButton
+        private class FloorButtonData
         {
             public int FloorNumber;
-            public Button Button;
-            public TextMeshProUGUI Text;
-            public Image Image;
+            public ElevatorFloorButton ButtonComponent;
             public bool IsBlocked;
         }
 
@@ -414,9 +412,8 @@ namespace _Scripts.Systems.Machines
         {
             Blocked,
             Current,
-            Unlocked,
-            NextToUnlock,
-            Locked
+            Visited,
+            Unvisited
         }
 
         #endregion

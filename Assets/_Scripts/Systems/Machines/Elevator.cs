@@ -159,8 +159,7 @@ namespace _Scripts.Systems.Machines
             int currentFloor = GetCurrentFloor();
             int highestUnlocked = GetHighestUnlockedFloor();
 
-            Debug.Log($"[Elevator] Showing floor UI. CurrentFloor: {currentFloor}, HighestUnlocked: {highestUnlocked}");
-            _floorUI.Show(currentFloor, highestUnlocked);
+            _floorUI.Show(currentFloor, highestUnlocked, IsPowered);
             _isUIOpen = true;
 
             PlaySound(_uiOpenSound);
@@ -281,9 +280,7 @@ namespace _Scripts.Systems.Machines
             // Refresh UI if open
             if (_isUIOpen && _floorUI != null)
             {
-                int currentFloor = GetCurrentFloor();
-                int highestUnlocked = GetHighestUnlockedFloor();
-                _floorUI.Show(currentFloor, highestUnlocked);
+                _floorUI.SetPoweredState(isPowered);
             }
         }
 
