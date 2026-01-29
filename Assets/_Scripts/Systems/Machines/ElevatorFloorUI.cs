@@ -10,9 +10,17 @@ namespace _Scripts.Systems.Machines
     /// UI for selecting floors in the elevator.
     /// Displays a grid of floor buttons with color-coded states.
     /// Floor X and Floor 0 are blocked (red), floors start from 1.
+    /// Uses singleton pattern for easy access from Elevator components.
     /// </summary>
     public class ElevatorFloorUI : MonoBehaviour
     {
+        #region Singleton
+
+        private static ElevatorFloorUI _instance;
+        public static ElevatorFloorUI Instance => _instance;
+
+        #endregion
+
         #region Events
 
         public event Action<int> OnFloorSelected;
@@ -56,6 +64,7 @@ namespace _Scripts.Systems.Machines
         private int _highestUnlockedFloor;
         private FloorButton[] _floorButtons;
         private bool _isOpen;
+        private bool _justOpened; // Prevents closing on the same frame as opening
 
         #endregion
 
@@ -71,15 +80,40 @@ namespace _Scripts.Systems.Machines
 
         private void Awake()
         {
+            // Singleton setup
+            if (_instance != null && _instance != this)
+            {
+                Debug.LogWarning("[ElevatorFloorUI] Multiple instances detected. Destroying duplicate.");
+                Destroy(gameObject);
+                return;
+            }
+            _instance = this;
+
             if (_panel != null)
             {
                 _panel.SetActive(false);
             }
         }
 
+        private void OnDestroy()
+        {
+            if (_instance == this)
+            {
+                _instance = null;
+            }
+        }
+
         private void Update()
         {
             if (!_isOpen) return;
+
+            // Skip closing check on the same frame the UI was opened
+            // (prevents the same E keypress from immediately closing the UI)
+            if (_justOpened)
+            {
+                _justOpened = false;
+                return;
+            }
 
             // Close UI on Escape, Tab, or E
             if (Input.GetKeyDown(KeyCode.Escape) ||
@@ -113,20 +147,33 @@ namespace _Scripts.Systems.Machines
         /// </summary>
         public void Show(int currentFloor, int highestUnlockedFloor)
         {
+            Debug.Log($"[ElevatorFloorUI] Show() called. currentFloor: {currentFloor}, highestUnlockedFloor: {highestUnlockedFloor}");
+
             _currentFloor = currentFloor;
             _highestUnlockedFloor = highestUnlockedFloor;
 
+            Debug.Log($"[ElevatorFloorUI] _floorButtons: {_floorButtons}, count: {(_floorButtons != null ? _floorButtons.Length : 0)}");
             RefreshButtonStates();
+
+            Debug.Log($"[ElevatorFloorUI] _panel: {_panel}, _panel null: {_panel == null}");
 
             if (_panel != null)
             {
                 _panel.SetActive(true);
+                Debug.Log($"[ElevatorFloorUI] Panel activated. _panel.activeSelf: {_panel.activeSelf}, _panel.activeInHierarchy: {_panel.activeInHierarchy}");
+            }
+            else
+            {
+                Debug.LogError("[ElevatorFloorUI] _panel is NULL! Cannot show UI.");
             }
 
             _isOpen = true;
+            _justOpened = true; // Prevent closing on the same frame
 
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+
+            Debug.Log($"[ElevatorFloorUI] Show() complete. _isOpen: {_isOpen}");
         }
 
         /// <summary>

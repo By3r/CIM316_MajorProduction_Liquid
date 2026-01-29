@@ -78,10 +78,13 @@ namespace _Scripts.Systems.Machines
 
         private void Start()
         {
-            // Find Floor UI at runtime if not assigned (since it's in the scene, not the prefab)
+            Debug.Log("[Elevator] Start() called");
+
+            // Use singleton if not assigned directly (prefab won't have scene reference)
             if (_floorUI == null)
             {
-                _floorUI = FindObjectOfType<ElevatorFloorUI>();
+                _floorUI = ElevatorFloorUI.Instance;
+                Debug.Log($"[Elevator] ElevatorFloorUI.Instance: {_floorUI}");
                 if (_floorUI == null)
                 {
                     Debug.LogWarning("[Elevator] ElevatorFloorUI not found in scene!");
@@ -145,11 +148,18 @@ namespace _Scripts.Systems.Machines
         /// </summary>
         public void OpenFloorUI()
         {
-            if (_isTransitioning || _floorUI == null) return;
+            Debug.Log($"[Elevator] OpenFloorUI() called. _isTransitioning: {_isTransitioning}, _floorUI: {_floorUI}");
+
+            if (_isTransitioning || _floorUI == null)
+            {
+                Debug.Log($"[Elevator] OpenFloorUI() returning early. _isTransitioning: {_isTransitioning}, _floorUI null: {_floorUI == null}");
+                return;
+            }
 
             int currentFloor = GetCurrentFloor();
             int highestUnlocked = GetHighestUnlockedFloor();
 
+            Debug.Log($"[Elevator] Showing floor UI. CurrentFloor: {currentFloor}, HighestUnlocked: {highestUnlocked}");
             _floorUI.Show(currentFloor, highestUnlocked);
             _isUIOpen = true;
 
