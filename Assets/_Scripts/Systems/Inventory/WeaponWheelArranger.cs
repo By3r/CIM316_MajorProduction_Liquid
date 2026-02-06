@@ -9,7 +9,7 @@ namespace _Scripts.Systems.Inventory
     /// </summary>
 
     [ExecuteAlways]
-    public class RadialSegmentArranger : MonoBehaviour
+    public class WeaponWheelArranger : MonoBehaviour
     {
         #region Variables
         [Header("Segment Images")]

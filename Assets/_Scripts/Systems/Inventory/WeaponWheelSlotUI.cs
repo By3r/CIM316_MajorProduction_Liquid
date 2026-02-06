@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace _Scripts.Systems.Inventory
 {
-    public class RadialInventorySlotUI : MonoBehaviour
+    public class WeaponWheelSlotUI : MonoBehaviour
     {
         #region Variables
         [Header("Slot References")]

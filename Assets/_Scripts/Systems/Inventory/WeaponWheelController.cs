@@ -3,11 +3,11 @@ using UnityEngine;
 
 namespace _Scripts.Systems.Inventory
 {
-    public class PlayerInventoryController : MonoBehaviour
+    public class WeaponWheelController : MonoBehaviour
     {
         #region Variables
         [Header("References")]
-        [SerializeField] private RadialInventoryWheel radialInventoryWheel;
+        [SerializeField] private WeaponWheelUI radialInventoryWheel;
 
         [Header("Debug Items")]
         [Tooltip("Items that will be added when pressing G")]

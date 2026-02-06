@@ -6,7 +6,7 @@ namespace _Scripts.Systems.Inventory.UI
 {
     /// <summary>
     /// Main inventory UI controller.
-    /// Opens with TAB key, shows 3 physical item slots (left) and 3 ingredient counters (right).
+    /// Opens with TAB key, shows 3 physical item slots and AR grams counter.
     /// </summary>
     public class InventoryUI : MonoBehaviour
     {
@@ -22,7 +22,6 @@ namespace _Scripts.Systems.Inventory.UI
         [Header("UI References")]
         [SerializeField] private GameObject _inventoryPanel;
         [SerializeField] private InventorySlotUI[] _slotUIs;
-        [SerializeField] private IngredientCounterUI[] _ingredientCounterUIs;
         [SerializeField] private ARGramsCounterUI _arGramsCounterUI;
 
         [Header("Context Menu & Examination")]
@@ -73,7 +72,6 @@ namespace _Scripts.Systems.Inventory.UI
             if (_playerInventory != null)
             {
                 _playerInventory.OnSlotChanged += HandleSlotChanged;
-                _playerInventory.OnIngredientChanged += HandleIngredientChanged;
                 _playerInventory.OnARGramsChanged += HandleARGramsChanged;
             }
 
@@ -159,7 +157,6 @@ namespace _Scripts.Systems.Inventory.UI
             if (_playerInventory != null)
             {
                 _playerInventory.OnSlotChanged -= HandleSlotChanged;
-                _playerInventory.OnIngredientChanged -= HandleIngredientChanged;
                 _playerInventory.OnARGramsChanged -= HandleARGramsChanged;
             }
 
@@ -299,20 +296,6 @@ namespace _Scripts.Systems.Inventory.UI
                 }
             }
 
-            // Update ingredient counters
-            if (_ingredientCounterUIs != null)
-            {
-                foreach (var counterUI in _ingredientCounterUIs)
-                {
-                    if (counterUI != null)
-                    {
-                        int count = _playerInventory.GetIngredientCount(counterUI.IngredientType);
-                        int cap = _playerInventory.GetIngredientCap(counterUI.IngredientType);
-                        counterUI.UpdateCounter(count, cap);
-                    }
-                }
-            }
-
             // Update AR grams counter
             if (_arGramsCounterUI != null)
             {
@@ -329,21 +312,6 @@ namespace _Scripts.Systems.Inventory.UI
             if (_slotUIs != null && slotIndex < _slotUIs.Length && _slotUIs[slotIndex] != null)
             {
                 _slotUIs[slotIndex].UpdateSlot(slot);
-            }
-        }
-
-        private void HandleIngredientChanged(IngredientType type, int newCount)
-        {
-            if (_ingredientCounterUIs == null) return;
-
-            foreach (var counterUI in _ingredientCounterUIs)
-            {
-                if (counterUI != null && counterUI.IngredientType == type)
-                {
-                    int cap = _playerInventory.GetIngredientCap(type);
-                    counterUI.UpdateCounter(newCount, cap);
-                    break;
-                }
             }
         }
 

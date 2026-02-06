@@ -5,7 +5,7 @@ using UnityEngine.Rendering;
 
 namespace _Scripts.Systems.Inventory
 {
-    public class RadialInventoryWheel : MonoBehaviour
+    public class WeaponWheelUI : MonoBehaviour
     {
         #region Variables
 
@@ -21,7 +21,7 @@ namespace _Scripts.Systems.Inventory
 
         [Header("Slots")]
         [Tooltip("All slot UI elements that belong to this wheel, in circular order.")]
-        [SerializeField] private List<RadialInventorySlotUI> slots = new List<RadialInventorySlotUI>();
+        [SerializeField] private List<WeaponWheelSlotUI> slots = new List<WeaponWheelSlotUI>();
 
         [Tooltip("Radius in pixels from center to each slot.")]
         [SerializeField] private float slotRadius = 200f;
@@ -41,7 +41,7 @@ namespace _Scripts.Systems.Inventory
 
         [Header("Input Settings")]
         [Tooltip("Key to hold in order to show the wheel.")]
-        [SerializeField] private KeyCode openKey = KeyCode.Tab;
+        [SerializeField] private KeyCode openKey = KeyCode.Q;
 
         [Tooltip("Key that confirms the currently selected slot.")]
         [SerializeField] private KeyCode confirmKey = KeyCode.Mouse0;
@@ -175,7 +175,7 @@ namespace _Scripts.Systems.Inventory
                 return;
             }
 
-            RadialInventorySlotUI slot = slots[_currentSelectedIndex];
+            WeaponWheelSlotUI slot = slots[_currentSelectedIndex];
             InventoryItemData data = slot != null ? slot.ItemData : null;
 
             OnSlotConfirmed?.Invoke(_currentSelectedIndex, data);
@@ -206,7 +206,7 @@ namespace _Scripts.Systems.Inventory
 
             if (selectedIndex >= 0 && selectedIndex < slots.Count)
             {
-                RadialInventorySlotUI slot = slots[selectedIndex];
+                WeaponWheelSlotUI slot = slots[selectedIndex];
                 selectedItem = slot != null ? slot.ItemData : null;
             }
 
@@ -323,7 +323,7 @@ namespace _Scripts.Systems.Inventory
         #region Layout
         /// <summary>
         /// Positions all slots in a circle around the wheel center.
-        /// If a RadialSegmentArranger is present then this method will not modify the slot transforms.
+        /// If a WeaponWheelArranger is present then this method will not modify the slot transforms.
         /// </summary>
         private void ArrangeSlotsRadially()
         {
@@ -332,7 +332,7 @@ namespace _Scripts.Systems.Inventory
                 return;
             }
 
-            RadialSegmentArranger arranger = GetComponent<RadialSegmentArranger>();
+            WeaponWheelArranger arranger = GetComponent<WeaponWheelArranger>();
             if (arranger != null)
             {
                 return;
@@ -342,7 +342,7 @@ namespace _Scripts.Systems.Inventory
 
             for (int i = 0; i < slots.Count; i++)
             {
-                RadialInventorySlotUI slot = slots[i];
+                WeaponWheelSlotUI slot = slots[i];
                 if (slot == null || slot.SlotRectTransform == null)
                 {
                     continue;

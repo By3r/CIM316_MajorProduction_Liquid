@@ -4,7 +4,8 @@ using UnityEngine;
 namespace _Scripts.Systems.Inventory
 {
     /// <summary>
-    /// Manages the player's inventory: 3 physical item slots and 3 ingredient counters.
+    /// Manages the player's inventory: 3 physical item slots and AR grams tracking.
+    /// AR grams represent deposited Aneutronic Rock extracted via Specialized Containers.
     /// </summary>
     public class PlayerInventory : MonoBehaviour
     {
@@ -28,7 +29,6 @@ namespace _Scripts.Systems.Inventory
         #region Events
 
         public event Action<int, InventorySlot> OnSlotChanged;
-        public event Action<IngredientType, int> OnIngredientChanged;
         public event Action<int> OnARGramsChanged;
 
         #endregion
@@ -39,13 +39,8 @@ namespace _Scripts.Systems.Inventory
         [Tooltip("Number of physical item slots (default 3).")]
         [SerializeField] private int _slotCount = 3;
 
-        [Header("Ingredient Limits")]
-        [SerializeField] private int _ferriteCap = 20;
-        [SerializeField] private int _polymerCap = 10;
-        [SerializeField] private int _reagentCap = 10;
-
-        [Header("AR Container")]
-        [Tooltip("Maximum AR grams the player can carry (upgradeable).")]
+        [Header("AR Deposit")]
+        [Tooltip("Maximum AR grams that can be deposited (upgradeable).")]
         [SerializeField] private int _arGramsCap = 100;
 
         [Header("Debug")]
@@ -56,9 +51,6 @@ namespace _Scripts.Systems.Inventory
         #region Private Fields
 
         private InventorySlot[] _slots;
-        private int _ferriteCount;
-        private int _polymerCount;
-        private int _reagentCount;
         private int _arGrams;
 
         #endregion
@@ -66,14 +58,7 @@ namespace _Scripts.Systems.Inventory
         #region Properties
 
         public int SlotCount => _slotCount;
-        public int FerriteCap => _ferriteCap;
-        public int PolymerCap => _polymerCap;
-        public int ReagentCap => _reagentCap;
         public int ARGramsCap => _arGramsCap;
-
-        public int FerriteCount => _ferriteCount;
-        public int PolymerCount => _polymerCount;
-        public int ReagentCount => _reagentCount;
         public int ARGrams => _arGrams;
 
         #endregion
@@ -245,123 +230,10 @@ namespace _Scripts.Systems.Inventory
 
         #endregion
 
-        #region Ingredients
-
-        /// <summary>
-        /// Gets the current count of a specific ingredient.
-        /// </summary>
-        public int GetIngredientCount(IngredientType type)
-        {
-            return type switch
-            {
-                IngredientType.Ferrite => _ferriteCount,
-                IngredientType.Polymer => _polymerCount,
-                IngredientType.Reagent => _reagentCount,
-                _ => 0
-            };
-        }
-
-        /// <summary>
-        /// Gets the cap for a specific ingredient.
-        /// </summary>
-        public int GetIngredientCap(IngredientType type)
-        {
-            return type switch
-            {
-                IngredientType.Ferrite => _ferriteCap,
-                IngredientType.Polymer => _polymerCap,
-                IngredientType.Reagent => _reagentCap,
-                _ => 0
-            };
-        }
-
-        /// <summary>
-        /// Attempts to add ingredients of a specific type.
-        /// Returns the amount actually added.
-        /// </summary>
-        public int AddIngredient(IngredientType type, int amount)
-        {
-            if (amount <= 0) return 0;
-
-            int added = 0;
-
-            switch (type)
-            {
-                case IngredientType.Ferrite:
-                    added = Mathf.Min(amount, _ferriteCap - _ferriteCount);
-                    _ferriteCount += added;
-                    break;
-                case IngredientType.Polymer:
-                    added = Mathf.Min(amount, _polymerCap - _polymerCount);
-                    _polymerCount += added;
-                    break;
-                case IngredientType.Reagent:
-                    added = Mathf.Min(amount, _reagentCap - _reagentCount);
-                    _reagentCount += added;
-                    break;
-            }
-
-            if (added > 0)
-            {
-                OnIngredientChanged?.Invoke(type, GetIngredientCount(type));
-
-                if (_showDebugLogs)
-                {
-                    Debug.Log($"[PlayerInventory] Added {added} {type}. Total: {GetIngredientCount(type)}/{GetIngredientCap(type)}");
-                }
-            }
-
-            return added;
-        }
-
-        /// <summary>
-        /// Attempts to remove ingredients of a specific type.
-        /// Returns true if successful (had enough).
-        /// </summary>
-        public bool RemoveIngredient(IngredientType type, int amount)
-        {
-            if (amount <= 0) return true;
-
-            int current = GetIngredientCount(type);
-            if (current < amount) return false;
-
-            switch (type)
-            {
-                case IngredientType.Ferrite:
-                    _ferriteCount -= amount;
-                    break;
-                case IngredientType.Polymer:
-                    _polymerCount -= amount;
-                    break;
-                case IngredientType.Reagent:
-                    _reagentCount -= amount;
-                    break;
-            }
-
-            OnIngredientChanged?.Invoke(type, GetIngredientCount(type));
-
-            if (_showDebugLogs)
-            {
-                Debug.Log($"[PlayerInventory] Removed {amount} {type}. Total: {GetIngredientCount(type)}/{GetIngredientCap(type)}");
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Checks if the player has at least the specified amount of an ingredient.
-        /// </summary>
-        public bool HasIngredient(IngredientType type, int amount)
-        {
-            return GetIngredientCount(type) >= amount;
-        }
-
-        #endregion
-
         #region AR Grams
 
         /// <summary>
-        /// Adds AR grams to the player's container.
+        /// Adds AR grams (from depositing a filled Specialized Container).
         /// Returns the amount actually added.
         /// </summary>
         public int AddARGrams(int amount)
@@ -377,7 +249,7 @@ namespace _Scripts.Systems.Inventory
 
                 if (_showDebugLogs)
                 {
-                    Debug.Log($"[PlayerInventory] Added {added}g AR. Total: {_arGrams}/{_arGramsCap}g");
+                    Debug.Log($"[PlayerInventory] Deposited {added}g AR. Total: {_arGrams}/{_arGramsCap}g");
                 }
             }
 
@@ -385,7 +257,7 @@ namespace _Scripts.Systems.Inventory
         }
 
         /// <summary>
-        /// Removes AR grams from the player's container.
+        /// Removes AR grams.
         /// Returns true if successful.
         /// </summary>
         public bool RemoveARGrams(int amount)
@@ -404,36 +276,8 @@ namespace _Scripts.Systems.Inventory
             return true;
         }
 
-        #endregion
-
-        #region Upgrades
-
         /// <summary>
-        /// Upgrades ingredient capacity (e.g., from backpack upgrade).
-        /// </summary>
-        public void UpgradeIngredientCap(IngredientType type, int additionalCap)
-        {
-            switch (type)
-            {
-                case IngredientType.Ferrite:
-                    _ferriteCap += additionalCap;
-                    break;
-                case IngredientType.Polymer:
-                    _polymerCap += additionalCap;
-                    break;
-                case IngredientType.Reagent:
-                    _reagentCap += additionalCap;
-                    break;
-            }
-
-            if (_showDebugLogs)
-            {
-                Debug.Log($"[PlayerInventory] Upgraded {type} cap to {GetIngredientCap(type)}");
-            }
-        }
-
-        /// <summary>
-        /// Upgrades AR container capacity.
+        /// Upgrades AR deposit capacity.
         /// </summary>
         public void UpgradeARGramsCap(int additionalCap)
         {
