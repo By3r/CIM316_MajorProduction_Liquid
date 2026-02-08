@@ -107,6 +107,19 @@ namespace _Scripts.Systems.Machines
             {
                 _powerCellSlot.OnPowerStateChanged += HandlePowerStateChanged;
             }
+
+            // Restore PowerCellSlot state from previous floor transition
+            // (this Elevator is freshly spawned — the old one was destroyed during floor gen)
+            var fm = FloorStateManager.Instance;
+            if (fm != null && fm.PowerCellSlotWasPowered && _powerCellSlot != null)
+            {
+                InventoryItemData pcData = null;
+                if (!string.IsNullOrEmpty(fm.PowerCellSlotItemId))
+                {
+                    pcData = ItemDatabase.FindByItemId(fm.PowerCellSlotItemId);
+                }
+                _powerCellSlot.SetPoweredState(true, pcData);
+            }
         }
 
         private void OnDestroy()
@@ -250,6 +263,15 @@ namespace _Scripts.Systems.Machines
                     floorManager.SavePlayerInventory(invData);
                 }
 
+                // Save PowerCellSlot state before transition
+                // (so we can restore it after the Elevator prefab gets rebuilt)
+                if (_powerCellSlot != null)
+                {
+                    floorManager.SavePowerCellSlotState(
+                        _powerCellSlot.IsPowered,
+                        _powerCellSlot.IsPowered ? "powercell" : "");
+                }
+
                 // Sync dropped item positions (physics may have moved them since drop)
                 SyncDroppedItemPositions(floorManager);
 
@@ -260,11 +282,14 @@ namespace _Scripts.Systems.Machines
                 floorManager.CurrentFloorNumber = targetFloor;
             }
 
-            // Consume power cell if going to new floor
+            // Consume power cell if going to new floor — clear saved state too
             if (consumesPower && _powerCellSlot != null && _powerCellSlot.IsPowered)
             {
-                // The power cell is consumed - we don't return it to inventory
                 _powerCellSlot.SetPoweredState(false, null);
+                if (floorManager != null)
+                {
+                    floorManager.SavePowerCellSlotState(false, "");
+                }
             }
 
             // Publish event for level regeneration (LevelGenerator listens to this)
@@ -282,6 +307,9 @@ namespace _Scripts.Systems.Machines
                 InventorySaveData savedInventory = floorManager.GetSavedInventory();
                 PlayerInventory.Instance.RestoreFromSaveData(savedInventory);
             }
+
+            // NOTE: PowerCellSlot restore happens in the NEW Elevator's Start(),
+            // since this Elevator instance gets destroyed during floor generation.
 
             OnFloorTransitionComplete?.Invoke(targetFloor);
             _onTransitionComplete?.Invoke();

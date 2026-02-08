@@ -133,6 +133,11 @@ namespace _Scripts.Core.Managers
         // Item persistence: player inventory snapshot between floor transitions
         private InventorySaveData _savedInventory;
 
+        // PowerCellSlot state: persists across floor transitions so the power cell
+        // isn't lost when revisiting already-visited floors
+        private bool _powerCellSlotPowered;
+        private string _powerCellSlotItemId;
+
         #endregion
 
         #region Public Properties
@@ -394,6 +399,25 @@ namespace _Scripts.Core.Managers
         {
             return _savedInventory;
         }
+
+        /// <summary>
+        /// Saves the PowerCellSlot state so it persists across floor transitions.
+        /// </summary>
+        public void SavePowerCellSlotState(bool isPowered, string itemId)
+        {
+            _powerCellSlotPowered = isPowered;
+            _powerCellSlotItemId = itemId;
+        }
+
+        /// <summary>
+        /// Whether the PowerCellSlot had a power cell inserted before transition.
+        /// </summary>
+        public bool PowerCellSlotWasPowered => _powerCellSlotPowered;
+
+        /// <summary>
+        /// The itemId of the power cell that was in the slot, or null/empty if none.
+        /// </summary>
+        public string PowerCellSlotItemId => _powerCellSlotItemId;
 
         /// <summary>
         /// Checks if a world position is inside the safe room (EntryRoom).

@@ -226,6 +226,16 @@ namespace _Scripts.Systems.Machines
             {
                 _powerLight.color = _isPowered ? _poweredLightColor : _unpoweredLightColor;
             }
+
+            // Show/hide the PowerCell model in the slot
+            if (_powerCellModel != null)
+            {
+                _powerCellModel.SetActive(_isPowered);
+                if (_isPowered)
+                {
+                    _powerCellModel.transform.localPosition = _endPosition;
+                }
+            }
         }
 
         private void PlaySound(AudioClip clip)
