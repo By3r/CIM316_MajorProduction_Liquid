@@ -1,8 +1,11 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using _Scripts.Core.Managers;
+using _Scripts.Systems.Inventory;
+using _Scripts.Systems.Inventory.Pickups;
 using _Scripts.Systems.ProceduralGeneration;
 
 namespace _Scripts.Systems.Machines
@@ -78,13 +81,10 @@ namespace _Scripts.Systems.Machines
 
         private void Start()
         {
-            Debug.Log("[Elevator] Start() called");
-
             // Use singleton if not assigned directly (prefab won't have scene reference)
             if (_floorUI == null)
             {
                 _floorUI = ElevatorFloorUI.Instance;
-                Debug.Log($"[Elevator] ElevatorFloorUI.Instance: {_floorUI}");
                 if (_floorUI == null)
                 {
                     Debug.LogWarning("[Elevator] ElevatorFloorUI not found in scene!");
@@ -148,11 +148,8 @@ namespace _Scripts.Systems.Machines
         /// </summary>
         public void OpenFloorUI()
         {
-            Debug.Log($"[Elevator] OpenFloorUI() called. _isTransitioning: {_isTransitioning}, _floorUI: {_floorUI}");
-
             if (_isTransitioning || _floorUI == null)
             {
-                Debug.Log($"[Elevator] OpenFloorUI() returning early. _isTransitioning: {_isTransitioning}, _floorUI null: {_floorUI == null}");
                 return;
             }
 
@@ -246,6 +243,16 @@ namespace _Scripts.Systems.Machines
                     floorManager.SaveCurrentFloorGenerationSeed(floorGenerator.CurrentSeed);
                 }
 
+                // Save player inventory before floor transition
+                if (PlayerInventory.Instance != null)
+                {
+                    var invData = PlayerInventory.Instance.ToSaveData();
+                    floorManager.SavePlayerInventory(invData);
+                }
+
+                // Sync dropped item positions (physics may have moved them since drop)
+                SyncDroppedItemPositions(floorManager);
+
                 // Mark current floor as visited before leaving
                 floorManager.MarkCurrentFloorAsVisited();
 
@@ -269,10 +276,63 @@ namespace _Scripts.Systems.Machines
             // Wait a frame for floor generation to complete
             yield return null;
 
+            // Restore player inventory after floor generation
+            if (floorManager != null && PlayerInventory.Instance != null)
+            {
+                InventorySaveData savedInventory = floorManager.GetSavedInventory();
+                PlayerInventory.Instance.RestoreFromSaveData(savedInventory);
+            }
+
             OnFloorTransitionComplete?.Invoke(targetFloor);
             _onTransitionComplete?.Invoke();
 
             _isTransitioning = false;
+        }
+
+        /// <summary>
+        /// Updates the saved positions of all dropped items before leaving a floor.
+        /// Items may have moved due to physics after being dropped.
+        /// </summary>
+        private void SyncDroppedItemPositions(FloorStateManager floorManager)
+        {
+            GameObject pickupsContainer = GameObject.Find("--- PICKUPS ---");
+            if (pickupsContainer == null) return;
+
+            FloorState currentFloorState = floorManager.GetCurrentFloorState();
+
+            // Scan all pickups in the container and sync positions to the correct list
+            Pickup[] pickups = pickupsContainer.GetComponentsInChildren<Pickup>();
+            foreach (Pickup pickup in pickups)
+            {
+                if (pickup == null || string.IsNullOrEmpty(pickup.PickupId)) continue;
+                if (!pickup.PickupId.StartsWith("dropped_")) continue;
+
+                Vector3 pos = pickup.transform.position;
+                Vector3 rot = pickup.transform.rotation.eulerAngles;
+
+                // Determine which list this pickup belongs to based on its position
+                bool isSafeRoom = FloorStateManager.IsPositionInSafeRoom(pos);
+                List<DroppedItemData> droppedItems = isSafeRoom
+                    ? floorManager.SafeRoomDroppedItems
+                    : currentFloorState.droppedItems;
+
+                if (droppedItems == null) continue;
+
+                // Find matching dropped item data and update position
+                for (int i = 0; i < droppedItems.Count; i++)
+                {
+                    if (droppedItems[i].droppedItemId == pickup.PickupId)
+                    {
+                        droppedItems[i].posX = pos.x;
+                        droppedItems[i].posY = pos.y;
+                        droppedItems[i].posZ = pos.z;
+                        droppedItems[i].rotX = rot.x;
+                        droppedItems[i].rotY = rot.y;
+                        droppedItems[i].rotZ = rot.z;
+                        break;
+                    }
+                }
+            }
         }
 
         private void HandlePowerStateChanged(bool isPowered)

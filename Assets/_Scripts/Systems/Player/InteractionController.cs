@@ -197,16 +197,12 @@ namespace _Scripts.Systems.Player
                 Elevator elevator = hit.collider.GetComponent<Elevator>();
                 if (elevator == null) elevator = hit.collider.GetComponentInParent<Elevator>();
 
-                Debug.Log($"[InteractionController] Hit: {hit.collider.name}, Elevator found: {elevator != null}");
-
                 if (elevator != null)
                 {
                     // Check if we hit the control panel specifically or the elevator in general
                     bool isControlPanel = elevator.ControlPanel == null ||
                                           hit.collider.transform == elevator.ControlPanel ||
                                           hit.collider.transform.IsChildOf(elevator.ControlPanel);
-
-                    Debug.Log($"[InteractionController] Elevator.ControlPanel: {elevator.ControlPanel}, isControlPanel: {isControlPanel}, hit.collider.transform: {hit.collider.transform.name}");
 
                     if (isControlPanel)
                     {
@@ -367,16 +363,10 @@ namespace _Scripts.Systems.Player
             // Try Elevator panel interaction
             if (_isLookingAtElevatorPanel && _currentElevator != null)
             {
-                Debug.Log($"[InteractionController] Attempting elevator interaction. IsTransitioning: {_currentElevator.IsTransitioning}, IsUIOpen: {_currentElevator.IsUIOpen}");
                 if (!_currentElevator.IsTransitioning && !_currentElevator.IsUIOpen)
                 {
-                    Debug.Log("[InteractionController] Calling OpenFloorUI()");
                     _currentElevator.OpenFloorUI();
                 }
-            }
-            else if (_currentElevator == null)
-            {
-                Debug.Log($"[InteractionController] E pressed but _currentElevator is null. _isLookingAtElevatorPanel: {_isLookingAtElevatorPanel}");
             }
         }
 

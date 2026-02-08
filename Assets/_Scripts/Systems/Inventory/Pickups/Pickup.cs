@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using _Scripts.Core.Managers;
 using UnityEngine;
 
 namespace _Scripts.Systems.Inventory.Pickups
@@ -49,7 +51,7 @@ namespace _Scripts.Systems.Inventory.Pickups
 
         protected virtual void CheckIfAlreadyCollected()
         {
-            var floorManager = _Scripts.Core.Managers.FloorStateManager.Instance;
+            var floorManager = FloorStateManager.Instance;
             if (floorManager != null && floorManager.IsInitialized)
             {
                 var floorState = floorManager.GetCurrentFloorState();
@@ -65,11 +67,41 @@ namespace _Scripts.Systems.Inventory.Pickups
         {
             _isCollected = true;
 
-            var floorManager = _Scripts.Core.Managers.FloorStateManager.Instance;
+            var floorManager = FloorStateManager.Instance;
             if (floorManager != null && floorManager.IsInitialized)
             {
                 var floorState = floorManager.GetCurrentFloorState();
                 floorState.collectedItems[_pickupId] = true;
+
+                // If this is a player-dropped item, remove it from the dropped items list
+                if (!string.IsNullOrEmpty(_pickupId) && _pickupId.StartsWith("dropped_"))
+                {
+                    RemoveFromDroppedItemsList(floorManager, floorState);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Removes this pickup from the appropriate dropped items persistence list.
+        /// </summary>
+        private void RemoveFromDroppedItemsList(FloorStateManager floorManager, FloorState floorState)
+        {
+            // Check if this pickup is in the safe room by its position
+            bool isSafeRoom = FloorStateManager.IsPositionInSafeRoom(transform.position);
+
+            List<DroppedItemData> droppedItems = isSafeRoom
+                ? floorManager.SafeRoomDroppedItems
+                : floorState.droppedItems;
+
+            if (droppedItems == null) return;
+
+            for (int i = droppedItems.Count - 1; i >= 0; i--)
+            {
+                if (droppedItems[i].droppedItemId == _pickupId)
+                {
+                    droppedItems.RemoveAt(i);
+                    break;
+                }
             }
         }
 

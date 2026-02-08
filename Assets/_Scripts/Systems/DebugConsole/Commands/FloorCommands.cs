@@ -1,5 +1,6 @@
 using System.Text;
 using _Scripts.Core.Managers;
+using _Scripts.Systems.Inventory;
 
 namespace _Scripts.Systems.DebugConsole.Commands
 {
@@ -32,8 +33,28 @@ namespace _Scripts.Systems.DebugConsole.Commands
                 DebugConsole.Instance.Close();
             }
 
+            // Save inventory before transition (same as Elevator does)
+            var floorManager = FloorStateManager.Instance;
+            if (floorManager != null && floorManager.IsInitialized)
+            {
+                if (PlayerInventory.Instance != null)
+                {
+                    floorManager.SavePlayerInventory(PlayerInventory.Instance.ToSaveData());
+                }
+
+                floorManager.MarkCurrentFloorAsVisited();
+                floorManager.CurrentFloorNumber = targetFloor;
+            }
+
             // Use the same event the Elevator uses
             GameManager.Instance.EventManager.Publish("OnFloorTransitionRequested", targetFloor);
+
+            // Restore inventory after floor generation
+            if (floorManager != null && PlayerInventory.Instance != null)
+            {
+                var savedInventory = floorManager.GetSavedInventory();
+                PlayerInventory.Instance.RestoreFromSaveData(savedInventory);
+            }
 
             return $"<color=green>Transitioning to floor {targetFloor}...</color>";
         }

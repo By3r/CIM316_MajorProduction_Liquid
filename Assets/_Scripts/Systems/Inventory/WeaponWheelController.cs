@@ -68,18 +68,12 @@ namespace _Scripts.Systems.Inventory
                 return;
             }
 
-            if (_debugItemIndex >= debugItems.Count)
-            {
-                Debug.Log("Inventory is full or no more test items.");
-                return;
-            }
+            if (_debugItemIndex >= debugItems.Count) return;
 
             InventoryItemData itemToAdd = debugItems[_debugItemIndex];
             _debugItemIndex++;
 
             _currentItems.Add(itemToAdd);
-
-            Debug.Log($"Added item: {itemToAdd.displayName}");
 
             RefreshWheel();
         }

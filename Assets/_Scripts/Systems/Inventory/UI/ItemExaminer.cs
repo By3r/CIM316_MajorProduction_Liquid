@@ -102,8 +102,6 @@ namespace _Scripts.Systems.Inventory.UI
         /// </summary>
         public void Show(InventoryItemData itemData)
         {
-            Debug.Log("[ItemExaminer] Show() called");
-
             if (itemData == null)
             {
                 Debug.LogWarning("[ItemExaminer] Cannot examine - itemData is null.");
@@ -115,8 +113,6 @@ namespace _Scripts.Systems.Inventory.UI
                 Debug.LogWarning($"[ItemExaminer] Cannot examine '{itemData.displayName}' - no worldPrefab assigned.");
                 return;
             }
-
-            Debug.Log($"[ItemExaminer] Showing item: {itemData.displayName}");
 
             _isOpen = true;
 
@@ -146,7 +142,6 @@ namespace _Scripts.Systems.Inventory.UI
             if (_examinePanel != null)
             {
                 _examinePanel.SetActive(true);
-                Debug.Log("[ItemExaminer] Panel activated");
             }
             else
             {

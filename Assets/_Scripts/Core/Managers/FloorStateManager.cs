@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using _Scripts.Systems.Inventory;
+using _Scripts.Systems.ProceduralGeneration;
 using TMPro;
 using UnityEngine;
 
@@ -125,6 +127,12 @@ namespace _Scripts.Core.Managers
         // Static field to persist seed override across scene reloads
         private static int? _pendingSeedOverride = null;
 
+        // Item persistence: safe room items persist across all floor transitions
+        private List<DroppedItemData> _safeRoomDroppedItems = new List<DroppedItemData>();
+
+        // Item persistence: player inventory snapshot between floor transitions
+        private InventorySaveData _savedInventory;
+
         #endregion
 
         #region Public Properties
@@ -159,6 +167,11 @@ namespace _Scripts.Core.Managers
         /// </summary>
         public bool IsInitialized => _isInitialized;
 
+        /// <summary>
+        /// Gets all tracked floor states (read-only access for debugging/inspection).
+        /// </summary>
+        public IReadOnlyDictionary<int, FloorState> FloorStates => _floorStates;
+
         #endregion
 
         #region Initialization
@@ -180,6 +193,8 @@ namespace _Scripts.Core.Managers
             }
 
             _floorStates.Clear();
+            _safeRoomDroppedItems.Clear();
+            _savedInventory = null;
             _currentFloorNumber = 1;
             _isInitialized = true;
 
@@ -352,6 +367,70 @@ namespace _Scripts.Core.Managers
 
         #endregion
 
+        #region Item Persistence
+
+        /// <summary>
+        /// Items dropped in the safe room. These persist across all floor transitions.
+        /// </summary>
+        public List<DroppedItemData> SafeRoomDroppedItems => _safeRoomDroppedItems;
+
+        /// <summary>
+        /// Saves a snapshot of the player's inventory for restoration after floor transition.
+        /// </summary>
+        public void SavePlayerInventory(InventorySaveData inventoryData)
+        {
+            _savedInventory = inventoryData;
+
+            if (_showDebugLogs)
+            {
+                Debug.Log("[FloorStateManager] Saved player inventory snapshot.");
+            }
+        }
+
+        /// <summary>
+        /// Gets the saved player inventory snapshot. Returns null if nothing was saved.
+        /// </summary>
+        public InventorySaveData GetSavedInventory()
+        {
+            return _savedInventory;
+        }
+
+        /// <summary>
+        /// Checks if a world position is inside the safe room (EntryRoom).
+        /// Uses the EntryRoom's BoundsChecker to determine if the position is within the room bounds.
+        /// Falls back to GameState.SafeRoom check, then to Elevator proximity.
+        /// </summary>
+        public static bool IsPositionInSafeRoom(Vector3 worldPosition)
+        {
+            // Method 1: Check if position is inside EntryRoom bounds
+            GameObject entryRoom = GameObject.Find("EntryRoom");
+            if (entryRoom != null)
+            {
+                BoundsChecker boundsChecker = entryRoom.GetComponent<BoundsChecker>();
+                if (boundsChecker != null)
+                {
+                    Bounds roomBounds = boundsChecker.GetBounds();
+                    return roomBounds.Contains(worldPosition);
+                }
+            }
+
+            // Method 2: Fallback to GameState check
+            if (GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.SafeRoom)
+                return true;
+
+            // Method 3: Fallback to Elevator proximity (within 15 units)
+            var elevator = UnityEngine.Object.FindObjectOfType<_Scripts.Systems.Machines.Elevator>();
+            if (elevator != null)
+            {
+                float distance = Vector3.Distance(worldPosition, elevator.transform.position);
+                return distance < 15f;
+            }
+
+            return false;
+        }
+
+        #endregion
+
         #region Save/Load System
 
         /// <summary>
@@ -365,7 +444,9 @@ namespace _Scripts.Core.Managers
                 {
                     worldSeed = _worldSeed,
                     currentFloorNumber = _currentFloorNumber,
-                    floorStates = new List<FloorState>(_floorStates.Values)
+                    floorStates = new List<FloorState>(_floorStates.Values),
+                    playerInventory = _savedInventory,
+                    safeRoomItems = new List<DroppedItemData>(_safeRoomDroppedItems)
                 };
 
                 string json = JsonUtility.ToJson(saveData, true);
@@ -413,6 +494,10 @@ namespace _Scripts.Core.Managers
                 {
                     _floorStates[state.floorNumber] = state;
                 }
+
+                // Restore item persistence data
+                _savedInventory = saveData.playerInventory;
+                _safeRoomDroppedItems = saveData.safeRoomItems ?? new List<DroppedItemData>();
 
                 _isInitialized = true;
 
@@ -526,6 +611,9 @@ namespace _Scripts.Core.Managers
         [Tooltip("Cached room layout for Delver-style floor persistence.")]
         public CachedFloorLayout cachedLayout;
 
+        [Tooltip("Items dropped by the player on this floor.")]
+        public List<DroppedItemData> droppedItems = new List<DroppedItemData>();
+
         /// <summary>
         /// Returns true if this floor has a valid cached layout that can be replayed.
         /// </summary>
@@ -575,6 +663,28 @@ namespace _Scripts.Core.Managers
         public int worldSeed;
         public int currentFloorNumber;
         public List<FloorState> floorStates;
+        public InventorySaveData playerInventory;
+        public List<DroppedItemData> safeRoomItems;
+    }
+
+    /// <summary>
+    /// Serializable snapshot of a single inventory slot.
+    /// </summary>
+    [Serializable]
+    public class InventorySlotSaveData
+    {
+        public string itemId;
+        public int quantity;
+    }
+
+    /// <summary>
+    /// Serializable snapshot of the player's full inventory state.
+    /// </summary>
+    [Serializable]
+    public class InventorySaveData
+    {
+        public InventorySlotSaveData[] slots;
+        public int arGrams;
     }
 
     #endregion

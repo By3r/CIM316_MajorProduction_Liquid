@@ -10,15 +10,11 @@ namespace _Scripts.Systems.DebugConsole.Commands
     /// </summary>
     public static class InventoryCommands
     {
-        #region Item Cache
-
-        private static InventoryItemData[] _cachedItems;
+        #region Item Lookup
 
         private static InventoryItemData[] GetAllItems()
         {
-            // Re-scan each time since assets can change in editor
-            _cachedItems = Resources.FindObjectsOfTypeAll<InventoryItemData>();
-            return _cachedItems;
+            return ItemDatabase.GetAll();
         }
 
         private static InventoryItemData FindItem(string query)
@@ -26,8 +22,8 @@ namespace _Scripts.Systems.DebugConsole.Commands
             var items = GetAllItems();
             string lowerQuery = query.ToLower();
 
-            // Exact match on itemId
-            var match = items.FirstOrDefault(i => i.itemId != null && i.itemId.ToLower() == lowerQuery);
+            // Exact match on itemId (use ItemDatabase for direct lookup first)
+            var match = ItemDatabase.FindByItemId(query);
             if (match != null) return match;
 
             // Exact match on displayName

@@ -1,6 +1,9 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using _Scripts.Core.Managers;
+using _Scripts.Systems.Inventory.Pickups;
 
 namespace _Scripts.Systems.Inventory.UI
 {
@@ -356,17 +359,16 @@ namespace _Scripts.Systems.Inventory.UI
             if (slot == null || slot.IsEmpty) return;
 
             InventoryItemData itemData = slot.ItemData;
+            int quantity = slot.Quantity;
 
-            // Remove item from inventory
-            _playerInventory.RemoveItemFromSlot(slotIndex);
+            // Remove all items from the slot
+            _playerInventory.RemoveItemFromSlot(slotIndex, quantity);
 
-            // Spawn the item in the world
-            SpawnDroppedItem(itemData);
-
-            Debug.Log($"[InventoryUI] Dropped {itemData.displayName}");
+            // Spawn the item in the world with tracking
+            SpawnDroppedItem(itemData, quantity);
         }
 
-        private void SpawnDroppedItem(InventoryItemData itemData)
+        private void SpawnDroppedItem(InventoryItemData itemData, int quantity = 1)
         {
             if (itemData.worldPrefab == null)
             {
@@ -383,6 +385,63 @@ namespace _Scripts.Systems.Inventory.UI
 
             // Spawn the prefab
             GameObject droppedItem = Instantiate(itemData.worldPrefab, spawnPosition, Quaternion.identity);
+
+            // Parent to pickups container
+            GameObject pickupsContainer = GameObject.Find("--- PICKUPS ---");
+            if (pickupsContainer == null)
+            {
+                pickupsContainer = new GameObject("--- PICKUPS ---");
+            }
+            droppedItem.transform.SetParent(pickupsContainer.transform);
+
+            // Generate a unique dropped item ID
+            string droppedItemId = $"dropped_{itemData.itemId}_{Guid.NewGuid().ToString().Substring(0, 8)}";
+
+            // Set the pickup ID on the spawned pickup component
+            Pickup pickup = droppedItem.GetComponent<Pickup>();
+            if (pickup != null)
+            {
+                pickup.SetPickupId(droppedItemId);
+            }
+            else
+            {
+                Debug.LogWarning($"[ItemPersistence] WARNING: worldPrefab for '{itemData.itemId}' has no Pickup component! It won't be re-pickable.");
+            }
+
+            // Create dropped item tracking data
+            DroppedItemData droppedData = new DroppedItemData
+            {
+                droppedItemId = droppedItemId,
+                itemId = itemData.itemId,
+                quantity = quantity,
+                posX = spawnPosition.x,
+                posY = spawnPosition.y,
+                posZ = spawnPosition.z,
+                rotX = 0f,
+                rotY = 0f,
+                rotZ = 0f
+            };
+
+            // Add to the correct persistence scope
+            var floorManager = FloorStateManager.Instance;
+            if (floorManager != null && floorManager.IsInitialized)
+            {
+                bool isSafeRoom = FloorStateManager.IsPositionInSafeRoom(spawnPosition);
+
+                if (isSafeRoom)
+                {
+                    floorManager.SafeRoomDroppedItems.Add(droppedData);
+                }
+                else
+                {
+                    FloorState floorState = floorManager.GetCurrentFloorState();
+                    floorState.droppedItems.Add(droppedData);
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[ItemPersistence] DROPPED ITEM NOT TRACKED! FloorStateManager null: {floorManager == null}, initialized: {floorManager?.IsInitialized}");
+            }
 
             // Apply some force to make it feel natural
             Rigidbody rb = droppedItem.GetComponent<Rigidbody>();

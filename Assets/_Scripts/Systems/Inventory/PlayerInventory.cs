@@ -1,4 +1,5 @@
 using System;
+using _Scripts.Core.Managers;
 using UnityEngine;
 
 namespace _Scripts.Systems.Inventory
@@ -286,6 +287,87 @@ namespace _Scripts.Systems.Inventory
             if (_showDebugLogs)
             {
                 Debug.Log($"[PlayerInventory] Upgraded AR cap to {_arGramsCap}g");
+            }
+        }
+
+        #endregion
+
+        #region Save / Restore
+
+        /// <summary>
+        /// Creates a serializable snapshot of the current inventory state.
+        /// Used to persist inventory across floor transitions.
+        /// </summary>
+        public InventorySaveData ToSaveData()
+        {
+            var data = new InventorySaveData
+            {
+                arGrams = _arGrams,
+                slots = new InventorySlotSaveData[_slotCount]
+            };
+
+            for (int i = 0; i < _slotCount; i++)
+            {
+                data.slots[i] = new InventorySlotSaveData
+                {
+                    itemId = _slots[i].IsEmpty ? "" : _slots[i].ItemData.itemId,
+                    quantity = _slots[i].Quantity
+                };
+            }
+
+            if (_showDebugLogs)
+            {
+                Debug.Log("[PlayerInventory] Created inventory save data snapshot.");
+            }
+
+            return data;
+        }
+
+        /// <summary>
+        /// Restores inventory state from a previously saved snapshot.
+        /// Looks up InventoryItemData assets via ItemDatabase.
+        /// </summary>
+        public void RestoreFromSaveData(InventorySaveData data)
+        {
+            if (data == null)
+            {
+                if (_showDebugLogs)
+                {
+                    Debug.Log("[PlayerInventory] No save data to restore.");
+                }
+                return;
+            }
+
+            // Restore AR grams
+            _arGrams = data.arGrams;
+            OnARGramsChanged?.Invoke(_arGrams);
+
+            // Restore slots
+            int slotsToRestore = Mathf.Min(data.slots.Length, _slotCount);
+            for (int i = 0; i < _slotCount; i++)
+            {
+                _slots[i].Clear();
+
+                if (i < slotsToRestore && !string.IsNullOrEmpty(data.slots[i].itemId))
+                {
+                    InventoryItemData itemData = ItemDatabase.FindByItemId(data.slots[i].itemId);
+                    if (itemData != null)
+                    {
+                        _slots[i].ItemData = itemData;
+                        _slots[i].Quantity = data.slots[i].quantity;
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"[PlayerInventory] Could not find item '{data.slots[i].itemId}' during restore.");
+                    }
+                }
+
+                OnSlotChanged?.Invoke(i, _slots[i]);
+            }
+
+            if (_showDebugLogs)
+            {
+                Debug.Log("[PlayerInventory] Restored inventory from save data.");
             }
         }
 

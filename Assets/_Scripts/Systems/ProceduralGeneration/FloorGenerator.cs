@@ -1,4 +1,6 @@
 using _Scripts.Core.Managers;
+using _Scripts.Systems.Inventory;
+using _Scripts.Systems.Inventory.Pickups;
 using _Scripts.Systems.ProceduralGeneration.Doors;
 using _Scripts.Systems.ProceduralGeneration.Items;
 using System.Collections.Generic;
@@ -191,6 +193,10 @@ namespace _Scripts.Systems.ProceduralGeneration
 
                     if (ReplayCachedLayout(floorState.cachedLayout))
                     {
+                        // Re-spawn dropped items on this floor and in the safe room
+                        SpawnDroppedItems(floorState);
+                        SpawnSafeRoomItems();
+
                         // Notify listeners that floor generation is complete (unfreeze player)
                         GameManager.Instance?.EventManager?.Publish("OnFloorGenerationComplete");
                         return; // Successfully replayed, no need to generate
@@ -250,6 +256,13 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             // After the floor is built (and registry populated) rebuild the nav grid once.
             RebuildNavGridFromRegistry();
+
+            // Re-spawn dropped items on this floor and in the safe room
+            if (floorState != null)
+            {
+                SpawnDroppedItems(floorState);
+            }
+            SpawnSafeRoomItems();
 
             // Notify listeners that floor generation is complete (unfreeze player)
             GameManager.Instance?.EventManager?.Publish("OnFloorGenerationComplete");
@@ -765,10 +778,97 @@ namespace _Scripts.Systems.ProceduralGeneration
                         DestroyImmediate(child.gameObject);
                 }
 
-                if (_showDebugLogs)
-                    Debug.Log("[FloorGenerator] Cleared all pickups from container");
+                // Pickups cleared
             }
         }
+
+        #region Dropped Item Spawning
+
+        /// <summary>
+        /// Re-spawns player-dropped items that were saved for this floor.
+        /// Called after floor generation/replay to restore dropped items.
+        /// </summary>
+        private void SpawnDroppedItems(FloorState floorState)
+        {
+            if (floorState == null || floorState.droppedItems == null || floorState.droppedItems.Count == 0)
+                return;
+
+            SpawnDroppedItemList(floorState.droppedItems, "floor");
+        }
+
+        /// <summary>
+        /// Re-spawns items dropped in the safe room (elevator room).
+        /// These persist across all floor transitions.
+        /// </summary>
+        private void SpawnSafeRoomItems()
+        {
+            var floorManager = FloorStateManager.Instance;
+            if (floorManager == null || floorManager.SafeRoomDroppedItems == null || floorManager.SafeRoomDroppedItems.Count == 0)
+                return;
+
+            SpawnDroppedItemList(floorManager.SafeRoomDroppedItems, "safe room");
+        }
+
+        /// <summary>
+        /// Spawns a list of dropped items in the world.
+        /// </summary>
+        private void SpawnDroppedItemList(List<DroppedItemData> droppedItems, string sourceLabel)
+        {
+            // Ensure pickups container exists
+            GameObject pickupsContainer = GameObject.Find("--- PICKUPS ---");
+            if (pickupsContainer == null)
+            {
+                pickupsContainer = new GameObject("--- PICKUPS ---");
+            }
+
+            int spawnedCount = 0;
+
+            foreach (DroppedItemData droppedData in droppedItems)
+            {
+                if (droppedData == null || string.IsNullOrEmpty(droppedData.itemId)) continue;
+
+                InventoryItemData itemData = ItemDatabase.FindByItemId(droppedData.itemId);
+                if (itemData == null)
+                {
+                    Debug.LogWarning($"[ItemPersistence] FAILED: Could not find item '{droppedData.itemId}' in ItemDatabase.");
+                    continue;
+                }
+
+                if (itemData.worldPrefab == null)
+                {
+                    Debug.LogWarning($"[ItemPersistence] FAILED: Item '{droppedData.itemId}' has no worldPrefab.");
+                    continue;
+                }
+
+                Vector3 position = new Vector3(droppedData.posX, droppedData.posY, droppedData.posZ);
+                Quaternion rotation = Quaternion.Euler(droppedData.rotX, droppedData.rotY, droppedData.rotZ);
+
+                GameObject spawnedItem = Instantiate(itemData.worldPrefab, position, rotation, pickupsContainer.transform);
+
+                // Set the pickup ID so it can be tracked for re-pickup
+                Pickup pickup = spawnedItem.GetComponent<Pickup>();
+                if (pickup != null)
+                {
+                    pickup.SetPickupId(droppedData.droppedItemId);
+                }
+
+                // Disable physics on respawned items so they stay in place
+                Rigidbody rb = spawnedItem.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                }
+
+                spawnedCount++;
+            }
+
+            if (spawnedCount > 0 && _showDebugLogs)
+            {
+                Debug.Log($"[ItemPersistence] Respawned {spawnedCount}/{droppedItems.Count} items from {sourceLabel}.");
+            }
+        }
+
+        #endregion
 
         #region Floor Layout Caching (Delver-style Persistence)
 
