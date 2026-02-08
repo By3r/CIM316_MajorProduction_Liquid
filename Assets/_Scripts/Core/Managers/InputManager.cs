@@ -125,6 +125,14 @@ namespace _Scripts.Core.Managers
         {
             if (GameManager.Instance == null) return;
 
+            // If debug console is open, close it instead of toggling pause
+            var console = Systems.DebugConsole.DebugConsole.Instance;
+            if (console != null && console.IsOpen)
+            {
+                console.Close();
+                return;
+            }
+
             // If inventory is open, let InventoryUI handle ESC (it closes inventory)
             // Don't toggle pause while inventory is open
             var inventoryUI = _Scripts.Systems.Inventory.UI.InventoryUI.Instance;

@@ -22,7 +22,8 @@ namespace _Scripts.Systems.Inventory.UI
         [Header("UI References")]
         [SerializeField] private GameObject _inventoryPanel;
         [SerializeField] private InventorySlotUI[] _slotUIs;
-        [SerializeField] private ARGramsCounterUI _arGramsCounterUI;
+        // TODO: AR grams UI will be redesigned
+        // [SerializeField] private ARGramsCounterUI _arGramsCounterUI;
 
         [Header("Context Menu & Examination")]
         [SerializeField] private ItemContextMenu _contextMenu;
@@ -296,11 +297,7 @@ namespace _Scripts.Systems.Inventory.UI
                 }
             }
 
-            // Update AR grams counter
-            if (_arGramsCounterUI != null)
-            {
-                _arGramsCounterUI.UpdateCounter(_playerInventory.ARGrams, _playerInventory.ARGramsCap);
-            }
+            // TODO: AR grams UI will be redesigned
         }
 
         #endregion
@@ -317,10 +314,7 @@ namespace _Scripts.Systems.Inventory.UI
 
         private void HandleARGramsChanged(int newAmount)
         {
-            if (_arGramsCounterUI != null)
-            {
-                _arGramsCounterUI.UpdateCounter(newAmount, _playerInventory.ARGramsCap);
-            }
+            // TODO: AR grams UI will be redesigned
         }
 
         private void HandleSlotRightClicked(int slotIndex, Vector2 screenPosition)

@@ -105,8 +105,6 @@ namespace _Scripts.Core.Managers
         [Tooltip("Optional TextMeshProUGUI to display the current seed. For cross-scene persistence, use SeedControlUI instead.")]
         [SerializeField] private TextMeshProUGUI _seedDisplayText;
 
-        private SeedControlUI _seedControlUI;
-
         [Header("Runtime State")]
         [Tooltip("Current floor number the player is on.")]
         [SerializeField] private int _currentFloorNumber = 1;
@@ -203,10 +201,6 @@ namespace _Scripts.Core.Managers
                 _seedDisplayText.text = $"Seed: {_worldSeed}";
             }
 
-            if (_seedControlUI != null)
-            {
-                _seedControlUI.UpdateSeedDisplay(_worldSeed);
-            }
         }
 
         /// <summary>
@@ -216,16 +210,6 @@ namespace _Scripts.Core.Managers
         public void SetSeedDisplayText(TextMeshProUGUI text)
         {
             _seedDisplayText = text;
-            UpdateSeedDisplay();
-        }
-
-        /// <summary>
-        /// Sets the seed control UI reference and updates it immediately.
-        /// Called by SeedControlUI component on scene load.
-        /// </summary>
-        public void SetSeedControlUI(SeedControlUI controlUI)
-        {
-            _seedControlUI = controlUI;
             UpdateSeedDisplay();
         }
 
