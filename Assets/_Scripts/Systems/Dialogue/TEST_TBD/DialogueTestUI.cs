@@ -28,13 +28,11 @@ namespace Liquid.Dialogue
         [Header("Radial Layout")]
         [SerializeField] private RadialChoiceLayout radialLayout;
 
-        [Header("Test Data")]
-        [SerializeField] private NpcDefinition testNpc;
-        [SerializeField] private DialogueAsset testDialogue;
-
         private readonly List<Button> _spawnedButtons = new();
         private readonly List<RectTransform> _spawnedButtonRects = new();
         #endregion
+
+        public bool IsDialogueActive => runner != null && runner.State != DialogueRunner.DialogueState.Idle;
 
         private void Awake()
         {
@@ -42,7 +40,7 @@ namespace Liquid.Dialogue
             if (context == null) context = FindFirstObjectByType<DialogueContextBehaviour>();
 
             if (radialLayout == null && choicesContainer != null)
-                radialLayout = choicesContainer.GetComponent<Liquid.Dialogue.UI.RadialChoiceLayout>();
+                radialLayout = choicesContainer.GetComponent<RadialChoiceLayout>();
 
             runner.OnLinePresented += HandleLinePresented;
             runner.OnChoicesPresented += HandleChoicesPresented;
@@ -52,19 +50,27 @@ namespace Liquid.Dialogue
             ShowChoices(false);
         }
 
-        private void Start()
-        {
-            context.SetNpc(testNpc);
-            runner.Begin(testDialogue, context);
-        }
-
         private void Update()
         {
+            if (runner == null) return;
+
             if (runner.State == DialogueRunner.DialogueState.PresentingLine)
             {
                 if (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return))
                     runner.Advance();
             }
+        }
+
+        public void StartDialogue(NpcDefinition npc, DialogueAsset dialogue)
+        {
+            if (runner == null || context == null) return;
+            if (npc == null || dialogue == null) return;
+
+            // Avoid restarting while already in dialogue
+            if (IsDialogueActive) return;
+
+            context.SetNpc(npc);
+            runner.Begin(dialogue, context);
         }
 
         private void HandleLinePresented(string speakerName, string text, DialogueSpeakerKind kind)
@@ -94,7 +100,6 @@ namespace Liquid.Dialogue
         private void RebuildChoices(IReadOnlyList<DialogueRunner.ChoiceViewModel> choices)
         {
             ClearChoices();
-
             _spawnedButtonRects.Clear();
 
             for (int i = 0; i < choices.Count; i++)

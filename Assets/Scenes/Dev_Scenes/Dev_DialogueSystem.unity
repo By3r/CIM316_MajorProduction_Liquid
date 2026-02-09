@@ -375,7 +375,7 @@ GameObject:
   - component: {fileID: 212072603}
   - component: {fileID: 212072602}
   - component: {fileID: 212072601}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (8)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -486,7 +486,7 @@ GameObject:
   - component: {fileID: 240809982}
   - component: {fileID: 240809981}
   - component: {fileID: 240809980}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (1)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -862,7 +862,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 389425200}
-  m_Layer: 0
+  - component: {fileID: 389425201}
+  - component: {fileID: 389425202}
+  m_Layer: 6
   m_Name: TEMP_______________________NPC
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -895,6 +897,41 @@ Transform:
   - {fileID: 967972590}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &389425201
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 389425199}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8109221a0619f1b449deb7a892cbfc91, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Liquid.Dialogue.NpcDialogueSource
+  npc: {fileID: 11400000, guid: e517570e99528ac46a9296a78d785e14, type: 2}
+  dialogue: {fileID: 11400000, guid: 48e406d94c28a2f44bc14044e16942b1, type: 2}
+--- !u!65 &389425202
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 389425199}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1001 &391548883
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1151,7 +1188,7 @@ GameObject:
   - component: {fileID: 489571212}
   - component: {fileID: 489571211}
   - component: {fileID: 489571210}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (2)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1361,7 +1398,7 @@ GameObject:
   - component: {fileID: 588585863}
   - component: {fileID: 588585862}
   - component: {fileID: 588585861}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (3)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4077,7 +4114,7 @@ GameObject:
   - component: {fileID: 967972593}
   - component: {fileID: 967972592}
   - component: {fileID: 967972591}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (6)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5750,7 +5787,7 @@ GameObject:
   - component: {fileID: 1432631443}
   - component: {fileID: 1432631442}
   - component: {fileID: 1432631441}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (10)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5861,7 +5898,7 @@ GameObject:
   - component: {fileID: 1456401240}
   - component: {fileID: 1456401239}
   - component: {fileID: 1456401238}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5972,7 +6009,7 @@ GameObject:
   - component: {fileID: 1463935400}
   - component: {fileID: 1463935399}
   - component: {fileID: 1463935398}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (7)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7056,7 +7093,7 @@ GameObject:
   - component: {fileID: 1878261007}
   - component: {fileID: 1878261006}
   - component: {fileID: 1878261005}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (5)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7533,7 +7570,7 @@ GameObject:
   - component: {fileID: 1941246346}
   - component: {fileID: 1941246345}
   - component: {fileID: 1941246344}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (4)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7725,8 +7762,6 @@ MonoBehaviour:
   choicesContainer: {fileID: 1081785229}
   choiceButtonPrefab: {fileID: 1489463969496689690, guid: b13fd9c66c05bbd4b872a3fae9c40966, type: 3}
   radialLayout: {fileID: 1081785230}
-  testNpc: {fileID: 11400000, guid: e517570e99528ac46a9296a78d785e14, type: 2}
-  testDialogue: {fileID: 11400000, guid: 48e406d94c28a2f44bc14044e16942b1, type: 2}
 --- !u!1 &2085116336
 GameObject:
   m_ObjectHideFlags: 0
@@ -7739,7 +7774,7 @@ GameObject:
   - component: {fileID: 2085116340}
   - component: {fileID: 2085116339}
   - component: {fileID: 2085116338}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Cube (9)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -7894,6 +7929,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 7762665856642071411, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
+      propertyPath: _dialogueUI
+      value: 
+      objectReference: {fileID: 2056686769}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
