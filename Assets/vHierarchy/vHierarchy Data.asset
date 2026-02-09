@@ -38,6 +38,9 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-562289233-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1390096577-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-71571944-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-402940315-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-620862091-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-82160491-0
         values:
         - colorIndex: 6
           iconNameOrGuid: Canvas Icon
@@ -117,6 +120,18 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 0
           iconNameOrGuid: Settings Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: DebuggerAttached
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: DebuggerAttached
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: DebuggerAttached
           isIconRecursive: 0
           isColorRecursive: 0
   bookmarks: []
