@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a55a095fd4b84d7489b56fdf79d7130d, type: 3}
+  m_Name: Node_Line_Test_2
+  m_EditorClassIdentifier: Assembly-CSharp::Liquid.Dialogue.DialogueLineNode
+  nodeId: cd9c4c59-fd19-4db4-aa82-4583d41a7757
+  speakerKind: 0
+  text: Thought so. What do you want to know?
+  next: {fileID: 11400000, guid: 50660ec6310cb1c438bf5f6d85249153, type: 2}
