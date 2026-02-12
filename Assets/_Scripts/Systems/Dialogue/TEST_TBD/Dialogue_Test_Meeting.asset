@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69276646a7f2fec41b5231e6e0cf6747, type: 3}
+  m_Name: Dialogue_Test_Meeting
+  m_EditorClassIdentifier: Assembly-CSharp::Liquid.Dialogue.DialogueAsset
+  entryNode: {fileID: 11400000, guid: 853203dab6d05fa479594c1e3e60d8a6, type: 2}
+  nodes:
+  - {fileID: 11400000, guid: 4bcdbc726b26af14da04fce31c0265ae, type: 2}
+  - {fileID: 11400000, guid: b7bf0f5f7d089e9458419c918700a2eb, type: 2}
+  - {fileID: 11400000, guid: 50660ec6310cb1c438bf5f6d85249153, type: 2}
+  - {fileID: 11400000, guid: 853203dab6d05fa479594c1e3e60d8a6, type: 2}
+  - {fileID: 11400000, guid: 16ca2ddae6281b24bba82bc21a793e54, type: 2}
+  - {fileID: 11400000, guid: 8b2f8061e6faa894bb8fd0ec9ef499a3, type: 2}
+  - {fileID: 11400000, guid: bda37c1a623d34f4688347bd8be8fa90, type: 2}

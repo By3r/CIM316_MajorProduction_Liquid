@@ -3,6 +3,7 @@ using _Scripts.Systems.ProceduralGeneration.Doors;
 using _Scripts.Systems.Inventory;
 using _Scripts.Systems.Inventory.Pickups;
 using _Scripts.Systems.Machines;
+using Liquid.Dialogue;
 using UnityEngine;
 
 namespace _Scripts.Systems.Player
@@ -25,6 +26,11 @@ namespace _Scripts.Systems.Player
 
         [Tooltip("Should we show debug raycasts in the scene view?")]
         [SerializeField] private bool _showDebugRays;
+
+        [Header("Dialogue")]
+        [Tooltip("UI controller that starts dialogue when interacting with an NPC.")]
+        [SerializeField] private DialogueTestUI _dialogueUI;
+
         #endregion
 
         #region Private Fields
@@ -34,6 +40,10 @@ namespace _Scripts.Systems.Player
         private Pickup _currentPickup;
         private PowerCellSlot _currentPowerCellSlot;
         private Elevator _currentElevator;
+
+        private NpcDialogueSource _currentNpcDialogueSource;
+        private bool _isLookingAtNpcDialogue;
+
         private bool _isLookingAtDoor;
         private bool _isLookingAtPickup;
         private bool _isLookingAtPowerCellSlot;
@@ -84,9 +94,14 @@ namespace _Scripts.Systems.Player
         public bool IsLookingAtElevatorPanel => _isLookingAtElevatorPanel;
 
         /// <summary>
+        /// Gets whether the player is currently looking at an NPC dialogue source.
+        /// </summary>
+        public bool IsLookingAtNpcDialogue => _isLookingAtNpcDialogue;
+
+        /// <summary>
         /// Gets whether the player is looking at any interactable.
         /// </summary>
-        public bool IsLookingAtInteractable => _isLookingAtDoor || _isLookingAtPickup || _isLookingAtPowerCellSlot || _isLookingAtElevatorPanel;
+        public bool IsLookingAtInteractable => _isLookingAtDoor || _isLookingAtPickup || _isLookingAtPowerCellSlot || _isLookingAtElevatorPanel || _isLookingAtNpcDialogue;
         #endregion
 
         #region Initialization
@@ -94,6 +109,9 @@ namespace _Scripts.Systems.Player
         private void Awake()
         {
             FindPlayerCamera();
+
+            if (_dialogueUI == null)
+                _dialogueUI = FindFirstObjectByType<DialogueTestUI>();
         }
 
         private void Start()
@@ -140,6 +158,12 @@ namespace _Scripts.Systems.Player
 
         private void Update()
         {
+            if (_dialogueUI != null && _dialogueUI.IsDialogueActive)
+            {
+                ClearAllTargets();
+                return;
+            }
+
             CheckForInteractables();
             HandleInteractionInput();
         }
@@ -170,6 +194,17 @@ namespace _Scripts.Systems.Player
 
             if (Physics.Raycast(ray, out hit, _interactionDistance, _interactionLayerMask))
             {
+                // Check for NPC Dialogue source 
+                NpcDialogueSource npcDialogue = hit.collider.GetComponent<NpcDialogueSource>();
+                if (npcDialogue == null) npcDialogue = hit.collider.GetComponentInParent<NpcDialogueSource>();
+
+                if (npcDialogue != null && npcDialogue.IsValid)
+                {
+                    SetNpcDialogueTarget(npcDialogue);
+                    if (_showDebugRays) Debug.DrawRay(ray.origin, ray.direction * hit.distance, Color.white);
+                    return;
+                }
+
                 // Check for Door
                 Door door = hit.collider.GetComponent<Door>();
                 if (door == null) door = hit.collider.GetComponentInParent<Door>();
@@ -227,10 +262,29 @@ namespace _Scripts.Systems.Player
             ClearAllTargets();
         }
 
+        private void SetNpcDialogueTarget(NpcDialogueSource source)
+        {
+            _isLookingAtNpcDialogue = true;
+            _currentNpcDialogueSource = source;
+
+            _isLookingAtDoor = false;
+            _currentDoor = null;
+            _isLookingAtPickup = false;
+            _currentPickup = null;
+            _isLookingAtPowerCellSlot = false;
+            _currentPowerCellSlot = null;
+            _isLookingAtElevatorPanel = false;
+            _currentElevator = null;
+        }
+
         private void SetDoorTarget(Door door)
         {
             _isLookingAtDoor = true;
             _currentDoor = door;
+
+            _isLookingAtNpcDialogue = false;
+            _currentNpcDialogueSource = null;
+
             _isLookingAtPickup = false;
             _currentPickup = null;
             _isLookingAtPowerCellSlot = false;
@@ -243,6 +297,10 @@ namespace _Scripts.Systems.Player
         {
             _isLookingAtPickup = true;
             _currentPickup = pickup;
+
+            _isLookingAtNpcDialogue = false;
+            _currentNpcDialogueSource = null;
+
             _isLookingAtDoor = false;
             _currentDoor = null;
             _isLookingAtPowerCellSlot = false;
@@ -255,6 +313,10 @@ namespace _Scripts.Systems.Player
         {
             _isLookingAtPowerCellSlot = true;
             _currentPowerCellSlot = slot;
+
+            _isLookingAtNpcDialogue = false;
+            _currentNpcDialogueSource = null;
+
             _isLookingAtDoor = false;
             _currentDoor = null;
             _isLookingAtPickup = false;
@@ -267,6 +329,10 @@ namespace _Scripts.Systems.Player
         {
             _isLookingAtElevatorPanel = true;
             _currentElevator = elevator;
+
+            _isLookingAtNpcDialogue = false;
+            _currentNpcDialogueSource = null;
+
             _isLookingAtDoor = false;
             _currentDoor = null;
             _isLookingAtPickup = false;
@@ -277,6 +343,9 @@ namespace _Scripts.Systems.Player
 
         private void ClearAllTargets()
         {
+            _isLookingAtNpcDialogue = false;
+            _currentNpcDialogueSource = null;
+
             _isLookingAtDoor = false;
             _currentDoor = null;
             _isLookingAtPickup = false;
@@ -310,6 +379,13 @@ namespace _Scripts.Systems.Player
         /// </summary>
         private void AttemptInteraction()
         {
+            // Try NPC dialogue interaction
+            if (_isLookingAtNpcDialogue && _currentNpcDialogueSource != null && _dialogueUI != null)
+            {
+                _dialogueUI.StartDialogue(_currentNpcDialogueSource.Npc, _currentNpcDialogueSource.Dialogue);
+                return;
+            }
+
             // Try door interaction
             if (_isLookingAtDoor && _currentDoor != null)
             {
