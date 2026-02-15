@@ -14,22 +14,11 @@ namespace _Scripts.ProceduralGeneration
         private SerializedProperty _registerOnStart;
         private SerializedProperty _boundsCenter;
         private SerializedProperty _boundsSize;
-        private SerializedProperty _useUniformPadding;
-        private SerializedProperty _uniformPadding;
-        private SerializedProperty _axisBasedPadding;
-        private SerializedProperty _socketOffsetDistance;
-        private SerializedProperty _useTightCollisionBounds;
-        private SerializedProperty _socketCollisionTolerance;
         private SerializedProperty _showGizmos;
         private SerializedProperty _boundsColor;
-        private SerializedProperty _paddedBoundsColor;
-        private SerializedProperty _collisionBoundsColor;
 
         private bool _showRegistrySettings = true;
         private bool _showBoundsSettings = true;
-        private bool _showPaddingSettings = true;
-        private bool _showSocketSettings = true;
-        private bool _showCollisionSettings = true;
         private bool _showGizmoSettings = true;
         private bool _showActions = true;
 
@@ -41,16 +30,8 @@ namespace _Scripts.ProceduralGeneration
             _registerOnStart = serializedObject.FindProperty("_registerOnStart");
             _boundsCenter = serializedObject.FindProperty("_boundsCenter");
             _boundsSize = serializedObject.FindProperty("_boundsSize");
-            _useUniformPadding = serializedObject.FindProperty("_useUniformPadding");
-            _uniformPadding = serializedObject.FindProperty("_uniformPadding");
-            _axisBasedPadding = serializedObject.FindProperty("_axisBasedPadding");
-            _socketOffsetDistance = serializedObject.FindProperty("_socketOffsetDistance");
-            _useTightCollisionBounds = serializedObject.FindProperty("_useTightCollisionBounds");
-            _socketCollisionTolerance = serializedObject.FindProperty("_socketCollisionTolerance");
             _showGizmos = serializedObject.FindProperty("_showGizmos");
             _boundsColor = serializedObject.FindProperty("_boundsColor");
-            _paddedBoundsColor = serializedObject.FindProperty("_paddedBoundsColor");
-            _collisionBoundsColor = serializedObject.FindProperty("_collisionBoundsColor");
         }
 
         public override void OnInspectorGUI()
@@ -65,15 +46,6 @@ namespace _Scripts.ProceduralGeneration
             EditorGUILayout.Space(5);
 
             DrawBoundsSettings();
-            EditorGUILayout.Space(5);
-
-            DrawPaddingSettings();
-            EditorGUILayout.Space(5);
-
-            DrawSocketOffsetSettings();
-            EditorGUILayout.Space(5);
-
-            DrawCollisionSettings();
             EditorGUILayout.Space(5);
 
             DrawGizmoSettings();
@@ -161,75 +133,6 @@ namespace _Scripts.ProceduralGeneration
             EditorGUILayout.EndFoldoutHeaderGroup();
         }
 
-        private void DrawPaddingSettings()
-        {
-            _showPaddingSettings = EditorGUILayout.BeginFoldoutHeaderGroup(_showPaddingSettings, "Padding Settings");
-
-            if (_showPaddingSettings)
-            {
-                EditorGUI.indentLevel++;
-
-                EditorGUILayout.PropertyField(_useUniformPadding, new GUIContent("Use Uniform Padding"));
-
-                if (_useUniformPadding.boolValue)
-                {
-                    EditorGUILayout.PropertyField(_uniformPadding, new GUIContent("Uniform Padding"));
-                    EditorGUILayout.HelpBox("Padding applied equally on all axes (X, Y, Z).", MessageType.None);
-                }
-                else
-                {
-                    EditorGUILayout.PropertyField(_axisBasedPadding, new GUIContent("Axis-Based Padding"));
-                    EditorGUILayout.HelpBox("Padding configured per axis for fine control.", MessageType.None);
-                }
-
-                EditorGUI.indentLevel--;
-            }
-
-            EditorGUILayout.EndFoldoutHeaderGroup();
-        }
-
-        private void DrawSocketOffsetSettings()
-        {
-            _showSocketSettings = EditorGUILayout.BeginFoldoutHeaderGroup(_showSocketSettings, "Socket Offset Settings");
-
-            if (_showSocketSettings)
-            {
-                EditorGUI.indentLevel++;
-
-                EditorGUILayout.PropertyField(_socketOffsetDistance, new GUIContent("Socket Offset Distance"));
-                EditorGUILayout.HelpBox(
-                    "Distance (in units) to move sockets outward from the nearest bounds face.\n" +
-                    "Recommended: 0.1 - 0.5 units for most rooms.",
-                    MessageType.None);
-
-                EditorGUI.indentLevel--;
-            }
-
-            EditorGUILayout.EndFoldoutHeaderGroup();
-        }
-
-        private void DrawCollisionSettings()
-        {
-            _showCollisionSettings = EditorGUILayout.BeginFoldoutHeaderGroup(_showCollisionSettings, "Collision Settings");
-
-            if (_showCollisionSettings)
-            {
-                EditorGUI.indentLevel++;
-
-                EditorGUILayout.PropertyField(_useTightCollisionBounds, new GUIContent("Use Tight Collision Bounds"));
-                EditorGUILayout.PropertyField(_socketCollisionTolerance, new GUIContent("Socket Collision Tolerance"));
-
-                EditorGUILayout.HelpBox(
-                    "Tight bounds = no padding for precise socket alignment.\n" +
-                    "Socket tolerance allows slight overlap at connection points.",
-                    MessageType.None);
-
-                EditorGUI.indentLevel--;
-            }
-
-            EditorGUILayout.EndFoldoutHeaderGroup();
-        }
-
         private void DrawGizmoSettings()
         {
             _showGizmoSettings = EditorGUILayout.BeginFoldoutHeaderGroup(_showGizmoSettings, "Gizmo Settings");
@@ -243,8 +146,6 @@ namespace _Scripts.ProceduralGeneration
                 if (_showGizmos.boolValue)
                 {
                     EditorGUILayout.PropertyField(_boundsColor, new GUIContent("Bounds Color"));
-                    EditorGUILayout.PropertyField(_paddedBoundsColor, new GUIContent("Padded Bounds Color"));
-                    EditorGUILayout.PropertyField(_collisionBoundsColor, new GUIContent("Collision Bounds Color"));
                 }
 
                 EditorGUI.indentLevel--;
@@ -255,43 +156,23 @@ namespace _Scripts.ProceduralGeneration
 
         private void DrawActions()
         {
-            _showActions = EditorGUILayout.BeginFoldoutHeaderGroup(_showActions, "Socket Tools");
+            _showActions = EditorGUILayout.BeginFoldoutHeaderGroup(_showActions, "Tools");
 
             if (_showActions)
             {
                 EditorGUI.indentLevel++;
 
-                EditorGUILayout.LabelField("Socket Management", EditorStyles.miniBoldLabel);
-
-                EditorGUILayout.BeginHorizontal();
-
-                if (GUILayout.Button("Cache Sockets"))
+                if (GUILayout.Button("Cache Connection Sockets"))
                 {
                     Undo.RecordObject(_boundsChecker, "Cache Sockets");
                     _boundsChecker.CacheConnectionSockets();
                     EditorUtility.SetDirty(_boundsChecker);
                 }
 
-                if (GUILayout.Button("Adjust Socket Positions"))
-                {
-                    Undo.RecordObject(_boundsChecker, "Adjust Socket Positions");
-                    _boundsChecker.AdjustSocketPositions();
-                    EditorUtility.SetDirty(_boundsChecker);
-                }
-
-                EditorGUILayout.EndHorizontal();
-
-                if (GUILayout.Button("Clear Before Positions"))
-                {
-                    Undo.RecordObject(_boundsChecker, "Clear Before Positions");
-                    _boundsChecker.ClearBeforePositions();
-                    EditorUtility.SetDirty(_boundsChecker);
-                }
-
                 EditorGUILayout.HelpBox(
-                    "1. Cache Sockets - Find all ConnectionSocket children\n" +
-                    "2. Adjust Positions - Snap sockets to bounds faces + offset\n" +
-                    "3. Clear Before - Remove adjustment visualization",
+                    "Cache Sockets - Finds all ConnectionSocket children.\n" +
+                    "Sockets now live directly on door frame wall pieces.\n" +
+                    "Use 'Calculate Bounds from Renderers' above to auto-fit bounds.",
                     MessageType.Info);
 
                 EditorGUI.indentLevel--;

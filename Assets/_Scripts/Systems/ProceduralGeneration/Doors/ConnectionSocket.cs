@@ -4,10 +4,11 @@ using UnityEngine;
 namespace _Scripts.Systems.ProceduralGeneration.Doors
 {
     /// <summary>
-    /// ConnectionSocket represents a potential doorway connection point in a room prefab.
-    /// Used by the procedural generation system to connect rooms together.
-    /// Must match door types for compatibility.
-    /// Can spawn blockade prefabs if socket remains unconnected after generation.
+    /// ConnectionSocket represents a doorway connection point in a room prefab.
+    /// Attach this directly to a door frame wall piece (the mesh with the hole).
+    /// The connection point is the geometric center of this object's renderers,
+    /// so rooms align at doorway centers regardless of mesh pivot placement.
+    /// A child DoorSpawnPoint Transform marks where the door prefab instantiates.
     /// </summary>
     public class ConnectionSocket : MonoBehaviour
     {
@@ -20,14 +21,28 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         [Tooltip("Is this socket currently connected to another room?")]
         [SerializeField] private bool _isConnected;
 
-        [Header("-- Door Prefab (Optional) --")]
-        [Tooltip("Optional: Door prefab to instantiate when this socket is connected. Leave empty to use from database.")]
+        [Header("-- Forward Direction --")]
+        [Tooltip("Angle offset (degrees) to correct the forward direction if the door frame model doesn't face outward. " +
+                 "Rotates around the Y axis. 0 = use transform.forward as-is.")]
+        [Range(0f, 360f)]
+        [SerializeField] private float _forwardAngleOffset;
+
+        [Header("-- Socket Bounds --")]
+        [Tooltip("Local-space center of this door frame's geometry. Calculated from renderers. " +
+                 "This is the actual connection point where rooms meet.")]
+        [SerializeField] private Vector3 _boundsCenter = Vector3.zero;
+
+        [Tooltip("Local-space size of this door frame's geometry.")]
+        [SerializeField] private Vector3 _boundsSize = Vector3.zero;
+
+        [Header("-- Door Spawn --")]
+        [Tooltip("Optional: Door prefab to instantiate when connected. Leave empty to use from database.")]
         [SerializeField] private GameObject _doorPrefab;
 
-        [Tooltip("Local position offset for spawning the door. Use this to adjust door pivot alignment.")]
-        [SerializeField] private Vector3 _doorSpawnOffset = Vector3.zero;
+        [Tooltip("Child Transform marking where the door spawns. If not assigned, uses the socket's center.")]
+        [SerializeField] private Transform _doorSpawnPoint;
 
-        [Header("Blockade Prefabs")]
+        [Header("-- Blockade Prefabs --")]
         [Tooltip("Prefabs to spawn if this socket remains unconnected (walls, barriers, etc.)")]
         [SerializeField] private List<GameObject> _blockadePrefabs = new List<GameObject>();
 
@@ -37,12 +52,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         [Header("-- Visual Debugging --")]
         [Tooltip("Show debug gizmos in scene view?")]
         [SerializeField] private bool _showGizmos = true;
-
-        [Tooltip("Size of the socket opening for gizmo visualization.")]
-        [SerializeField] private Vector2 _socketSize = new(2f, 3f);
-
-        [Tooltip("Show door spawn offset visualization in scene view?")]
-        [SerializeField] private bool _showDoorOffsetGizmo = true;
 
         #endregion
 
@@ -80,15 +89,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         public GameObject DoorPrefab => _doorPrefab;
 
         /// <summary>
-        /// Gets or sets the door spawn offset.
-        /// </summary>
-        public Vector3 DoorSpawnOffset
-        {
-            get => _doorSpawnOffset;
-            set => _doorSpawnOffset = value;
-        }
-
-        /// <summary>
         /// Gets the list of blockade prefabs assigned to this socket.
         /// </summary>
         public List<GameObject> BlockadePrefabs => _blockadePrefabs;
@@ -114,37 +114,87 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         public ConnectionSocket ConnectedSocket => _connectedSocket;
 
         /// <summary>
-        /// Gets the forward direction of this socket (outward from the room).
+        /// Gets the forward direction of this socket, with angle offset applied.
+        /// This is the direction pointing OUTWARD from the room through the doorway.
         /// </summary>
-        public Vector3 Forward => transform.forward;
+        public Vector3 Forward => Quaternion.AngleAxis(_forwardAngleOffset, Vector3.up) * transform.forward;
 
         /// <summary>
-        /// Gets the position of this socket.
+        /// Gets the world-space connection point of this socket.
+        /// Uses the geometric center of the door frame (from cached bounds).
+        /// Falls back to transform.position if bounds haven't been calculated.
         /// </summary>
-        public Vector3 Position => transform.position;
+        public Vector3 Position
+        {
+            get
+            {
+                if (_boundsSize.sqrMagnitude < 0.001f)
+                    return transform.position;
+
+                return transform.TransformPoint(_boundsCenter);
+            }
+        }
 
         /// <summary>
-        /// Gets the rotation of this socket.
+        /// Gets the local-space connection point relative to the room root.
+        /// Used by FloorGenerator for placement offset calculations.
         /// </summary>
-        public Quaternion Rotation => transform.rotation;
+        public Vector3 LocalPosition
+        {
+            get
+            {
+                if (_boundsSize.sqrMagnitude < 0.001f)
+                    return transform.localPosition;
+
+                // Transform bounds center from socket-local to room-root-local
+                Vector3 worldCenter = transform.TransformPoint(_boundsCenter);
+                Transform roomRoot = transform.root;
+                return roomRoot.InverseTransformPoint(worldCenter);
+            }
+        }
 
         /// <summary>
-        /// Gets the world position where a door should be spawned (socket position + offset).
+        /// Gets the rotation of this socket, with forward angle offset applied.
         /// </summary>
-        public Vector3 DoorSpawnPosition => transform.position + transform.TransformDirection(_doorSpawnOffset);
+        public Quaternion Rotation => Quaternion.AngleAxis(_forwardAngleOffset, Vector3.up) * transform.rotation;
 
         /// <summary>
-        /// Gets the rotation where a door should be spawned (same as socket rotation).
+        /// Gets the DoorSpawnPoint child Transform (if assigned).
         /// </summary>
-        public Quaternion DoorSpawnRotation => transform.rotation;
+        public Transform DoorSpawnPointTransform => _doorSpawnPoint;
+
+        /// <summary>
+        /// Gets the world position where a door should be spawned.
+        /// Uses the DoorSpawnPoint child if assigned, otherwise falls back to the socket center.
+        /// </summary>
+        public Vector3 DoorSpawnPosition =>
+            _doorSpawnPoint != null ? _doorSpawnPoint.position : Position;
+
+        /// <summary>
+        /// Gets the rotation for door spawning.
+        /// Uses the DoorSpawnPoint child if assigned, otherwise uses socket rotation with offset.
+        /// </summary>
+        public Quaternion DoorSpawnRotation =>
+            _doorSpawnPoint != null ? _doorSpawnPoint.rotation : Rotation;
+
+        /// <summary>
+        /// Gets the local-space bounds center of this socket's door frame geometry.
+        /// </summary>
+        public Vector3 BoundsCenter => _boundsCenter;
+
+        /// <summary>
+        /// Gets the local-space bounds size of this socket's door frame geometry.
+        /// </summary>
+        public Vector3 BoundsSize => _boundsSize;
+
+        /// <summary>
+        /// Returns true if socket bounds have been calculated (size > 0).
+        /// </summary>
+        public bool HasBounds => _boundsSize.sqrMagnitude > 0.001f;
 
         #endregion
 
         #region Unity Lifecycle
-
-        private void OnValidate()
-        {
-        }
 
         private void OnDrawGizmos()
         {
@@ -158,12 +208,9 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             if (!_showGizmos) return;
 
             DrawSocketGizmo(true);
+            DrawBoundsGizmo();
             DrawDirectionIndicator();
-            
-            if (_showDoorOffsetGizmo && _doorSpawnOffset != Vector3.zero)
-            {
-                DrawDoorOffsetIndicator();
-            }
+            DrawDoorSpawnPointIndicator();
         }
 
         #endregion
@@ -172,7 +219,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
         /// <summary>
         /// Checks if this socket is compatible with a given door type.
-        /// Currently exact match required, can be extended for tier compatibility.
+        /// Currently exact match required.
         /// </summary>
         public bool IsCompatibleWith(Door.DoorType otherType)
         {
@@ -180,7 +227,45 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         }
 
         /// <summary>
+        /// Calculates the local-space bounds center and size from child renderers.
+        /// This determines the geometric center of the door frame piece,
+        /// which becomes the connection alignment point.
+        /// </summary>
+        public void CalculateBoundsFromRenderers()
+        {
+            Renderer[] renderers = GetComponentsInChildren<Renderer>();
+
+            if (renderers.Length == 0)
+            {
+                Debug.LogWarning($"[ConnectionSocket] No renderers found on '{gameObject.name}'. Cannot calculate bounds.");
+                _boundsCenter = Vector3.zero;
+                _boundsSize = Vector3.zero;
+                return;
+            }
+
+            // Calculate bounds in local space (relative to this socket's transform)
+            Bounds localBounds = new Bounds(
+                transform.InverseTransformPoint(renderers[0].bounds.center),
+                Vector3.zero);
+
+            foreach (Renderer renderer in renderers)
+            {
+                Vector3 localMin = transform.InverseTransformPoint(renderer.bounds.min);
+                Vector3 localMax = transform.InverseTransformPoint(renderer.bounds.max);
+                localBounds.Encapsulate(localMin);
+                localBounds.Encapsulate(localMax);
+            }
+
+            _boundsCenter = localBounds.center;
+            _boundsSize = localBounds.size;
+
+            Debug.Log($"[ConnectionSocket] Calculated bounds for '{gameObject.name}': " +
+                      $"Center={_boundsCenter}, Size={_boundsSize}");
+        }
+
+        /// <summary>
         /// Connects this socket to another socket and spawns a door.
+        /// Only the source socket spawns the door (one door per pair).
         /// Returns the instantiated door GameObject.
         /// </summary>
         public GameObject ConnectTo(ConnectionSocket otherSocket, GameObject doorPrefabOverride = null)
@@ -203,18 +288,25 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
                 return null;
             }
 
+            // Mark both sockets as connected
             _isConnected = true;
             _connectedSocket = otherSocket;
-            
+
             otherSocket._connectedSocket = this;
             otherSocket._isConnected = true;
 
+            // Spawn door at the DoorSpawnPoint (only source socket spawns the door)
             GameObject doorToSpawn = doorPrefabOverride ?? _doorPrefab;
             if (doorToSpawn != null)
             {
                 _instantiatedDoor = Instantiate(doorToSpawn, DoorSpawnPosition, DoorSpawnRotation);
                 _instantiatedDoor.name = $"Door_{gameObject.name}_to_{otherSocket.gameObject.name}";
+
+                // Preserve the prefab's original scale — SetParent can distort it
+                // if the parent hierarchy has non-uniform or non-1 scale.
+                Vector3 prefabScale = doorToSpawn.transform.localScale;
                 _instantiatedDoor.transform.SetParent(transform);
+                _instantiatedDoor.transform.localScale = prefabScale;
 
                 return _instantiatedDoor;
             }
@@ -226,8 +318,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         /// Spawns a blockade at this socket if it's unconnected.
         /// Called by FloorGenerator at the end of generation.
         /// </summary>
-        /// <param name="parentTransform">Optional parent transform for the blockade</param>
-        /// <returns>The instantiated blockade GameObject, or null if none spawned</returns>
         public GameObject SpawnBlockade(Transform parentTransform = null)
         {
             if (_isConnected)
@@ -235,6 +325,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
                 return null;
             }
 
+            // Check if the connected socket already has a door
             if (_connectedSocket != null)
             {
                 foreach (Transform child in _connectedSocket.transform)
@@ -246,7 +337,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
                         return null;
                     }
                 }
-                
+
                 _isConnected = true;
                 return null;
             }
@@ -257,6 +348,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
                 return null;
             }
 
+            // Check for existing door children
             foreach (Transform child in transform)
             {
                 if (child.name.Contains("Door_"))
@@ -266,7 +358,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
                     return null;
                 }
             }
-            
+
             if (!_spawnBlockadeIfUnconnected || _blockadePrefabs == null || _blockadePrefabs.Count == 0)
             {
                 return null;
@@ -286,13 +378,14 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             }
 
             Quaternion finalRotation = transform.rotation * blockadePrefab.transform.localRotation;
-            
+
             Vector3 rotatedOffset = transform.rotation * blockadePrefab.transform.localPosition;
             Vector3 finalPosition = transform.position + rotatedOffset;
-            
+
             _instantiatedBlockade = Instantiate(blockadePrefab, finalPosition, finalRotation);
             _instantiatedBlockade.name = $"Blockade_{gameObject.name}";
 
+            Vector3 blockadeScale = blockadePrefab.transform.localScale;
             if (parentTransform != null)
             {
                 _instantiatedBlockade.transform.SetParent(parentTransform);
@@ -301,6 +394,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             {
                 _instantiatedBlockade.transform.SetParent(transform);
             }
+            _instantiatedBlockade.transform.localScale = blockadeScale;
 
             return _instantiatedBlockade;
         }
@@ -319,7 +413,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
                     Destroy(_instantiatedDoor);
                 else
                     DestroyImmediate(_instantiatedDoor);
-                
+
                 _instantiatedDoor = null;
             }
 
@@ -329,7 +423,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
                     Destroy(_instantiatedBlockade);
                 else
                     DestroyImmediate(_instantiatedBlockade);
-                
+
                 _instantiatedBlockade = null;
             }
         }
@@ -346,52 +440,61 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
             Gizmos.color = socketColor;
 
-            Vector3 center = transform.position;
-            Vector3 right = transform.right * (_socketSize.x / 2f);
-            Vector3 up = transform.up * (_socketSize.y / 2f);
+            // Draw sphere at the connection point (bounds center, not pivot)
+            Gizmos.DrawWireSphere(Position, 0.15f);
+        }
 
-            Vector3 topLeft = center - right + up;
-            Vector3 topRight = center + right + up;
-            Vector3 bottomLeft = center - right - up;
-            Vector3 bottomRight = center + right - up;
+        private void DrawBoundsGizmo()
+        {
+            if (!HasBounds) return;
 
-            Gizmos.DrawLine(topLeft, topRight);
-            Gizmos.DrawLine(topRight, bottomRight);
-            Gizmos.DrawLine(bottomRight, bottomLeft);
-            Gizmos.DrawLine(bottomLeft, topLeft);
+            // Draw the socket's local bounds in orange
+            Matrix4x4 original = Gizmos.matrix;
+            Gizmos.matrix = transform.localToWorldMatrix;
 
-            if (selected)
+            Gizmos.color = new Color(1f, 0.6f, 0f, 0.4f);
+            Gizmos.DrawWireCube(_boundsCenter, _boundsSize);
+
+            // Draw a solid sphere at the center for clarity
+            Gizmos.color = new Color(1f, 0.6f, 0f, 0.8f);
+            Gizmos.DrawSphere(_boundsCenter, 0.08f);
+
+            Gizmos.matrix = original;
+
+            // Draw line from pivot to center if they differ
+            if (Vector3.Distance(transform.position, Position) > 0.01f)
             {
-                DrawSocketTypeLabel();
+                Gizmos.color = new Color(1f, 0.6f, 0f, 0.3f);
+                Gizmos.DrawLine(transform.position, Position);
             }
         }
 
         private void DrawDirectionIndicator()
         {
+            // Draw the adjusted forward direction from the connection point
+            Vector3 center = Position;
+            Vector3 adjustedForward = Forward;
             Gizmos.color = Color.blue;
-            Gizmos.DrawRay(transform.position, transform.forward * 1.5f);
-            
-            Vector3 arrowTip = transform.position + transform.forward * 1.5f;
-            Vector3 arrowRight = arrowTip - transform.forward * 0.3f + transform.right * 0.2f;
-            Vector3 arrowLeft = arrowTip - transform.forward * 0.3f - transform.right * 0.2f;
-            
+            Gizmos.DrawRay(center, adjustedForward * 1.5f);
+
+            Vector3 arrowTip = center + adjustedForward * 1.5f;
+            Vector3 right = Vector3.Cross(Vector3.up, adjustedForward).normalized;
+            Vector3 arrowRight = arrowTip - adjustedForward * 0.3f + right * 0.2f;
+            Vector3 arrowLeft = arrowTip - adjustedForward * 0.3f - right * 0.2f;
+
             Gizmos.DrawLine(arrowTip, arrowRight);
             Gizmos.DrawLine(arrowTip, arrowLeft);
-        }
 
-        private void DrawDoorOffsetIndicator()
-        {
-            Gizmos.color = Color.magenta;
-            Vector3 offsetPosition = DoorSpawnPosition;
-            Gizmos.DrawWireSphere(offsetPosition, 0.2f);
-            Gizmos.DrawLine(transform.position, offsetPosition);
-        }
+            // If angle offset is non-zero, also draw the raw transform.forward in grey for reference
+            if (_forwardAngleOffset > 0.1f)
+            {
+                Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 0.4f);
+                Gizmos.DrawRay(center, transform.forward * 1f);
+            }
 
-        private void DrawSocketTypeLabel()
-        {
 #if UNITY_EDITOR
             UnityEditor.Handles.Label(
-                transform.position + Vector3.up * (_socketSize.y / 2f + 0.3f),
+                center + Vector3.up * 0.5f,
                 $"{_socketType}\n{(_isConnected ? "Connected" : "Available")}",
                 new GUIStyle()
                 {
@@ -402,6 +505,19 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
                 }
             );
 #endif
+        }
+
+        private void DrawDoorSpawnPointIndicator()
+        {
+            if (_doorSpawnPoint == null) return;
+
+            Gizmos.color = Color.magenta;
+            Gizmos.DrawWireSphere(_doorSpawnPoint.position, 0.12f);
+            Gizmos.DrawLine(Position, _doorSpawnPoint.position);
+
+            // Show door spawn forward direction
+            Gizmos.color = new Color(1f, 0f, 1f, 0.6f);
+            Gizmos.DrawRay(_doorSpawnPoint.position, _doorSpawnPoint.forward * 0.8f);
         }
 
         #endregion

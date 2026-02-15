@@ -4,28 +4,19 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 {
     /// <summary>
     /// Handles the connection of rooms via ConnectionSockets.
-    /// Performs NARROW-PHASE collision detection between two specific rooms.
-    /// Uses TIGHT bounds with socket-level overlap exception.
-    /// Does NOT use the registry - that's for BROAD-PHASE checks in FloorGenerator.
+    /// Calculates target room rotation and position so sockets align face-to-face.
+    /// Performs a simple narrow-phase collision check between two specific rooms.
+    /// Broad-phase (OccupiedSpaceRegistry) already skips the source room, so
+    /// narrow-phase only needs to verify the two rooms being connected don't
+    /// excessively overlap beyond the expected door-frame contact area.
     /// </summary>
     public class DoorConnectionSystem : MonoBehaviour
     {
         [Header("Debug Settings")]
         [SerializeField] private bool _showDebugLogs = true;
 
-        [Header("Narrow-Phase Collision Settings")]
-        [Tooltip("Allow minimal overlap at socket connection points")]
-        [SerializeField] private bool _allowSocketOverlap = true;
-
-        [Tooltip("Maximum overlap volume allowed at socket connections (in cubic units)")]
-        [SerializeField] private float _socketOverlapThreshold = 0.5f;
-
-        [Tooltip("Maximum distance from socket center to consider overlap as 'at socket'")]
-        [SerializeField] private float _socketProximityThreshold = 0.3f;
-
         /// <summary>
         /// Connects two sockets together by aligning their rooms and instantiating a door.
-        /// Performs NARROW-PHASE collision check between the two specific rooms.
         /// CRITICAL: Apply rotation BEFORE calculating position!
         /// </summary>
         /// <param name="sourceSocket">The socket to connect from (existing room).</param>
@@ -58,15 +49,9 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             Quaternion targetRotation = CalculateTargetRoomRotation(sourceSocket, targetSocket, targetRoom);
             Vector3 targetPosition = CalculateTargetRoomPosition(sourceSocket, targetSocket, targetRoom, targetRotation);
 
-            BoundsChecker sourceBounds = sourceSocket.GetComponentInParent<BoundsChecker>();
-            BoundsChecker targetBounds = targetRoom.GetComponent<BoundsChecker>();
-
-            if (WouldConnectionCauseCollision(sourceBounds, targetBounds, targetPosition, targetRotation, sourceSocket, targetSocket))
-            {
-                if (_showDebugLogs)
-                    Debug.LogWarning($"[DoorConnectionSystem] Narrow-phase collision detected between '{sourceSocket.transform.root.name}' and '{targetRoom.name}'. Connection aborted.");
-                return false;
-            }
+            // Narrow-phase collision between source and target is no longer needed.
+            // The broad-phase (OccupiedSpaceRegistry) already checks against all placed rooms
+            // except the source room, which we intentionally skip to allow door-frame overlap.
 
             targetRoom.rotation = targetRotation;
             targetRoom.position = targetPosition;
@@ -88,8 +73,8 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         /// Returns both as a tuple for convenience.
         /// </summary>
         public (Vector3 position, Quaternion rotation) CalculateTargetRoomTransform(
-            ConnectionSocket sourceSocket, 
-            ConnectionSocket targetSocket, 
+            ConnectionSocket sourceSocket,
+            ConnectionSocket targetSocket,
             Transform targetRoom)
         {
             Quaternion rotation = CalculateTargetRoomRotation(sourceSocket, targetSocket, targetRoom);
@@ -102,9 +87,9 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         /// MUST be called AFTER calculating the target rotation!
         /// </summary>
         private Vector3 CalculateTargetRoomPosition(
-            ConnectionSocket sourceSocket, 
-            ConnectionSocket targetSocket, 
-            Transform targetRoom, 
+            ConnectionSocket sourceSocket,
+            ConnectionSocket targetSocket,
+            Transform targetRoom,
             Quaternion targetRotation)
         {
             Vector3 originalPos = targetRoom.position;
@@ -139,122 +124,13 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         }
 
         /// <summary>
-        /// NARROW-PHASE COLLISION CHECK between two specific rooms.
-        /// Uses TIGHT bounds with socket-level overlap exception.
-        /// Now supports intentional overlap from negative padding!
-        /// </summary>
-        private bool WouldConnectionCauseCollision(
-            BoundsChecker sourceBounds,
-            BoundsChecker targetBounds,
-            Vector3 targetPosition,
-            Quaternion targetRotation,
-            ConnectionSocket sourceSocket,
-            ConnectionSocket targetSocket)
-        {
-            if (sourceBounds == null || targetBounds == null)
-            {
-                Debug.LogWarning("[DoorConnectionSystem] Missing BoundsChecker on one or both rooms. Skipping narrow-phase check.");
-                return false;
-            }
-
-            Bounds sourceBoundsWorld = sourceBounds.GetCollisionBounds(allowSocketOverlap: true);
-
-            Vector3 originalPos = targetBounds.transform.position;
-            Quaternion originalRot = targetBounds.transform.rotation;
-
-            targetBounds.transform.position = targetPosition;
-            targetBounds.transform.rotation = targetRotation;
-
-            Bounds targetBoundsWorld = targetBounds.GetCollisionBounds(allowSocketOverlap: true);
-
-            targetBounds.transform.position = originalPos;
-            targetBounds.transform.rotation = originalRot;
-
-            if (!sourceBoundsWorld.Intersects(targetBoundsWorld))
-            {
-                return false;
-            }
-            
-            if (_allowSocketOverlap && IsAcceptableOverlap(
-                sourceBoundsWorld, targetBoundsWorld, 
-                sourceBounds, targetBounds,
-                sourceSocket, targetSocket))
-            {
-                if (_showDebugLogs)
-                    Debug.Log($"[DoorConnectionSystem] Acceptable overlap detected during narrow-phase check.");
-                return false;
-            }
-
-            return true;
-        }
-
-        /// <summary>
-        /// Determines if overlap is acceptable (socket-level or intentional from negative padding).
-        /// </summary>
-        private bool IsAcceptableOverlap(
-            Bounds boundsA, Bounds boundsB,
-            BoundsChecker checkerA, BoundsChecker checkerB,
-            ConnectionSocket sourceSocket, ConnectionSocket targetSocket)
-        {
-            Bounds intersection = GetBoundsIntersection(boundsA, boundsB);
-            
-            if (intersection.size == Vector3.zero)
-                return false;
-
-            float intersectionVolume = intersection.size.x * intersection.size.y * intersection.size.z;
-            
-            if (intersectionVolume < _socketOverlapThreshold)
-            {
-                Vector3 socketConnectionPoint = (sourceSocket.Position + targetSocket.Position) * 0.5f;
-                float distanceToSocket = Vector3.Distance(intersection.center, socketConnectionPoint);
-                
-                if (distanceToSocket < _socketProximityThreshold)
-                {
-                    return true;
-                }
-            }
-
-            Bounds sourcePadded = checkerA.GetPaddedBounds();
-            Bounds targetPadded = checkerB.GetPaddedBounds();
-
-            if (!sourcePadded.Intersects(targetPadded))
-            {
-                if (_showDebugLogs)
-                    Debug.Log($"[DoorConnectionSystem] Intentional overlap from negative padding detected (PADDED don't intersect, TIGHT do).");
-                return true;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Calculates the intersection of two bounds.
-        /// Returns a bounds with zero size if no intersection exists.
-        /// </summary>
-        private Bounds GetBoundsIntersection(Bounds a, Bounds b)
-        {
-            Vector3 min = Vector3.Max(a.min, b.min);
-            Vector3 max = Vector3.Min(a.max, b.max);
-            
-            if (min.x > max.x || min.y > max.y || min.z > max.z)
-            {
-                return new Bounds(Vector3.zero, Vector3.zero);
-            }
-            
-            Vector3 center = (min + max) * 0.5f;
-            Vector3 size = max - min;
-            
-            return new Bounds(center, size);
-        }
-
-        /// <summary>
         /// Disconnects two sockets and optionally destroys the door between them.
         /// </summary>
         public void DisconnectSockets(ConnectionSocket socket1, ConnectionSocket socket2)
         {
             if (socket1 != null)
                 socket1.Disconnect();
-            
+
             if (socket2 != null)
                 socket2.Disconnect();
 

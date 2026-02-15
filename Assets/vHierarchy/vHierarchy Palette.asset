@@ -82,6 +82,9 @@ MonoBehaviour:
   - builtinIcons: []
     customIcons:
     - DebuggerAttached
+    - SceneLoadOut
+    - editconstraints_32
+    - redLight
     enabled: 1
   - builtinIcons: []
     customIcons: []

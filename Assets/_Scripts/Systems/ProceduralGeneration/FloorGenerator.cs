@@ -457,7 +457,9 @@ namespace _Scripts.Systems.ProceduralGeneration
                     exitRoomEntry.prefab.transform.position = prefabOriginalPos;
                     exitRoomEntry.prefab.transform.rotation = prefabOriginalRot;
 
-                    if (OccupiedSpaceRegistry.Instance.IsSpaceOccupied(worldBounds, (BoundsChecker)null))
+                    // Skip the source room to allow natural overlap at door frames
+                    BoundsChecker sourceRoomBounds = selectedSocket.GetComponentInParent<BoundsChecker>();
+                    if (OccupiedSpaceRegistry.Instance.IsSpaceOccupied(worldBounds, sourceRoomBounds))
                     {
                         continue;
                     }
@@ -544,7 +546,7 @@ namespace _Scripts.Systems.ProceduralGeneration
                 if (targetSocket == null) continue;
 
                 Quaternion proposedRotation = Quaternion.LookRotation(-sourceSocket.Forward) * Quaternion.Inverse(targetSocket.Rotation) * selectedRoom.prefab.transform.rotation;
-                Vector3 targetSocketLocalPos = targetSocket.transform.localPosition;
+                Vector3 targetSocketLocalPos = targetSocket.LocalPosition;
                 Vector3 targetSocketWorldOffset = proposedRotation * targetSocketLocalPos;
                 Vector3 proposedPosition = sourceSocket.Position - targetSocketWorldOffset;
 
@@ -553,8 +555,8 @@ namespace _Scripts.Systems.ProceduralGeneration
 
                 Bounds paddedBounds = targetBoundsChecker.GetPaddedBounds(proposedPosition, proposedRotation);
 
-                // BROAD-PHASE check
-                if (OccupiedSpaceRegistry.Instance.IsSpaceOccupied(paddedBounds))
+                // BROAD-PHASE check — skip the source room to allow natural overlap at door frames
+                if (OccupiedSpaceRegistry.Instance.IsSpaceOccupied(paddedBounds, sourceBounds))
                 {
                     continue;
                 }

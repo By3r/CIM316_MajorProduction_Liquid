@@ -9424,9 +9424,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.ProceduralGeneration.DoorConnectionSystem
   _showDebugLogs: 0
-  _allowSocketOverlap: 1
-  _socketOverlapThreshold: 0.5
-  _socketProximityThreshold: 0.3
 --- !u!114 &1466747774
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12162,7 +12159,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.3
-  far clip plane: 10
+  far clip plane: 100
   field of view: 60
   orthographic: 0
   orthographic size: 5
@@ -13566,11 +13563,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3588519887378791136, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 11.68
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 3588519887378791136, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.2
+      value: 3.5
       objectReference: {fileID: 0}
     - target: {fileID: 3588519887378791136, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
       propertyPath: m_LocalPosition.z
@@ -13578,7 +13575,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3588519887378791136, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 1
+      value: 0.9918945
       objectReference: {fileID: 0}
     - target: {fileID: 3588519887378791136, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
       propertyPath: m_LocalRotation.x
@@ -13586,7 +13583,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3588519887378791136, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: 0.12706463
       objectReference: {fileID: 0}
     - target: {fileID: 3588519887378791136, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
       propertyPath: m_LocalRotation.z

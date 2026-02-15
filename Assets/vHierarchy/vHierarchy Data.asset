@@ -15,6 +15,9 @@ MonoBehaviour:
   sceneDatas_byGuid:
     keys:
     - 79c8f7b34fac32649ab8df8b05dadd3b
+    - 4c6321b3a9c95334d90ffcab10a45d03
+    - 8cc30a3974b42ed4e90fd99f03f611d6
+    - 25a48a5d8784e494d91d56e2c4e82bb4
     values:
     - goDatas_byGlobalId:
         keys:
@@ -132,6 +135,80 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 1
           iconNameOrGuid: DebuggerAttached
+          isIconRecursive: 0
+          isColorRecursive: 0
+    - goDatas_byGlobalId:
+        keys:
+        - globalObjectIdString: GlobalObjectId_V1-1-4c6321b3a9c95334d90ffcab10a45d03-4903016399100092177-0
+        - globalObjectIdString: GlobalObjectId_V1-1-4c6321b3a9c95334d90ffcab10a45d03-1834404637998707887-0
+        - globalObjectIdString: GlobalObjectId_V1-1-4c6321b3a9c95334d90ffcab10a45d03-6663053343445143567-0
+        - globalObjectIdString: GlobalObjectId_V1-1-4c6321b3a9c95334d90ffcab10a45d03-383165574300691218-0
+        - globalObjectIdString: GlobalObjectId_V1-1-4c6321b3a9c95334d90ffcab10a45d03-625769579062743601-0
+        - globalObjectIdString: GlobalObjectId_V1-1-4c6321b3a9c95334d90ffcab10a45d03-4987311118658318629-0
+        values:
+        - colorIndex: 2
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: PreMatCube
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: Favorite
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: Favorite
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 8
+          iconNameOrGuid: SceneLoadOut
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 5
+          iconNameOrGuid: editconstraints_32
+          isIconRecursive: 0
+          isColorRecursive: 0
+    - goDatas_byGlobalId:
+        keys:
+        - globalObjectIdString: GlobalObjectId_V1-1-8cc30a3974b42ed4e90fd99f03f611d6-7912803439716468786-0
+        - globalObjectIdString: GlobalObjectId_V1-1-8cc30a3974b42ed4e90fd99f03f611d6-3821786593894199118-0
+        - globalObjectIdString: GlobalObjectId_V1-1-8cc30a3974b42ed4e90fd99f03f611d6-5905477482315762008-0
+        values:
+        - colorIndex: 8
+          iconNameOrGuid: SceneLoadOut
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 5
+          iconNameOrGuid: editconstraints_32
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: PreMatQuad
+          isIconRecursive: 0
+          isColorRecursive: 0
+    - goDatas_byGlobalId:
+        keys:
+        - globalObjectIdString: GlobalObjectId_V1-1-25a48a5d8784e494d91d56e2c4e82bb4-296074898220957443-0
+        - globalObjectIdString: GlobalObjectId_V1-1-25a48a5d8784e494d91d56e2c4e82bb4-7873030236629428107-0
+        - globalObjectIdString: GlobalObjectId_V1-1-25a48a5d8784e494d91d56e2c4e82bb4-8132483846936247860-0
+        - globalObjectIdString: GlobalObjectId_V1-1-25a48a5d8784e494d91d56e2c4e82bb4-4638851676375869358-0
+        values:
+        - colorIndex: 1
+          iconNameOrGuid: redLight
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 6
+          iconNameOrGuid: Favorite
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 8
+          iconNameOrGuid: SceneLoadOut
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 5
+          iconNameOrGuid: editconstraints_32
           isIconRecursive: 0
           isColorRecursive: 0
   bookmarks: []

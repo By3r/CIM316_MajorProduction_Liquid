@@ -5,10 +5,10 @@ using UnityEngine;
 namespace _Scripts.Systems.ProceduralGeneration
 {
     /// <summary>
-    /// Manages room bounds calculation and ConnectionSocket positioning.
-    /// Provides tools for automatic bounds detection, padding, and socket offset adjustment.
+    /// Manages room bounds calculation for procedural generation.
+    /// Provides tools for automatic bounds detection from renderers.
     /// Automatically registers with OccupiedSpaceRegistry for BROAD-PHASE collision detection.
-    /// Registry stores PADDED bounds for personal space checking.
+    /// Broad-phase skips the previous room to allow natural overlap at door frames.
     /// </summary>
     public class BoundsChecker : MonoBehaviour
     {
@@ -28,43 +28,15 @@ namespace _Scripts.Systems.ProceduralGeneration
         [Tooltip("The size of the bounds")]
         [SerializeField] private Vector3 _boundsSize = Vector3.one * 10f;
 
-        [Header("Padding Settings")]
-        [Tooltip("Use uniform padding on all axes, or configure per axis")]
-        [SerializeField] private bool _useUniformPadding = true;
-
-        [Tooltip("Uniform padding applied to all axes")]
-        [SerializeField] private float _uniformPadding = 0.5f;
-
-        [Tooltip("Per-axis padding (only used if Uniform Padding is disabled)")]
-        [SerializeField] private Vector3 _axisBasedPadding = Vector3.one * 0.5f;
-
-        [Header("Socket Offset Settings")]
-        [Tooltip("Distance to move sockets outward from the nearest bounds face")]
-        [SerializeField] private float _socketOffsetDistance = 0.1f;
-
-        [Header("Collision Settings")]
-        [Tooltip("Use tight bounds (no padding) for collision detection at sockets")]
-        [SerializeField] private bool _useTightCollisionBounds = true;
-
-        [Tooltip("Additional padding to remove near socket areas for collision (negative value to allow overlap)")]
-        [SerializeField] private float _socketCollisionTolerance = 0.1f;
-
         [Header("Gizmo Settings")]
         [Tooltip("Show bounds gizmos in Scene view")]
         [SerializeField] private bool _showGizmos = true;
 
-        [Tooltip("Color for actual bounds")]
+        [Tooltip("Color for bounds wireframe")]
         [SerializeField] private Color _boundsColor = Color.green;
-
-        [Tooltip("Color for padded bounds")]
-        [SerializeField] private Color _paddedBoundsColor = Color.yellow;
-
-        [Tooltip("Color for collision bounds")]
-        [SerializeField] private Color _collisionBoundsColor = Color.cyan;
 
         [Header("Debug Info")]
         [SerializeField] private List<ConnectionSocket> _cachedSockets = new();
-        [SerializeField] private List<Vector3> _socketPositionsBeforeAdjustment = new();
 
         private void Start()
         {
@@ -98,7 +70,7 @@ namespace _Scripts.Systems.ProceduralGeneration
         /// <summary>
         /// Manually register this room with the OccupiedSpaceRegistry.
         /// Called automatically if _autoRegisterWithRegistry is true.
-        /// Registry stores PADDED bounds for broad-phase collision detection.
+        /// Registry stores bounds for broad-phase collision detection.
         /// </summary>
         public void RegisterWithRegistry()
         {
@@ -144,59 +116,36 @@ namespace _Scripts.Systems.ProceduralGeneration
         }
 
         /// <summary>
-        /// Gets the padded bounds in world space at current transform.
-        /// Use this for BROAD-PHASE collision detection in registry.
+        /// Gets bounds in world space at current transform.
+        /// Used for BROAD-PHASE collision detection in registry.
+        /// (Padding has been removed — returns same as GetBounds.)
         /// </summary>
         public Bounds GetPaddedBounds()
         {
-            Vector3 padding = _useUniformPadding 
-                ? Vector3.one * _uniformPadding 
-                : _axisBasedPadding;
-
-            Vector3 paddedSize = _boundsSize + (padding * 2f);
-
-            return new Bounds(
-                transform.TransformPoint(_boundsCenter),
-                Vector3.Scale(paddedSize, transform.lossyScale)
-            );
+            return GetBounds();
         }
 
         /// <summary>
-        /// Gets the padded bounds at a SPECIFIC position and rotation.
+        /// Gets bounds at a SPECIFIC position and rotation (without instantiating).
         /// CRITICAL METHOD for FloorGenerator's broad-phase check.
-        /// Allows checking if a room CAN be placed before instantiating it.
+        /// (Padding has been removed — returns actual bounds at the specified transform.)
         /// </summary>
-        /// <param name="worldPosition">The position to calculate bounds at</param>
-        /// <param name="worldRotation">The rotation to calculate bounds at</param>
-        /// <returns>Padded bounds at the specified transform</returns>
         public Bounds GetPaddedBounds(Vector3 worldPosition, Quaternion worldRotation)
         {
-            Vector3 padding = _useUniformPadding 
-                ? Vector3.one * _uniformPadding 
-                : _axisBasedPadding;
-
-            Vector3 paddedSize = _boundsSize + (padding * 2f);
-
             Matrix4x4 trs = Matrix4x4.TRS(worldPosition, worldRotation, transform.lossyScale);
             Vector3 worldCenter = trs.MultiplyPoint3x4(_boundsCenter);
-            Vector3 worldSize = Vector3.Scale(paddedSize, transform.lossyScale);
+            Vector3 worldSize = Vector3.Scale(_boundsSize, transform.lossyScale);
 
             return new Bounds(worldCenter, worldSize);
         }
 
         /// <summary>
         /// Gets bounds for collision detection during room placement.
-        /// This is for NARROW-PHASE checks (TIGHT bounds with socket overlap allowed).
+        /// (Simplified — no padding/tight distinction. Returns actual bounds.)
         /// </summary>
-        /// <param name="allowSocketOverlap">If true, uses tighter bounds to allow socket areas to overlap slightly</param>
         public Bounds GetCollisionBounds(bool allowSocketOverlap = true)
         {
-            if (allowSocketOverlap && _useTightCollisionBounds)
-            {
-                return GetBounds();
-            }
-            
-            return GetPaddedBounds();
+            return GetBounds();
         }
 
         /// <summary>
@@ -315,109 +264,9 @@ namespace _Scripts.Systems.ProceduralGeneration
             Debug.Log($"[BoundsChecker] Cached {_cachedSockets.Count} ConnectionSockets on '{gameObject.name}'");
         }
 
-        /// <summary>
-        /// Adjusts all cached socket positions to be on the nearest bounds face, then offset outward.
-        /// This ensures sockets are always positioned correctly at bounds edges + offset.
-        /// </summary>
-        public void AdjustSocketPositions()
-        {
-            if (_cachedSockets.Count == 0)
-            {
-                Debug.LogWarning($"[BoundsChecker] No cached sockets found. Run 'Cache Sockets' first.");
-                return;
-            }
-
-            _socketPositionsBeforeAdjustment.Clear();
-            foreach (ConnectionSocket socket in _cachedSockets)
-            {
-                if (socket != null)
-                    _socketPositionsBeforeAdjustment.Add(socket.transform.position);
-            }
-
-            Bounds bounds = GetBounds();
-            Vector3 boundsMin = _boundsCenter - _boundsSize * 0.5f;
-            Vector3 boundsMax = _boundsCenter + _boundsSize * 0.5f;
-
-            int adjusted = 0;
-
-            foreach (ConnectionSocket socket in _cachedSockets)
-            {
-                if (socket == null) continue;
-
-                Vector3 localSocketPos = socket.transform.localPosition;
-
-                (Vector3 facePosition, Vector3 faceNormal) = FindClosestBoundsFace(localSocketPos, boundsMin, boundsMax);
-
-                socket.transform.localPosition = facePosition;
-
-                socket.transform.localPosition += faceNormal * _socketOffsetDistance;
-
-                adjusted++;
-            }
-
-            Debug.Log($"[BoundsChecker] Snapped {adjusted} sockets to bounds faces with {_socketOffsetDistance} unit offset.");
-        }
-
-        /// <summary>
-        /// Finds the closest bounds face to a given local position.
-        /// Returns the position on that face and the face's outward normal.
-        /// </summary>
-        private (Vector3 facePosition, Vector3 faceNormal) FindClosestBoundsFace(Vector3 localPoint, Vector3 boundsMin, Vector3 boundsMax)
-        {
-            float distToMinX = Mathf.Abs(localPoint.x - boundsMin.x);
-            float distToMaxX = Mathf.Abs(localPoint.x - boundsMax.x);
-            float distToMinY = Mathf.Abs(localPoint.y - boundsMin.y);
-            float distToMaxY = Mathf.Abs(localPoint.y - boundsMax.y);
-            float distToMinZ = Mathf.Abs(localPoint.z - boundsMin.z);
-            float distToMaxZ = Mathf.Abs(localPoint.z - boundsMax.z);
-
-            float minDist = Mathf.Min(distToMinX, distToMaxX, distToMinY, distToMaxY, distToMinZ, distToMaxZ);
-
-            Vector3 facePosition = localPoint;
-            Vector3 faceNormal = Vector3.zero;
-
-            if (minDist == distToMinX)
-            {
-                facePosition.x = boundsMin.x;
-                faceNormal = Vector3.left;
-            }
-            else if (minDist == distToMaxX)
-            {
-                facePosition.x = boundsMax.x;
-                faceNormal = Vector3.right;
-            }
-            else if (minDist == distToMinY)
-            {
-                facePosition.y = boundsMin.y;
-                faceNormal = Vector3.down;
-            }
-            else if (minDist == distToMaxY)
-            {
-                facePosition.y = boundsMax.y;
-                faceNormal = Vector3.up;
-            }
-            else if (minDist == distToMinZ)
-            {
-                facePosition.z = boundsMin.z;
-                faceNormal = Vector3.back;
-            }
-            else if (minDist == distToMaxZ)
-            {
-                facePosition.z = boundsMax.z;
-                faceNormal = Vector3.forward;
-            }
-
-            return (facePosition, faceNormal);
-        }
-
-        /// <summary>
-        /// Clears the stored "before adjustment" positions for sockets.
-        /// </summary>
-        public void ClearBeforePositions()
-        {
-            _socketPositionsBeforeAdjustment.Clear();
-            Debug.Log($"[BoundsChecker] Cleared socket 'before' positions.");
-        }
+        // AdjustSocketPositions, FindClosestBoundsFace, and ClearBeforePositions
+        // have been removed. Sockets now live directly on door frame pieces
+        // and don't need to be snapped to bounds faces.
 
 #if UNITY_EDITOR
         private void OnDrawGizmos()
@@ -425,55 +274,22 @@ namespace _Scripts.Systems.ProceduralGeneration
             if (!_showGizmos) return;
 
             Matrix4x4 originalMatrix = Gizmos.matrix;
-
             Gizmos.matrix = transform.localToWorldMatrix;
 
+            // Draw room bounds wireframe
             Gizmos.color = _boundsColor;
             Gizmos.DrawWireCube(_boundsCenter, _boundsSize);
 
-            Gizmos.color = _paddedBoundsColor;
-            Vector3 padding = _useUniformPadding 
-                ? Vector3.one * _uniformPadding 
-                : _axisBasedPadding;
-            Vector3 paddedSize = _boundsSize + (padding * 2f);
-            Gizmos.DrawWireCube(_boundsCenter, paddedSize);
-
-            if (_useTightCollisionBounds)
-            {
-                Gizmos.color = _collisionBoundsColor;
-                Gizmos.DrawWireCube(_boundsCenter, _boundsSize);
-            }
-
             Gizmos.matrix = originalMatrix;
 
+            // Draw cached socket positions
             if (_cachedSockets.Count > 0)
             {
-                if (_socketPositionsBeforeAdjustment.Count > 0)
-                {
-                    Gizmos.color = Color.red;
-                    foreach (Vector3 beforePos in _socketPositionsBeforeAdjustment)
-                    {
-                        Gizmos.DrawSphere(beforePos, 0.1f);
-                    }
-                }
-
                 Gizmos.color = Color.green;
-                for (int i = 0; i < _cachedSockets.Count; i++)
+                foreach (ConnectionSocket socket in _cachedSockets)
                 {
-                    if (_cachedSockets[i] == null) continue;
-
-                    Vector3 currentPos = _cachedSockets[i].transform.position;
-                    Gizmos.DrawSphere(currentPos, 0.15f);
-
-                    if (i < _socketPositionsBeforeAdjustment.Count)
-                    {
-                        Gizmos.color = Color.cyan;
-                        Gizmos.DrawLine(_socketPositionsBeforeAdjustment[i], currentPos);
-                        Gizmos.color = Color.green;
-                    }
-
-                    Gizmos.color = new Color(1f, 0.5f, 0f, 0.3f);
-                    Gizmos.DrawWireSphere(currentPos, _socketCollisionTolerance);
+                    if (socket == null) continue;
+                    Gizmos.DrawSphere(socket.transform.position, 0.15f);
                 }
             }
         }
