@@ -1,5 +1,64 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &296074898220957443
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 905019476609294798}
+  - component: {fileID: 1742383666000175639}
+  m_Layer: 0
+  m_Name: Enemy Spawn Point
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &905019476609294798
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 296074898220957443}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 3, y: 1, z: -3}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2972281981673690497}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1742383666000175639
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 296074898220957443}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bd2628edf572c4c4398224aa65b435bb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.ProceduralGeneration.Enemies.EnemySpawnPoint
+  _spawnableEnemies:
+  - enemyPrefab: {fileID: 7931069018125719377, guid: 6e0b8a43ae2c0fd47938e42dcf701e54, type: 3}
+    spawnChance: 100
+  _guaranteedSpawn: 1
+  _useFallbackEnemy: 0
+  _fallbackEnemyPrefab: {fileID: 7931069018125719377, guid: 6e0b8a43ae2c0fd47938e42dcf701e54, type: 3}
+  _snapToGround: 1
+  _maxGroundCheckDistance: 10
+  _groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 8
+  _spawnOffset: {x: 0, y: 0, z: 0}
+  _isVent: 0
+  _spawnInactive: 0
+  _showDebugLogs: 0
 --- !u!1 &483818381294918872
 GameObject:
   m_ObjectHideFlags: 0
@@ -17437,6 +17496,7 @@ GameObject:
   - component: {fileID: 2972281981673690497}
   - component: {fileID: 3204005921674846911}
   - component: {fileID: 1164104693284440989}
+  - component: {fileID: 1452015646665924553}
   m_Layer: 0
   m_Name: Test Room Prefab 4
   m_TagString: Untagged
@@ -17457,6 +17517,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 905019476609294798}
   - {fileID: 2479919963660750090}
   - {fileID: 8114353112139888495}
   - {fileID: 6890238675281168684}
@@ -17518,6 +17579,21 @@ MonoBehaviour:
   _spawnOnAwake: 1
   _spawnDelay: 0
   _showDebugLogs: 0
+--- !u!114 &1452015646665924553
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8589230654753735102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 150c3546e4de2a441aa5b3ce3cb5af50, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.ProceduralGeneration.Enemies.RoomEnemySpawner
+  _spawnOnAwake: 1
+  _spawnDelay: 0
+  _showDebugLogs: 1
 --- !u!1001 &1574033576487285112
 PrefabInstance:
   m_ObjectHideFlags: 0

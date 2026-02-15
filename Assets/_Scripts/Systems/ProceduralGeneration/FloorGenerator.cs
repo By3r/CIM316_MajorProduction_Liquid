@@ -2,6 +2,7 @@ using _Scripts.Core.Managers;
 using _Scripts.Systems.Inventory;
 using _Scripts.Systems.Inventory.Pickups;
 using _Scripts.Systems.ProceduralGeneration.Doors;
+using _Scripts.Systems.ProceduralGeneration.Enemies;
 using _Scripts.Systems.ProceduralGeneration.Items;
 using System.Collections.Generic;
 using UnityEngine;
@@ -755,8 +756,12 @@ namespace _Scripts.Systems.ProceduralGeneration
             // Clear all spawned pickups
             ClearAllPickups();
 
-            // Reset the static container reference so it can be recreated
+            // Clear all spawned enemies
+            ClearAllEnemies();
+
+            // Reset the static container references so they can be recreated
             ItemSpawnPoint.ClearContainerReference();
+            EnemySpawnPoint.ClearContainerReference();
         }
 
         /// <summary>
@@ -779,6 +784,26 @@ namespace _Scripts.Systems.ProceduralGeneration
                 }
 
                 // Pickups cleared
+            }
+        }
+
+        /// <summary>
+        /// Destroys all spawned enemies in the enemies container.
+        /// Called during floor transitions to clean up enemies before regeneration.
+        /// </summary>
+        private void ClearAllEnemies()
+        {
+            GameObject enemiesContainer = GameObject.Find("--- ENEMIES ---");
+            if (enemiesContainer != null)
+            {
+                for (int i = enemiesContainer.transform.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = enemiesContainer.transform.GetChild(i);
+                    if (Application.isPlaying)
+                        Destroy(child.gameObject);
+                    else
+                        DestroyImmediate(child.gameObject);
+                }
             }
         }
 
