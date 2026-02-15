@@ -1,10 +1,11 @@
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace _Scripts.Systems.DebugConsole.Commands
 {
     /// <summary>
-    /// Built-in console commands: help, clear.
+    /// Built-in console commands: help, clear, copy.
     /// </summary>
     public static class ConsoleCommands
     {
@@ -52,6 +53,20 @@ namespace _Scripts.Systems.DebugConsole.Commands
             }
 
             return null; // No output after clearing
+        }
+
+        [DebugCommand("copy", "Copies all console output to the system clipboard.", "copy")]
+        public static string Copy(string[] args)
+        {
+            if (DebugConsole.Instance == null)
+                return "<color=red>Console not available.</color>";
+
+            string log = DebugConsole.Instance.GetFullLog();
+            if (string.IsNullOrEmpty(log))
+                return "Nothing to copy.";
+
+            GUIUtility.systemCopyBuffer = log;
+            return "<color=green>Console output copied to clipboard.</color>";
         }
     }
 }

@@ -127,6 +127,25 @@ namespace _Scripts.Systems.DebugConsole
             {
                 NavigateHistory(1);
             }
+
+            // Ctrl+C with empty input → copy full log to clipboard
+            if ((keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed)
+                && keyboard.cKey.wasPressedThisFrame)
+            {
+                // Only copy full log if the input field has no text selected
+                // (otherwise let TMP_InputField handle its own Ctrl+C for selected input text)
+                bool hasSelection = _inputField != null
+                    && _inputField.selectionAnchorPosition != _inputField.selectionFocusPosition;
+                if (!hasSelection)
+                {
+                    string log = GetFullLog();
+                    if (!string.IsNullOrEmpty(log))
+                    {
+                        GUIUtility.systemCopyBuffer = log;
+                        AppendOutput("<color=green>Log copied to clipboard.</color>");
+                    }
+                }
+            }
         }
 
         private void LateUpdate()
@@ -333,6 +352,17 @@ namespace _Scripts.Systems.DebugConsole
         public static void Log(string message)
         {
             Instance?.AppendOutput(message);
+        }
+
+        /// <summary>
+        /// Returns the full log as a plain-text string (rich text tags stripped).
+        /// Used by the 'copy' command and Ctrl+C shortcut.
+        /// </summary>
+        public string GetFullLog()
+        {
+            string raw = string.Join("\n", _logLines);
+            // Strip Unity rich text tags for clean clipboard content
+            return System.Text.RegularExpressions.Regex.Replace(raw, "<[^>]+>", "");
         }
 
         #endregion
