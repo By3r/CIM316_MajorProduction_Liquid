@@ -4,7 +4,9 @@ using UnityEngine;
 /// <summary>
 /// Base enemy that moves using a grid-based-AStar-pathfinder.
 /// Walls should be tagged "Obstacle".
+/// Uses CharacterController for physics-based movement (wall collision, gravity).
 /// </summary>
+[RequireComponent(typeof(CharacterController))]
 public abstract class EnemyBase : MonoBehaviour
 {
     #region Variables
@@ -17,6 +19,13 @@ public abstract class EnemyBase : MonoBehaviour
     [SerializeField] protected float waypointTolerance = 0.2f;
     [SerializeField] protected float pathRecalcDistanceThreshold = 2f;
     [SerializeField] protected LayerMask obstacleMask;
+
+    [Header("Physics")]
+    [SerializeField] protected float gravity = -9.81f;
+
+    protected CharacterController characterController;
+    protected Vector3 verticalVelocity;
+    protected bool isGrounded;
 
     [Header("Navigation")]
     [Tooltip("Layers this enemy is allowed to walk on (floor, walls, ceiling, etc.). Empty = use any walkable node.")]
@@ -65,6 +74,7 @@ public abstract class EnemyBase : MonoBehaviour
     protected virtual void Awake()
     {
         currentHealth = maxHealth;
+        characterController = GetComponent<CharacterController>();
     }
 
     protected virtual void Update()
@@ -74,10 +84,55 @@ public abstract class EnemyBase : MonoBehaviour
             return;
         }
 
+        ApplyGravity();
         Tick();
     }
 
     protected abstract void Tick();
+
+    #region Physics
+
+    /// <summary>
+    /// Applies gravity each frame using the CharacterController.
+    /// Mirrors the player's MovementController gravity pattern.
+    /// </summary>
+    protected void ApplyGravity()
+    {
+        if (characterController == null) return;
+
+        isGrounded = characterController.isGrounded;
+
+        // Small downward force when grounded to keep the CC anchored (same as player pattern)
+        if (isGrounded && verticalVelocity.y < 0f)
+        {
+            verticalVelocity.y = -2f;
+        }
+
+        verticalVelocity.y += gravity * Time.deltaTime;
+        characterController.Move(verticalVelocity * Time.deltaTime);
+    }
+
+    /// <summary>
+    /// Teleports the enemy to a position. Disables CharacterController temporarily
+    /// to allow direct position change (CC blocks transform.position writes).
+    /// Same pattern as PlayerCommands.TeleportPlayer().
+    /// </summary>
+    public void Teleport(Vector3 position)
+    {
+        if (characterController != null)
+        {
+            characterController.enabled = false;
+        }
+
+        transform.position = position;
+
+        if (characterController != null)
+        {
+            characterController.enabled = true;
+        }
+    }
+
+    #endregion
 
     #region Health
 
@@ -205,7 +260,9 @@ public abstract class EnemyBase : MonoBehaviour
             }
         }
 
-        transform.position += direction * stepDistance;
+        Vector3 moveVector = direction * stepDistance;
+        moveVector.y = 0f; // Horizontal only; gravity handled by ApplyGravity()
+        characterController.Move(moveVector);
 
         if (direction.sqrMagnitude > 0.001f)
         {

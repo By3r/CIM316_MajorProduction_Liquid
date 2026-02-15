@@ -46,6 +46,13 @@ public class GridPathfinder : MonoBehaviour
     [SerializeField] private float nodeRadius = 0.5f;
     [SerializeField] private LayerMask obstacleMask;
 
+    [Header("Ground Validation")]
+    [Tooltip("Layers considered valid ground beneath walkable nodes. Nodes with no ground below are marked unwalkable. Leave empty to disable ground validation.")]
+    [SerializeField] private LayerMask groundCheckMask;
+
+    [Tooltip("Max raycast distance to search for ground below a node.")]
+    [SerializeField] private float groundCheckDistance = 2f;
+
     [Header("Fallback Search")]
     [Tooltip("How many cells outward to search for the nearest walkable node if start/target is blocked.")]
     [SerializeField] private int maxWalkableSearchRadius = 4;
@@ -126,6 +133,7 @@ public class GridPathfinder : MonoBehaviour
 
         int walkableCount = 0;
         int unwalkableCount = 0;
+        int airRejectedCount = 0;
 
         for (int x = 0; x < _gridSizeX; x++)
         {
@@ -158,6 +166,23 @@ public class GridPathfinder : MonoBehaviour
                         }
                     }
 
+                    // Ground validation: reject nodes floating in empty air
+                    if (walkable && groundCheckMask.value != 0)
+                    {
+                        bool hasGroundBelow = Physics.Raycast(
+                            worldPoint,
+                            Vector3.down,
+                            groundCheckDistance,
+                            groundCheckMask,
+                            QueryTriggerInteraction.Ignore);
+
+                        if (!hasGroundBelow)
+                        {
+                            walkable = false;
+                            airRejectedCount++;
+                        }
+                    }
+
                     if (walkable) walkableCount++;
                     else unwalkableCount++;
 
@@ -169,7 +194,7 @@ public class GridPathfinder : MonoBehaviour
             }
         }
 
-        Debug.Log($"[GridPathfinder] Grid created. Walkable: {walkableCount}, Unwalkable: {unwalkableCount}");
+        Debug.Log($"[GridPathfinder] Grid created. Walkable: {walkableCount}, Unwalkable: {unwalkableCount} (air-rejected: {airRejectedCount})");
     }
 
     private Node NodeFromWorldPoint(Vector3 worldPosition)

@@ -9981,7 +9981,11 @@ MonoBehaviour:
   nodeRadius: 0.5
   obstacleMask:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 512
+  groundCheckMask:
+    serializedVersion: 2
+    m_Bits: 8
+  groundCheckDistance: 2
   maxWalkableSearchRadius: 4
   drawGizmos: 0
   walkableColor: {r: 1, g: 1, b: 1, a: 1}
@@ -13558,8 +13562,28 @@ PrefabInstance:
       value: Player
       objectReference: {fileID: 0}
     - target: {fileID: 2507676271494124045, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
+      propertyPath: m_ClearFlags
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 2507676271494124045, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
+      propertyPath: field of view
+      value: 89.52176
+      objectReference: {fileID: 0}
+    - target: {fileID: 2507676271494124045, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
       propertyPath: far clip plane
       value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 2507676271494124045, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
+      propertyPath: m_BackGroundColor.b
+      value: 0.1273585
+      objectReference: {fileID: 0}
+    - target: {fileID: 2507676271494124045, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
+      propertyPath: m_BackGroundColor.g
+      value: 0.1196489
+      objectReference: {fileID: 0}
+    - target: {fileID: 2507676271494124045, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
+      propertyPath: m_BackGroundColor.r
+      value: 0.11474279
       objectReference: {fileID: 0}
     - target: {fileID: 3588519887378791136, guid: ef091372f0ca1dd4fafd5c8c9101626c, type: 3}
       propertyPath: m_LocalPosition.x

@@ -872,7 +872,13 @@ public class LiquidEnemy : EnemyBase, INoiseListener, IEnemyDebugTarget
 
         dir.Normalize();
         Vector3 desired = targetPosition - dir * backOffDistance;
-        transform.position = Vector3.Lerp(transform.position, desired, Time.deltaTime * 3f);
+
+        Vector3 moveDir = desired - transform.position;
+        moveDir.y = 0f; // Horizontal only; gravity handled by ApplyGravity()
+
+        // Clamp step to preserve the original smooth approach speed
+        Vector3 step = moveDir.normalized * Mathf.Min(moveDir.magnitude, 3f * Time.deltaTime);
+        characterController.Move(step);
     }
 
     public Vector3 GetPondSpawnPosition()

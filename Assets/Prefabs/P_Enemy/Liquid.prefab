@@ -11,8 +11,8 @@ GameObject:
   - component: {fileID: 685177789530576657}
   - component: {fileID: 2884349532159625488}
   - component: {fileID: 1848529901536180}
-  - component: {fileID: 8832361076288927505}
   - component: {fileID: 6092232765804585642}
+  - component: {fileID: 2123791719757383108}
   m_Layer: 0
   m_Name: Liquid
   m_TagString: Untagged
@@ -91,29 +91,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!136 &8832361076288927505
-CapsuleCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7931069018125719377}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Height: 2
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &6092232765804585642
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -134,6 +111,7 @@ MonoBehaviour:
   obstacleMask:
     serializedVersion: 2
     m_Bits: 512
+  gravity: -9.81
   walkableLayers:
     serializedVersion: 2
     m_Bits: 1032
@@ -141,16 +119,57 @@ MonoBehaviour:
   playerTarget: {fileID: 0}
   currentState: 0
   drawPathGizmos: 1
+  logPathFailures: 0
+  logPathBlocked: 0
+  logStateChanges: 0
+  logCooldownSeconds: 1
   pondCenter: {fileID: 0}
   pondRadius: 4
   relaxDuration: 6
+  pondPatrolRadius: 2.5
+  pondPatrolArriveRadius: 0.6
+  pondPatrolDurationRange: {x: 2, y: 4.5}
   sightDistance: 18
   chaseDistance: 15
+  playerInterestingMemorySeconds: 1.25
+  lastSeenMemorySeconds: 4
+  lastSeenArriveRadius: 1.25
+  noiseAwarenessThreshold: 0.22
+  noiseInterestMemorySeconds: 2
+  noiseAwarenessDecayPerSecond: 0.18
+  noiseAwarenessGainMultiplier: 1
   liquidPrefab: {fileID: 6092232765804585642}
   mergeDistance: 2
   holdDistance: 1.5
   holdDuration: 2.5
   swallowDistance: 1.1
+  chaseStrafeOffset: 1.25
+  unreachablePlayerCooldownSeconds: 3
   currentGoalName: 
   currentActionName: 
   worldStateDump: 
+--- !u!143 &2123791719757383108
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7931069018125719377}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2
+  m_Radius: 0.5
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 0, z: 0}

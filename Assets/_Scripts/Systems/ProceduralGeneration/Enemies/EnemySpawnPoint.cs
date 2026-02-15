@@ -397,10 +397,18 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
                 SnapToGroundOnce(spawnedObject);
             }
 
-            // Apply offset
+            // Apply offset (use Teleport for CharacterController compatibility)
             if (_spawnOffset != Vector3.zero)
             {
-                spawnedObject.transform.position += _spawnOffset;
+                EnemyBase offsetEnemy = spawnedObject.GetComponent<EnemyBase>();
+                if (offsetEnemy != null)
+                {
+                    offsetEnemy.Teleport(spawnedObject.transform.position + _spawnOffset);
+                }
+                else
+                {
+                    spawnedObject.transform.position += _spawnOffset;
+                }
             }
 
             // If this spawn point is set to spawn inactive, disable the enemy AI until awakened
@@ -461,6 +469,8 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
         /// </summary>
         private void SnapToGroundOnce(GameObject obj)
         {
+            EnemyBase enemyBase = obj.GetComponent<EnemyBase>();
+
             Collider objCollider = obj.GetComponent<Collider>();
             if (objCollider == null)
             {
@@ -468,7 +478,10 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
                 if (Physics.Raycast(obj.transform.position + Vector3.up * 0.5f, Vector3.down,
                     out RaycastHit hit, _maxGroundCheckDistance, _groundLayerMask))
                 {
-                    obj.transform.position = hit.point;
+                    if (enemyBase != null)
+                        enemyBase.Teleport(hit.point);
+                    else
+                        obj.transform.position = hit.point;
                 }
                 return;
             }
@@ -483,7 +496,12 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
                 _maxGroundCheckDistance, _groundLayerMask))
             {
                 float distanceToGround = bottomPoint.y - groundHit.point.y;
-                obj.transform.position += Vector3.down * distanceToGround;
+                Vector3 snappedPos = obj.transform.position + Vector3.down * distanceToGround;
+
+                if (enemyBase != null)
+                    enemyBase.Teleport(snappedPos);
+                else
+                    obj.transform.position = snappedPos;
 
                 if (_showDebugLogs)
                     Debug.Log($"[EnemySpawnPoint] Snapped '{obj.name}' to ground at {groundHit.point}");
