@@ -1,4 +1,5 @@
 using _Scripts.Core.Managers;
+using _Scripts.Systems.Weapon;
 using UnityEngine;
 // **FIX**: Add the namespace for NeutronicBoots
 using Liquid.Player.Equipment;
@@ -108,6 +109,10 @@ namespace _Scripts.Systems.Player
             {
                 _interactionController = gameObject.AddComponent<InteractionController>();
             }
+
+            // Weapon Manager
+            WeaponManager weaponManager = GetComponent<WeaponManager>();
+            if (weaponManager == null) weaponManager = gameObject.AddComponent<WeaponManager>();
         }
 
         #endregion

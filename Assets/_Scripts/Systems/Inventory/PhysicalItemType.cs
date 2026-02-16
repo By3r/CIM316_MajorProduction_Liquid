@@ -8,6 +8,7 @@ namespace _Scripts.Systems.Inventory
         PowerCell,      // Used to power elevator and machines
         Grenade,        // Throwable explosive
         ARContainer,    // Container for AR extraction
-        KeyItem         // Quest/progression items
+        KeyItem,        // Quest/progression items
+        Weapon          // Weapons (ranged and melee) — managed via weapon wheel
     }
 }

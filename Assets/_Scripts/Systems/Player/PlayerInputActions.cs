@@ -181,6 +181,24 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Aim"",
+                    ""type"": ""Button"",
+                    ""id"": ""a1e2f3b4-5678-9abc-def0-112233445566"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""InventoryToggle"",
+                    ""type"": ""Button"",
+                    ""id"": ""c2d3e4f5-6789-abcd-ef01-223344556677"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -337,6 +355,28 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""action"": ""WalkToggle"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""d4e5f6a7-8901-bcde-f234-334455667788"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Aim"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e5f6a7b8-9012-cdef-3456-445566778899"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""InventoryToggle"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -487,6 +527,8 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Player_Reload = m_Player.FindAction("Reload", throwIfNotFound: true);
         m_Player_SwitchWeapon = m_Player.FindAction("SwitchWeapon", throwIfNotFound: true);
         m_Player_WalkToggle = m_Player.FindAction("WalkToggle", throwIfNotFound: true);
+        m_Player_Aim = m_Player.FindAction("Aim", throwIfNotFound: true);
+        m_Player_InventoryToggle = m_Player.FindAction("InventoryToggle", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Pause = m_UI.FindAction("Pause", throwIfNotFound: true);
@@ -584,6 +626,8 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Reload;
     private readonly InputAction m_Player_SwitchWeapon;
     private readonly InputAction m_Player_WalkToggle;
+    private readonly InputAction m_Player_Aim;
+    private readonly InputAction m_Player_InventoryToggle;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -635,6 +679,14 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/WalkToggle".
         /// </summary>
         public InputAction @WalkToggle => m_Wrapper.m_Player_WalkToggle;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Aim".
+        /// </summary>
+        public InputAction @Aim => m_Wrapper.m_Player_Aim;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/InventoryToggle".
+        /// </summary>
+        public InputAction @InventoryToggle => m_Wrapper.m_Player_InventoryToggle;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -691,6 +743,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @WalkToggle.started += instance.OnWalkToggle;
             @WalkToggle.performed += instance.OnWalkToggle;
             @WalkToggle.canceled += instance.OnWalkToggle;
+            @Aim.started += instance.OnAim;
+            @Aim.performed += instance.OnAim;
+            @Aim.canceled += instance.OnAim;
+            @InventoryToggle.started += instance.OnInventoryToggle;
+            @InventoryToggle.performed += instance.OnInventoryToggle;
+            @InventoryToggle.canceled += instance.OnInventoryToggle;
         }
 
         /// <summary>
@@ -732,6 +790,12 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @WalkToggle.started -= instance.OnWalkToggle;
             @WalkToggle.performed -= instance.OnWalkToggle;
             @WalkToggle.canceled -= instance.OnWalkToggle;
+            @Aim.started -= instance.OnAim;
+            @Aim.performed -= instance.OnAim;
+            @Aim.canceled -= instance.OnAim;
+            @InventoryToggle.started -= instance.OnInventoryToggle;
+            @InventoryToggle.performed -= instance.OnInventoryToggle;
+            @InventoryToggle.canceled -= instance.OnInventoryToggle;
         }
 
         /// <summary>
@@ -971,6 +1035,20 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnWalkToggle(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Aim" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAim(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "InventoryToggle" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInventoryToggle(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _Scripts.Systems.Weapon;
 using UnityEngine;
 
 namespace _Scripts.Systems.Inventory
@@ -8,6 +9,9 @@ namespace _Scripts.Systems.Inventory
         #region Variables
         [Header("References")]
         [SerializeField] private WeaponWheelUI radialInventoryWheel;
+
+        [Tooltip("WeaponManager on the Player. Routes weapon selection to the weapon system.")]
+        [SerializeField] private WeaponManager _weaponManager;
 
         [Header("Debug Items")]
         [Tooltip("Items that will be added when pressing G")]
@@ -84,6 +88,9 @@ namespace _Scripts.Systems.Inventory
             {
                 radialInventoryWheel.SetItems(_currentItems);
             }
+
+            // Sync weapon order for scroll-wheel switching
+            _weaponManager?.SetWheelWeaponOrder(_currentItems);
         }
 
         private void HandleWheelClosedWithSelection(int index, InventoryItemData item)
@@ -94,6 +101,9 @@ namespace _Scripts.Systems.Inventory
             }
 
             SetEquippedVisual(item);
+
+            // Route weapon selection to the weapon system
+            _weaponManager?.OnWeaponSelectedFromWheel(item);
         }
 
         private void SetEquippedVisual(InventoryItemData equippedItem)

@@ -39,6 +39,7 @@ namespace _Scripts.Core.Managers
         private InputAction _cancelAction;
         private InputAction _walkToggleAction;
         private InputAction _inventoryToggleAction;
+        private InputAction _aimAction;
 
         private bool _isInitialized = false;
 
@@ -60,6 +61,9 @@ namespace _Scripts.Core.Managers
         public bool CancelPressed => _isInitialized && _cancelAction != null && _cancelAction.WasPressedThisFrame();
         public bool WalkTogglePressed => _isInitialized && _walkToggleAction != null && _walkToggleAction.WasPressedThisFrame();
         public bool InventoryTogglePressed => _isInitialized && _inventoryToggleAction != null && _inventoryToggleAction.WasPressedThisFrame();
+        public bool AimPressed => _isInitialized && _aimAction != null && _aimAction.IsPressed();
+        public bool AimJustPressed => _isInitialized && _aimAction != null && _aimAction.WasPressedThisFrame();
+        public bool AimJustReleased => _isInitialized && _aimAction != null && _aimAction.WasReleasedThisFrame();
 
         private void Awake()
         {
@@ -105,6 +109,7 @@ namespace _Scripts.Core.Managers
             _switchWeaponAction = _playerActionMap.FindAction("SwitchWeapon");
             _walkToggleAction = _playerActionMap.FindAction("WalkToggle");
             _inventoryToggleAction = _playerActionMap.FindAction("InventoryToggle");
+            _aimAction = _playerActionMap.FindAction("Aim");
 
             _pauseAction = _uiActionMap.FindAction("Pause");
             _navigateAction = _uiActionMap.FindAction("Navigate");
