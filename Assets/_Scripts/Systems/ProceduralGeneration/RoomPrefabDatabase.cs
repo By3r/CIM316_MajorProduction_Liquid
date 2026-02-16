@@ -110,14 +110,8 @@ namespace _Scripts.Systems.ProceduralGeneration
         [SerializeField] private List<RoomEntry> _rooms = new List<RoomEntry>();
 
         [Header("Special Rooms")]
-        [Tooltip("Entry elevator room for floor start (Floors 2+)")]
-        [SerializeField] private RoomEntry _entryElevatorRoom;
-
-        [Tooltip("Exit elevator room for floor end")]
-        [SerializeField] private RoomEntry _exitElevatorRoom;
-
-        [Tooltip("Safe room for Floor 1 start and optional sanctuaries")]
-        [SerializeField] private RoomEntry _safeRoom;
+        [Tooltip("Safe elevator room — the starting room for floor generation")]
+        [SerializeField] private RoomEntry _safeElevatorRoom;
 
         [Header("Database Statistics")]
         [SerializeField] private int _totalRooms = 0;
@@ -137,19 +131,9 @@ namespace _Scripts.Systems.ProceduralGeneration
         public List<RoomEntry> AllRooms => _rooms;
 
         /// <summary>
-        /// Gets the entry elevator room.
+        /// Gets the safe elevator room (starting room for generation).
         /// </summary>
-        public RoomEntry EntryElevatorRoom => _entryElevatorRoom;
-
-        /// <summary>
-        /// Gets the exit elevator room.
-        /// </summary>
-        public RoomEntry ExitElevatorRoom => _exitElevatorRoom;
-
-        /// <summary>
-        /// Gets the safe room.
-        /// </summary>
-        public RoomEntry SafeRoom => _safeRoom;
+        public RoomEntry SafeElevatorRoom => _safeElevatorRoom;
 
         /// <summary>
         /// Gets the total number of rooms in the database.
@@ -276,28 +260,14 @@ namespace _Scripts.Systems.ProceduralGeneration
             if (string.IsNullOrEmpty(identifier))
                 return null;
 
-            // Check special rooms first (by displayName, then prefab name)
-            if (_entryElevatorRoom != null)
+            // Check special rooms first (by displayName, then prefab name, then constant identifiers)
+            if (_safeElevatorRoom != null)
             {
-                if (_entryElevatorRoom.displayName == identifier ||
-                    (_entryElevatorRoom.prefab != null && _entryElevatorRoom.prefab.name == identifier) ||
-                    identifier == "EntryElevatorRoom")
-                    return _entryElevatorRoom;
-            }
-
-            if (_exitElevatorRoom != null)
-            {
-                if (_exitElevatorRoom.displayName == identifier ||
-                    (_exitElevatorRoom.prefab != null && _exitElevatorRoom.prefab.name == identifier) ||
-                    identifier == "ExitElevatorRoom")
-                    return _exitElevatorRoom;
-            }
-
-            if (_safeRoom != null)
-            {
-                if (_safeRoom.displayName == identifier ||
-                    (_safeRoom.prefab != null && _safeRoom.prefab.name == identifier))
-                    return _safeRoom;
+                if (_safeElevatorRoom.displayName == identifier ||
+                    (_safeElevatorRoom.prefab != null && _safeElevatorRoom.prefab.name == identifier) ||
+                    identifier == "SafeElevatorRoom" ||
+                    identifier == "EntryElevatorRoom") // backwards compat with cached layouts
+                    return _safeElevatorRoom;
             }
 
             // Search all rooms by displayName first
@@ -340,9 +310,7 @@ namespace _Scripts.Systems.ProceduralGeneration
             }
 
             // Refresh special rooms
-            _entryElevatorRoom?.RefreshSocketInfo();
-            _exitElevatorRoom?.RefreshSocketInfo();
-            _safeRoom?.RefreshSocketInfo();
+            _safeElevatorRoom?.RefreshSocketInfo();
 
             UpdateStatistics();
             Debug.Log($"[RoomPrefabDatabase] Refreshed {_rooms.Count} rooms. Enabled: {_enabledRooms}/{_totalRooms}");
@@ -364,12 +332,10 @@ namespace _Scripts.Systems.ProceduralGeneration
         /// <summary>
         /// Checks if the database has all required special rooms.
         /// </summary>
-        /// <returns>True if all special rooms are assigned and valid.</returns>
+        /// <returns>True if the safe elevator room is assigned and valid.</returns>
         public bool HasAllSpecialRooms()
         {
-            return _entryElevatorRoom != null && _entryElevatorRoom.prefab != null &&
-                   _exitElevatorRoom != null && _exitElevatorRoom.prefab != null &&
-                   _safeRoom != null && _safeRoom.prefab != null;
+            return _safeElevatorRoom != null && _safeElevatorRoom.prefab != null;
         }
 
         /// <summary>
@@ -394,15 +360,12 @@ namespace _Scripts.Systems.ProceduralGeneration
             if (rooms == null || rooms.Count == 0)
                 return null;
 
-            // Calculate total weight
+            // Calculate total weight (treat weight <= 0 as 1 to prevent silent exclusion)
             int totalWeight = 0;
             foreach (var room in rooms)
             {
-                totalWeight += room.spawnWeight;
+                totalWeight += Mathf.Max(1, room.spawnWeight);
             }
-
-            if (totalWeight <= 0)
-                return rooms[Random.Range(0, rooms.Count)]; // Fallback to uniform random
 
             // Pick random value within total weight
             int randomValue = Random.Range(0, totalWeight);
@@ -411,7 +374,7 @@ namespace _Scripts.Systems.ProceduralGeneration
             int currentWeight = 0;
             foreach (var room in rooms)
             {
-                currentWeight += room.spawnWeight;
+                currentWeight += Mathf.Max(1, room.spawnWeight);
                 if (randomValue < currentWeight)
                 {
                     return room;

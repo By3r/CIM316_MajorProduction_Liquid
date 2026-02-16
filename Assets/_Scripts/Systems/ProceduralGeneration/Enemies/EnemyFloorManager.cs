@@ -1,4 +1,5 @@
 using _Scripts.Core.Managers;
+using Liquid.Audio;
 using UnityEngine;
 
 namespace _Scripts.Systems.ProceduralGeneration.Enemies
@@ -245,6 +246,95 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
                 sb.AppendLine("<color=red>✗</color> GridPathfinder not found");
             }
 
+            // --- Detection Systems ---
+            sb.AppendLine("--- Detection Systems ---");
+            var noiseManager = FindObjectOfType<NoiseManager>();
+            sb.AppendLine(noiseManager != null
+                ? "<color=green>✓</color> NoiseManager active"
+                : "<color=red>✗</color> NoiseManager MISSING — enemies cannot hear");
+
+            // Count INoiseListener registrations
+            GenericGoapEnemy[] goapEnemies = FindObjectsOfType<GenericGoapEnemy>(true);
+            sb.AppendLine($"  GenericGoapEnemy instances: {goapEnemies.Length}");
+
+            if (goapEnemies.Length > 0)
+            {
+                int inSight = 0, chasing = 0, wandering = 0, idle = 0, spotted = 0, noPath = 0;
+                int hasWanderTarget = 0, wanderWaiting = 0;
+
+                foreach (GenericGoapEnemy enemy in goapEnemies)
+                {
+                    if (enemy == null || !enemy.enabled) continue;
+
+                    if (enemy.DebugPlayerInSight) inSight++;
+                    if (enemy.CurrentGoal == EnemyGoalType.ChasePlayer) chasing++;
+                    if (enemy.CurrentGoal == EnemyGoalType.WanderArea) wandering++;
+                    if (enemy.CurrentGoal == EnemyGoalType.None) idle++;
+                    if (enemy.DebugHasEverSpottedPlayer) spotted++;
+                    if (!enemy.DebugHasValidPath) noPath++;
+                    if (enemy.DebugHasWanderTarget) hasWanderTarget++;
+                    if (enemy.DebugIsWanderWaiting) wanderWaiting++;
+                }
+
+                sb.AppendLine($"  Player in sight of: {inSight}");
+                sb.AppendLine($"  Currently chasing: {chasing}");
+                sb.AppendLine($"  Currently wandering: {wandering} (has target: {hasWanderTarget}, waiting: {wanderWaiting})");
+                sb.AppendLine($"  Idle/None goal: {idle}");
+                sb.AppendLine($"  Have ever spotted player: {spotted}");
+                sb.AppendLine($"  <color={(noPath > goapEnemies.Length / 2 ? "yellow" : "white")}>No valid path: {noPath}/{goapEnemies.Length}</color>");
+
+                // Sample first enemy for detailed debug
+                GenericGoapEnemy sample = null;
+                foreach (GenericGoapEnemy e in goapEnemies)
+                {
+                    if (e != null && e.enabled) { sample = e; break; }
+                }
+
+                if (sample != null)
+                {
+                    sb.AppendLine($"  --- Sample Enemy: {sample.name} ---");
+                    sb.AppendLine($"    Goal: {sample.CurrentGoal}  State: {sample.CurrentState}");
+                    sb.AppendLine($"    Reason: {sample.DebugLastDecisionReason}");
+                    sb.AppendLine($"    Dist to player: {sample.DebugDistanceToPlayer:F1}m");
+                    sb.AppendLine($"    In sight: {sample.DebugPlayerInSight}  Noise audible: {sample.DebugPlayerNoiseAudible}");
+                    sb.AppendLine($"    Chase persist: spotted={sample.DebugHasEverSpottedPlayer} sinceSeen={sample.DebugTimeSinceLastSpotted:F1}s/{sample.DebugChasePersistDuration:F1}s");
+                    sb.AppendLine($"    Wander: hasTarget={sample.DebugHasWanderTarget} waiting={sample.DebugIsWanderWaiting} timer={sample.DebugWanderWaitTimer:F1}");
+                    sb.AppendLine($"    Path valid: {sample.DebugHasValidPath}  Stamina: {sample.CurrentStamina:F0}");
+                }
+            }
+
+            // --- GridPathfinder Details ---
+            sb.AppendLine("--- GridPathfinder Details ---");
+            if (pathfinder != null)
+            {
+                sb.AppendLine("<color=green>✓</color> GridPathfinder active");
+
+                // Test pathfinding from a real enemy position if possible
+                EnemyBase[] allEnemiesNav = FindObjectsOfType<EnemyBase>(true);
+                if (allEnemiesNav.Length > 0 && allEnemiesNav[0] != null)
+                {
+                    Vector3 enemyPos = allEnemiesNav[0].transform.position;
+                    Vector3 testEnd = enemyPos + Vector3.forward * 3f;
+                    var testPath = pathfinder.FindPath(enemyPos, testEnd);
+                    sb.AppendLine(testPath != null && testPath.Count > 0
+                        ? $"<color=green>✓</color> Path from enemy pos works ({testPath.Count} nodes)"
+                        : $"<color=red>✗</color> Path from enemy pos FAILED — enemy at {enemyPos:F1}, grid may not cover this area");
+                }
+                else
+                {
+                    Vector3 testStart = pathfinder.transform.position;
+                    Vector3 testEnd = testStart + Vector3.forward * 2f;
+                    var testPath = pathfinder.FindPath(testStart, testEnd);
+                    sb.AppendLine(testPath != null && testPath.Count > 0
+                        ? "<color=green>✓</color> Nav grid responsive (generic test)"
+                        : "<color=yellow>⚠</color> Nav grid returned empty path (may need rebuild)");
+                }
+            }
+            else
+            {
+                sb.AppendLine("<color=red>✗</color> GridPathfinder not found");
+            }
+
             // --- Potential Issues ---
             sb.AppendLine("--- Potential Issues ---");
             bool hasIssues = false;
@@ -265,6 +355,27 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
             {
                 sb.AppendLine("<color=red>✗</color> No pathfinder — enemies cannot navigate");
                 hasIssues = true;
+            }
+
+            if (noiseManager == null)
+            {
+                sb.AppendLine("<color=yellow>⚠</color> No NoiseManager — enemies cannot hear player");
+                hasIssues = true;
+            }
+
+            if (goapEnemies.Length > 0)
+            {
+                int noPathCount = 0;
+                foreach (GenericGoapEnemy e in goapEnemies)
+                {
+                    if (e != null && e.enabled && !e.DebugHasValidPath) noPathCount++;
+                }
+
+                if (noPathCount == goapEnemies.Length)
+                {
+                    sb.AppendLine("<color=red>✗</color> ALL enemies have no valid path — GridPathfinder grid likely doesn't cover enemy spawn positions");
+                    hasIssues = true;
+                }
             }
 
             if (!hasIssues)

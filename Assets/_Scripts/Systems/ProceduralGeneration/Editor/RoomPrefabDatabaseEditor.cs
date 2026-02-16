@@ -11,9 +11,7 @@ namespace _Scripts.ProceduralGeneration.Editor
     public class RoomPrefabDatabaseEditor : UnityEditor.Editor
     {
         private SerializedProperty _roomsProp;
-        private SerializedProperty _entryElevatorProp;
-        private SerializedProperty _exitElevatorProp;
-        private SerializedProperty _safeRoomProp;
+        private SerializedProperty _safeElevatorProp;
 
         private bool _showRoomList = true;
         private bool _showStatistics = true;
@@ -22,9 +20,7 @@ namespace _Scripts.ProceduralGeneration.Editor
         private void OnEnable()
         {
             _roomsProp = serializedObject.FindProperty("_rooms");
-            _entryElevatorProp = serializedObject.FindProperty("_entryElevatorRoom");
-            _exitElevatorProp = serializedObject.FindProperty("_exitElevatorRoom");
-            _safeRoomProp = serializedObject.FindProperty("_safeRoom");
+            _safeElevatorProp = serializedObject.FindProperty("_safeElevatorRoom");
         }
 
         public override void OnInspectorGUI()
@@ -98,7 +94,7 @@ namespace _Scripts.ProceduralGeneration.Editor
                 if (database.EnabledRooms == 0)
                     issues += "• No enabled rooms\n";
                 if (!database.HasAllSpecialRooms())
-                    issues += "• Missing special rooms (Entry/Exit/Safe)\n";
+                    issues += "• Missing Safe Elevator Room\n";
 
                 EditorGUILayout.HelpBox($"DATABASE HAS ISSUES:\n{issues}", MessageType.Warning);
             }
@@ -109,17 +105,12 @@ namespace _Scripts.ProceduralGeneration.Editor
             EditorGUILayout.LabelField("Special Rooms", EditorStyles.boldLabel);
 
             EditorGUILayout.HelpBox(
-                "These rooms are used for specific purposes and excluded from random generation.",
+                "The safe elevator room is spawned as the starting room for floor generation.\n" +
+                "Exit rooms are picked from the normal room list below.",
                 MessageType.Info);
 
-            EditorGUILayout.PropertyField(_entryElevatorProp, new GUIContent("Entry Elevator Room",
-                "Starting room for Floors 2+ (elevator entrance)"));
-
-            EditorGUILayout.PropertyField(_exitElevatorProp, new GUIContent("Exit Elevator Room",
-                "Ending room for all floors (elevator exit)"));
-
-            EditorGUILayout.PropertyField(_safeRoomProp, new GUIContent("Safe Room",
-                "Floor 1 start / Optional sanctuary on other floors"));
+            EditorGUILayout.PropertyField(_safeElevatorProp, new GUIContent("Safe Elevator Room",
+                "Starting room for floor generation"));
         }
 
         private void DrawStatistics(RoomPrefabDatabase database)

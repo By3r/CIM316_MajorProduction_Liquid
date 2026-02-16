@@ -5,5 +5,6 @@ public enum EnemyGoalType
     ChasePlayer,
     PatrolArea,
     TakeRest,
-    ThreatenPlayer
+    ThreatenPlayer,
+    WanderArea
 }

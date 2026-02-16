@@ -51,7 +51,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
         [Header("-- Visual Debugging --")]
         [Tooltip("Show debug gizmos in scene view?")]
-        [SerializeField] private bool _showGizmos = true;
+        [SerializeField] private bool _showGizmos = false;
 
         #endregion
 
@@ -200,17 +200,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         {
             if (!_showGizmos) return;
 
-            DrawSocketGizmo();
-        }
-
-        private void OnDrawGizmosSelected()
-        {
-            if (!_showGizmos) return;
-
-            DrawSocketGizmo(true);
-            DrawBoundsGizmo();
-            DrawDirectionIndicator();
-            DrawDoorSpawnPointIndicator();
+            DrawForwardArrow();
         }
 
         #endregion
@@ -432,48 +422,15 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
         #region Gizmo Drawing
 
-        private void DrawSocketGizmo(bool selected = false)
+        /// <summary>
+        /// Draws the socket's adjusted forward direction as a blue arrow.
+        /// Only custom gizmo — all other visuals use Unity's built-in transform handles.
+        /// </summary>
+        private void DrawForwardArrow()
         {
-            Color socketColor = _isConnected ? Color.green : Color.yellow;
-            if (selected) socketColor = Color.cyan;
-            socketColor.a = selected ? 0.8f : 0.5f;
-
-            Gizmos.color = socketColor;
-
-            // Draw sphere at the connection point (bounds center, not pivot)
-            Gizmos.DrawWireSphere(Position, 0.15f);
-        }
-
-        private void DrawBoundsGizmo()
-        {
-            if (!HasBounds) return;
-
-            // Draw the socket's local bounds in orange
-            Matrix4x4 original = Gizmos.matrix;
-            Gizmos.matrix = transform.localToWorldMatrix;
-
-            Gizmos.color = new Color(1f, 0.6f, 0f, 0.4f);
-            Gizmos.DrawWireCube(_boundsCenter, _boundsSize);
-
-            // Draw a solid sphere at the center for clarity
-            Gizmos.color = new Color(1f, 0.6f, 0f, 0.8f);
-            Gizmos.DrawSphere(_boundsCenter, 0.08f);
-
-            Gizmos.matrix = original;
-
-            // Draw line from pivot to center if they differ
-            if (Vector3.Distance(transform.position, Position) > 0.01f)
-            {
-                Gizmos.color = new Color(1f, 0.6f, 0f, 0.3f);
-                Gizmos.DrawLine(transform.position, Position);
-            }
-        }
-
-        private void DrawDirectionIndicator()
-        {
-            // Draw the adjusted forward direction from the connection point
             Vector3 center = Position;
             Vector3 adjustedForward = Forward;
+
             Gizmos.color = Color.blue;
             Gizmos.DrawRay(center, adjustedForward * 1.5f);
 
@@ -485,39 +442,12 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             Gizmos.DrawLine(arrowTip, arrowRight);
             Gizmos.DrawLine(arrowTip, arrowLeft);
 
-            // If angle offset is non-zero, also draw the raw transform.forward in grey for reference
+            // If angle offset is non-zero, show raw transform.forward in grey for reference
             if (_forwardAngleOffset > 0.1f)
             {
                 Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 0.4f);
                 Gizmos.DrawRay(center, transform.forward * 1f);
             }
-
-#if UNITY_EDITOR
-            UnityEditor.Handles.Label(
-                center + Vector3.up * 0.5f,
-                $"{_socketType}\n{(_isConnected ? "Connected" : "Available")}",
-                new GUIStyle()
-                {
-                    normal = new GUIStyleState() { textColor = Color.white },
-                    fontSize = 12,
-                    fontStyle = FontStyle.Bold,
-                    alignment = TextAnchor.MiddleCenter
-                }
-            );
-#endif
-        }
-
-        private void DrawDoorSpawnPointIndicator()
-        {
-            if (_doorSpawnPoint == null) return;
-
-            Gizmos.color = Color.magenta;
-            Gizmos.DrawWireSphere(_doorSpawnPoint.position, 0.12f);
-            Gizmos.DrawLine(Position, _doorSpawnPoint.position);
-
-            // Show door spawn forward direction
-            Gizmos.color = new Color(1f, 0f, 1f, 0.6f);
-            Gizmos.DrawRay(_doorSpawnPoint.position, _doorSpawnPoint.forward * 0.8f);
         }
 
         #endregion

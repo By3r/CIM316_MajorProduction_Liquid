@@ -65,6 +65,9 @@ namespace _Scripts.Systems.ProceduralGeneration
         [Tooltip("Use FloorStateManager for seed-based generation? If false, uses pure random generation.")]
         [SerializeField] private bool _useSeedBasedGeneration = true;
 
+        [Header("Gizmos")]
+        [SerializeField] private bool _showGizmos = false;
+
         [Header("Runtime Info (Read-Only)")]
         [SerializeField] private List<GameObject> _spawnedRooms = new();
         [SerializeField] private List<GameObject> _spawnedBlockades = new();
@@ -366,36 +369,29 @@ namespace _Scripts.Systems.ProceduralGeneration
 
         private GameObject SpawnStartingRoom()
         {
-            RoomPrefabDatabase.RoomEntry startRoomEntry = _roomDatabase.EntryElevatorRoom;
+            RoomPrefabDatabase.RoomEntry startRoomEntry = _roomDatabase.SafeElevatorRoom;
 
             if (startRoomEntry == null || startRoomEntry.prefab == null)
             {
-                Debug.LogError("[FloorGenerator] Entry elevator room not set in database!");
+                Debug.LogError("[FloorGenerator] Safe elevator room not set in database!");
                 return null;
             }
 
             Vector3 startPosition = transform.position;
             Quaternion startRotation = transform.rotation;
 
-            GameObject startRoom = SpawnRoom(startRoomEntry.prefab, startPosition, startRotation, "EntryRoom", registerNow: true);
+            GameObject startRoom = SpawnRoom(startRoomEntry.prefab, startPosition, startRotation, "SafeElevatorRoom", registerNow: true);
             _spawnedRooms.Add(startRoom);
 
             return startRoom;
         }
 
         /// <summary>
-        /// Spawns the exit elevator room at one of the unconnected sockets.
+        /// Spawns an exit room at one of the unconnected sockets.
+        /// Picks from the normal room database (any compatible room).
         /// </summary>
         private void SpawnExitRoomAtTerminus()
         {
-            RoomPrefabDatabase.RoomEntry exitRoomEntry = _roomDatabase.ExitElevatorRoom;
-
-            if (exitRoomEntry == null || exitRoomEntry.prefab == null)
-            {
-                Debug.LogError("[FloorGenerator] Exit elevator room not set in database!");
-                return;
-            }
-
             // Collect all unconnected sockets
             List<ConnectionSocket> candidateSockets = new List<ConnectionSocket>();
             foreach (GameObject room in _spawnedRooms)
@@ -407,18 +403,14 @@ namespace _Scripts.Systems.ProceduralGeneration
                 {
                     if (socket != null && !socket.IsConnected && socket.ConnectedSocket == null)
                     {
-                        ConnectionSocket exitSocket = FindCompatibleSocketInPrefab(exitRoomEntry.prefab, socket.SocketType);
-                        if (exitSocket != null)
-                        {
-                            candidateSockets.Add(socket);
-                        }
+                        candidateSockets.Add(socket);
                     }
                 }
             }
 
             if (candidateSockets.Count == 0)
             {
-                Debug.LogError("[FloorGenerator] No compatible sockets found for exit room!");
+                Debug.LogError("[FloorGenerator] No unconnected sockets found for exit room!");
                 return;
             }
 
@@ -429,70 +421,81 @@ namespace _Scripts.Systems.ProceduralGeneration
                 (candidateSockets[i], candidateSockets[j]) = (candidateSockets[j], candidateSockets[i]);
             }
 
-            // Try each socket
+            // Try each socket with compatible rooms from the database
             foreach (ConnectionSocket selectedSocket in candidateSockets)
             {
-                ConnectionSocket exitSocketPrefab = FindCompatibleSocketInPrefab(exitRoomEntry.prefab, selectedSocket.SocketType);
-                if (exitSocketPrefab == null) continue;
+                List<RoomPrefabDatabase.RoomEntry> compatibleRooms = _roomDatabase.GetRoomsWithSocketType(selectedSocket.SocketType);
+                if (compatibleRooms.Count == 0) continue;
 
-                Vector3 prefabOriginalPos = exitRoomEntry.prefab.transform.position;
-                Quaternion prefabOriginalRot = exitRoomEntry.prefab.transform.rotation;
-
-                exitRoomEntry.prefab.transform.position = Vector3.zero;
-                exitRoomEntry.prefab.transform.rotation = Quaternion.identity;
-
-                var (roomPosition, roomRotation) = _connectionSystem.CalculateTargetRoomTransform(
-                    selectedSocket, exitSocketPrefab, exitRoomEntry.prefab.transform);
-
-                exitRoomEntry.prefab.transform.position = prefabOriginalPos;
-                exitRoomEntry.prefab.transform.rotation = prefabOriginalRot;
-
-                // Broad-phase collision check
-                BoundsChecker exitBoundsChecker = exitRoomEntry.prefab.GetComponent<BoundsChecker>();
-                if (exitBoundsChecker != null)
+                // Shuffle compatible rooms for variety
+                for (int i = compatibleRooms.Count - 1; i > 0; i--)
                 {
-                    exitRoomEntry.prefab.transform.position = roomPosition;
-                    exitRoomEntry.prefab.transform.rotation = roomRotation;
-                    Bounds worldBounds = exitBoundsChecker.GetPaddedBounds();
-                    exitRoomEntry.prefab.transform.position = prefabOriginalPos;
-                    exitRoomEntry.prefab.transform.rotation = prefabOriginalRot;
+                    int j = Random.Range(0, i + 1);
+                    (compatibleRooms[i], compatibleRooms[j]) = (compatibleRooms[j], compatibleRooms[i]);
+                }
 
-                    // Skip the source room to allow natural overlap at door frames
-                    BoundsChecker sourceRoomBounds = selectedSocket.GetComponentInParent<BoundsChecker>();
-                    if (OccupiedSpaceRegistry.Instance.IsSpaceOccupied(worldBounds, sourceRoomBounds))
+                foreach (RoomPrefabDatabase.RoomEntry exitRoomEntry in compatibleRooms)
+                {
+                    if (exitRoomEntry.prefab == null) continue;
+
+                    ConnectionSocket exitSocketPrefab = FindCompatibleSocketInPrefab(exitRoomEntry.prefab, selectedSocket.SocketType);
+                    if (exitSocketPrefab == null) continue;
+
+                    // Calculate placement using the same approach as TrySpawnAndConnectRoomWithTwoPhaseCheck
+                    Quaternion proposedRotation = Quaternion.LookRotation(-selectedSocket.Forward)
+                        * Quaternion.Inverse(exitSocketPrefab.Rotation)
+                        * exitRoomEntry.prefab.transform.rotation;
+                    Vector3 targetSocketWorldOffset = proposedRotation * exitSocketPrefab.LocalPosition;
+                    Vector3 proposedPosition = selectedSocket.Position - targetSocketWorldOffset;
+
+                    // Broad-phase collision check (compound-aware)
+                    BoundsChecker exitBoundsChecker = exitRoomEntry.prefab.GetComponent<BoundsChecker>();
+                    if (exitBoundsChecker != null)
                     {
+                        Bounds paddedBounds = exitBoundsChecker.GetPaddedBounds(proposedPosition, proposedRotation);
+                        List<Bounds> testSubBounds = exitBoundsChecker.GetWorldSubBounds(proposedPosition, proposedRotation);
+                        BoundsChecker sourceRoomBounds = selectedSocket.GetComponentInParent<BoundsChecker>();
+                        if (OccupiedSpaceRegistry.Instance.IsSpaceOccupied(paddedBounds, testSubBounds, sourceRoomBounds))
+                        {
+                            continue;
+                        }
+                    }
+
+                    string roomName = !string.IsNullOrEmpty(exitRoomEntry.displayName)
+                        ? exitRoomEntry.displayName
+                        : exitRoomEntry.prefab.name;
+                    GameObject exitRoom = SpawnRoom(exitRoomEntry.prefab, proposedPosition, proposedRotation,
+                        $"ExitRoom_{roomName}", registerNow: true);
+                    if (exitRoom == null) continue;
+
+                    _spawnedRooms.Add(exitRoom);
+
+                    ConnectionSocket spawnedExitSocket = FindMatchingSocketInInstance(exitRoom, exitSocketPrefab);
+                    if (spawnedExitSocket == null)
+                    {
+                        _spawnedRooms.Remove(exitRoom);
+                        BoundsChecker bc = exitRoom.GetComponent<BoundsChecker>();
+                        if (bc != null) bc.UnregisterFromRegistry();
+                        Destroy(exitRoom);
                         continue;
                     }
-                }
 
-                GameObject exitRoom = SpawnRoom(exitRoomEntry.prefab, roomPosition, roomRotation, "ExitRoom", registerNow: true);
-                if (exitRoom == null) continue;
+                    bool connectionSuccess = _connectionSystem.ConnectRooms(selectedSocket, spawnedExitSocket, exitRoom.transform, _doorPrefab);
 
-                _spawnedRooms.Add(exitRoom);
-
-                ConnectionSocket spawnedExitSocket = FindMatchingSocketInInstance(exitRoom, exitSocketPrefab);
-                if (spawnedExitSocket == null)
-                {
-                    _spawnedRooms.Remove(exitRoom);
-                    Destroy(exitRoom);
-                    continue;
-                }
-
-                bool connectionSuccess = _connectionSystem.ConnectRooms(selectedSocket, spawnedExitSocket, exitRoom.transform, _doorPrefab);
-
-                if (connectionSuccess)
-                {
-                    _creditsRemaining--;
-                    _connectionsMade++;
-                    _exitRoomSpawned = true;
-                    return;
-                }
-                else
-                {
-                    _spawnedRooms.Remove(exitRoom);
-                    BoundsChecker boundsChecker = exitRoom.GetComponent<BoundsChecker>();
-                    if (boundsChecker != null) boundsChecker.UnregisterFromRegistry();
-                    Destroy(exitRoom);
+                    if (connectionSuccess)
+                    {
+                        _creditsRemaining--;
+                        _connectionsMade++;
+                        _exitRoomSpawned = true;
+                        return;
+                    }
+                    else
+                    {
+                        _spawnedRooms.Remove(exitRoom);
+                        BoundsChecker bc = exitRoom.GetComponent<BoundsChecker>();
+                        if (bc != null) bc.UnregisterFromRegistry();
+                        Destroy(exitRoom);
+                    }
                 }
             }
 
@@ -554,9 +557,11 @@ namespace _Scripts.Systems.ProceduralGeneration
                 if (targetBoundsChecker == null) continue;
 
                 Bounds paddedBounds = targetBoundsChecker.GetPaddedBounds(proposedPosition, proposedRotation);
+                List<Bounds> testSubBounds = targetBoundsChecker.GetWorldSubBounds(proposedPosition, proposedRotation);
 
                 // BROAD-PHASE check — skip the source room to allow natural overlap at door frames
-                if (OccupiedSpaceRegistry.Instance.IsSpaceOccupied(paddedBounds, sourceBounds))
+                // Uses compound sub-bounds when available for tighter collision detection
+                if (OccupiedSpaceRegistry.Instance.IsSpaceOccupied(paddedBounds, testSubBounds, sourceBounds))
                 {
                     continue;
                 }
@@ -946,14 +951,10 @@ namespace _Scripts.Systems.ProceduralGeneration
         private string FindRoomDisplayName(GameObject room)
         {
             // Check special rooms first by name prefix - use constant identifiers for reliability
-            if (room.name == "EntryRoom" || room.name.StartsWith("EntryRoom_"))
+            if (room.name == "SafeElevatorRoom" || room.name.StartsWith("SafeElevatorRoom_") ||
+                room.name == "EntryRoom" || room.name.StartsWith("EntryRoom_")) // backwards compat
             {
-                // Use a constant identifier that GetRoomByDisplayName will recognize
-                return "EntryElevatorRoom";
-            }
-            if (room.name == "ExitRoom" || room.name.StartsWith("ExitRoom_"))
-            {
-                return "ExitElevatorRoom";
+                return "SafeElevatorRoom";
             }
 
             // For regular rooms, extract the display name from the instance name
@@ -1061,7 +1062,7 @@ namespace _Scripts.Systems.ProceduralGeneration
                 _spawnedRooms.Add(room);
 
                 // Track if exit room was spawned
-                if (placement.roomInstanceName.StartsWith("ExitRoom"))
+                if (placement.roomInstanceName.StartsWith("ExitRoom") || placement.prefabDisplayName == "ExitElevatorRoom")
                 {
                     _exitRoomSpawned = true;
                 }
@@ -1137,6 +1138,8 @@ namespace _Scripts.Systems.ProceduralGeneration
 #if UNITY_EDITOR
         private void OnDrawGizmos()
         {
+            if (!_showGizmos) return;
+
             if (_spawnedRooms.Count > 0)
             {
                 Gizmos.color = Color.cyan;

@@ -20,55 +20,63 @@ MonoBehaviour:
     sectorNumber: 0
     socketTypes: 00000000
     socketCount: 2
-    spawnWeight: 0
+    spawnWeight: 1
     isEnabled: 1
     previewImage: {fileID: 0}
   - prefab: {fileID: 8589230654753735102, guid: 25a48a5d8784e494d91d56e2c4e82bb4, type: 3}
     roomID: 
-    displayName: Intersection
+    displayName: Tri Intersection
     category: 1
     sectorNumber: 0
     socketTypes: 00000000
     socketCount: 3
-    spawnWeight: 0
+    spawnWeight: 1
     isEnabled: 1
     previewImage: {fileID: 0}
-  _entryElevatorRoom:
+  - prefab: {fileID: 1834404637998707887, guid: 663b0763082ab094fbad0f7166e4297d, type: 3}
+    roomID: 
+    displayName: Small Corridor
+    category: 0
+    sectorNumber: 0
+    socketTypes: 00000000
+    socketCount: 2
+    spawnWeight: 1
+    isEnabled: 1
+    previewImage: {fileID: 0}
+  - prefab: {fileID: 5905477482315762008, guid: c1649502282cdd349b1c79b701ae281d, type: 3}
+    roomID: 
+    displayName: Terminus
+    category: 4
+    sectorNumber: 0
+    socketTypes: 00000000
+    socketCount: 1
+    spawnWeight: 1
+    isEnabled: 1
+    previewImage: {fileID: 0}
+  - prefab: {fileID: 5905477482315762008, guid: daad1aac496d02c44906e7547d93fb94, type: 3}
+    roomID: 
+    displayName: Small Tri Intersection
+    category: 4
+    sectorNumber: 0
+    socketTypes: 00000000
+    socketCount: 4
+    spawnWeight: 1
+    isEnabled: 1
+    previewImage: {fileID: 0}
+  _safeElevatorRoom:
     prefab: {fileID: 5905477482315762008, guid: 8cc30a3974b42ed4e90fd99f03f611d6, type: 3}
-    roomID: 1
+    roomID: 
     displayName: 
-    category: 100
+    category: 0
     sectorNumber: 1
     socketTypes: 00000000
     socketCount: 1
     spawnWeight: 5
     isEnabled: 1
     previewImage: {fileID: 0}
-  _exitElevatorRoom:
-    prefab: {fileID: 5905477482315762008, guid: c1649502282cdd349b1c79b701ae281d, type: 3}
-    roomID: 2
-    displayName: 
-    category: 101
-    sectorNumber: 1
-    socketTypes: 00000000
-    socketCount: 1
-    spawnWeight: 5
-    isEnabled: 1
-    previewImage: {fileID: 0}
-  _safeRoom:
-    prefab: {fileID: 5905477482315762008, guid: 8cc30a3974b42ed4e90fd99f03f611d6, type: 3}
-    roomID: 1
-    displayName: 
-    category: 102
-    sectorNumber: 1
-    socketTypes: 00000000
-    socketCount: 1
-    spawnWeight: 5
-    isEnabled: 1
-    previewImage: {fileID: 0}
-  _totalRooms: 2
-  _enabledRooms: 2
-  _corridorRooms: 1
+  _totalRooms: 5
+  _enabledRooms: 5
+  _corridorRooms: 2
   _hubRooms: 0
   _intersectionRooms: 1
-  _terminusRooms: 0
+  _terminusRooms: 2

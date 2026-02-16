@@ -154,37 +154,6 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!1 &2029239836593436269
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 6309511882439661591}
-  m_Layer: 0
-  m_Name: Door Spawn Position
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &6309511882439661591
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2029239836593436269}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0.000000021855694, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 3}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1597641508387011526}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &3271750289215744815
 GameObject:
   m_ObjectHideFlags: 0
@@ -603,12 +572,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.ProceduralGeneration.BoundsChecker
   _autoRegisterWithRegistry: 1
   _registerOnStart: 1
-  _boundsCenter: {x: 12.462329, y: 4.1387687, z: 2.6794195}
-  _boundsSize: {x: 24.350657, y: 10.277542, z: 18.962574}
+  _boundsCenter: {x: 12.437011, y: 4.1387687, z: 2.6794195}
+  _boundsSize: {x: 24.300018, y: 10.277542, z: 18.962574}
+  _subBounds: []
   _showGizmos: 1
   _boundsColor: {r: 0, g: 1, b: 0, a: 1}
   _cachedSockets:
-  - {fileID: 0}
+  - {fileID: 6725641987040140834}
 --- !u!114 &-5610753460446336065
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -976,14 +946,8 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 2025503266058409176, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6309511882439661591}
+    m_AddedGameObjects: []
     m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2025503266058111224, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6714315740236585863}
     - targetCorrespondingSourceObject: {fileID: 2025503266058111228, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2996837512611163153}
@@ -1020,33 +984,17 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300000, guid: c9eb1c81668cbcd41bb3aba898e50112, type: 3}
---- !u!1 &1597641508387039206 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2025503266058111224, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
+--- !u!114 &6725641987040140834 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6296517993742954812, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
   m_PrefabInstance: {fileID: 736336346781429534}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &6714315740236585863
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1597641508387039206}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 9ac0f31e04964e5ba79ffdb991abcb59, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.ProceduralGeneration.Doors.ConnectionSocket
-  _socketType: 0
-  _isConnected: 0
-  _forwardAngleOffset: 90
-  _boundsCenter: {x: -0.0004119873, y: 4.0000124, z: 3.0000002}
-  _boundsSize: {x: 0.40211868, y: 9.999979, z: 6.000006}
-  _doorPrefab: {fileID: 2023411272611092658, guid: a95030338a17797419a2cb043f8c3b85, type: 3}
-  _doorSpawnPoint: {fileID: 6309511882439661591}
-  _blockadePrefabs: []
-  _spawnBlockadeIfUnconnected: 0
-  _showGizmos: 1
 --- !u!1001 &1358601366908941388
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -97,6 +97,9 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
         [Tooltip("How much noise does opening this door generate? (Added to threat level)")]
         [SerializeField] private float _noiseGenerated = 5f;
 
+        [Header("-- Gizmos --")]
+        [SerializeField] private bool _showGizmos = false;
+
         #endregion
 
         #region Private Fields
@@ -159,6 +162,8 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
         private void OnDrawGizmosSelected()
         {
+            if (!_showGizmos) return;
+
             if (_animationType == DoorAnimationType.Slide)
             {
                 Gizmos.color = Color.green;

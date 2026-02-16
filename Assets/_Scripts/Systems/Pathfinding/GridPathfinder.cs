@@ -59,8 +59,11 @@ public class GridPathfinder : MonoBehaviour
 
     [Header("Debug")]
     [SerializeField] private bool drawGizmos = false;
-    [SerializeField] private Color walkableColor = Color.white;
-    [SerializeField] private Color unwalkableColor = Color.red;
+    [Tooltip("Only draw walkable nodes within this radius of the player (0 = draw all, NOT recommended).")]
+    [SerializeField] private float gizmoViewRadius = 15f;
+    [SerializeField] private Color walkableColor = new Color(0f, 1f, 0f, 0.3f);
+    [SerializeField] private Color unwalkableColor = new Color(1f, 0f, 0f, 0.3f);
+    [SerializeField] private Color airRejectedColor = new Color(1f, 1f, 0f, 0.15f);
 
     [Header("Vertical Alignment")]
     [Tooltip("Additional offset (world units) applied to the grid center on Y. Negative = down, positive = up.")]
@@ -71,6 +74,30 @@ public class GridPathfinder : MonoBehaviour
     private int _gridSizeX;
     private int _gridSizeY;
     private int _gridSizeZ;
+
+    // Cached stats from last grid build
+    private int _lastWalkableCount;
+    private int _lastUnwalkableCount;
+    private int _lastAirRejectedCount;
+
+    /// <summary>Grid dimensions info for diagnostics.</summary>
+    public string GridStatsString => _grid == null
+        ? "Grid not built"
+        : $"Grid: {_gridSizeX}x{_gridSizeY}x{_gridSizeZ} = {_gridSizeX * _gridSizeY * _gridSizeZ} nodes | Walkable: {_lastWalkableCount} | Unwalkable: {_lastUnwalkableCount} (air-rejected: {_lastAirRejectedCount})";
+
+    /// <summary>Whether the grid has been built.</summary>
+    public bool IsGridBuilt => _grid != null;
+
+    /// <summary>Checks if a world position falls inside the grid bounds.</summary>
+    public bool IsInsideGrid(Vector3 worldPos)
+    {
+        Vector3 half = gridWorldSize * 0.5f;
+        Vector3 min = transform.position - half;
+        Vector3 max = transform.position + half;
+        return worldPos.x >= min.x && worldPos.x <= max.x &&
+               worldPos.y >= min.y && worldPos.y <= max.y &&
+               worldPos.z >= min.z && worldPos.z <= max.z;
+    }
     #endregion
 
     private void Awake()
@@ -193,6 +220,10 @@ public class GridPathfinder : MonoBehaviour
                 }
             }
         }
+
+        _lastWalkableCount = walkableCount;
+        _lastUnwalkableCount = unwalkableCount;
+        _lastAirRejectedCount = airRejectedCount;
 
         Debug.Log($"[GridPathfinder] Grid created. Walkable: {walkableCount}, Unwalkable: {unwalkableCount} (air-rejected: {airRejectedCount})");
     }
@@ -448,20 +479,68 @@ public class GridPathfinder : MonoBehaviour
     #region Gizmos
     private void OnDrawGizmos()
     {
-        Gizmos.color = Color.gray;
-        Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, gridWorldSize.y, gridWorldSize.z));
-
-        if (!drawGizmos || _grid == null)
+        if (!drawGizmos)
         {
+            // Always draw the grid boundary wireframe even when node gizmos are off
+            Gizmos.color = Color.gray;
+            Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, gridWorldSize.y, gridWorldSize.z));
             return;
         }
 
+        if (_grid == null) return;
+
+        // Find the player (or Scene camera in edit mode) as the spotlight center
+        Vector3 viewCenter = transform.position;
+        float viewRadiusSqr = gizmoViewRadius * gizmoViewRadius;
+
+#if UNITY_EDITOR
+        if (Application.isPlaying)
+        {
+            GameObject player = GameObject.FindWithTag("Player");
+            if (player != null)
+                viewCenter = player.transform.position;
+        }
+        else
+        {
+            // In edit mode, use the Scene view camera
+            if (UnityEditor.SceneView.lastActiveSceneView != null)
+                viewCenter = UnityEditor.SceneView.lastActiveSceneView.camera.transform.position;
+        }
+#endif
+
         float nodeDiameter = nodeRadius * 2f;
+        Vector3 cubeSize = Vector3.one * (nodeDiameter - 0.1f);
+
+        // Draw grid boundary
+        Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 0.3f);
+        Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, gridWorldSize.y, gridWorldSize.z));
+
+        // Draw spotlight radius
+        Gizmos.color = new Color(0f, 1f, 1f, 0.1f);
+        Gizmos.DrawWireSphere(viewCenter, gizmoViewRadius);
+
+        // Only draw nodes within spotlight radius
+        bool useSpotlight = gizmoViewRadius > 0f;
 
         foreach (Node node in _grid)
         {
-            Gizmos.color = node.walkable ? walkableColor : unwalkableColor;
-            Gizmos.DrawCube(node.worldPosition, Vector3.one * (nodeDiameter - 0.1f));
+            if (useSpotlight)
+            {
+                float sqrDist = (node.worldPosition - viewCenter).sqrMagnitude;
+                if (sqrDist > viewRadiusSqr) continue;
+            }
+
+            if (node.walkable)
+            {
+                Gizmos.color = walkableColor;
+                Gizmos.DrawCube(node.worldPosition, cubeSize);
+            }
+            else
+            {
+                // Only draw unwalkable nodes as small wireframes (less visual noise)
+                Gizmos.color = unwalkableColor;
+                Gizmos.DrawWireCube(node.worldPosition, cubeSize * 0.5f);
+            }
         }
     }
     #endregion

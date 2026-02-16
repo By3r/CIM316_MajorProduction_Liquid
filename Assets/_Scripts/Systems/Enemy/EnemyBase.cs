@@ -296,6 +296,11 @@ public abstract class EnemyBase : MonoBehaviour
     #endregion
 
     #region Helper methods
+
+    /// <summary>
+    /// Omni-directional line-of-sight check (no FOV restriction).
+    /// Used by LiquidEnemy and other systems that need 360° awareness.
+    /// </summary>
     protected bool HasLineOfSightTo(Vector3 worldPosition, float maxDistance)
     {
         Vector3 origin = transform.position + Vector3.up * 1.5f;
@@ -309,6 +314,47 @@ public abstract class EnemyBase : MonoBehaviour
         direction.Normalize();
 
         if (Physics.Raycast(origin, direction, out RaycastHit hit, distance, obstacleMask, QueryTriggerInteraction.Ignore))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Directional line-of-sight check with field-of-view restriction.
+    /// Only returns true if the target is within the specified half-angle cone in front of the enemy.
+    /// </summary>
+    /// <param name="worldPosition">Target position to check.</param>
+    /// <param name="maxDistance">Maximum detection range.</param>
+    /// <param name="fovHalfAngle">Half-angle of the cone in degrees (e.g. 60 = 120° total FOV).</param>
+    protected bool HasLineOfSightTo(Vector3 worldPosition, float maxDistance, float fovHalfAngle)
+    {
+        Vector3 origin = transform.position + Vector3.up * 1.5f;
+        Vector3 toTarget = (worldPosition + Vector3.up * 1.5f) - origin;
+        float distance = toTarget.magnitude;
+
+        if (distance > maxDistance)
+        {
+            return false;
+        }
+
+        // FOV check: is the target within the forward-facing cone?
+        Vector3 flatToTarget = new Vector3(toTarget.x, 0f, toTarget.z);
+        Vector3 flatForward = new Vector3(transform.forward.x, 0f, transform.forward.z);
+
+        if (flatToTarget.sqrMagnitude > 0.001f && flatForward.sqrMagnitude > 0.001f)
+        {
+            float angle = Vector3.Angle(flatForward, flatToTarget);
+            if (angle > fovHalfAngle)
+            {
+                return false;
+            }
+        }
+
+        toTarget.Normalize();
+
+        if (Physics.Raycast(origin, toTarget, out RaycastHit hit, distance, obstacleMask, QueryTriggerInteraction.Ignore))
         {
             return false;
         }
@@ -356,6 +402,21 @@ public abstract class EnemyBase : MonoBehaviour
     #endregion
 
     #region Gizmos
+
+    [Header("Gizmo Settings")]
+    [SerializeField] protected bool drawStateLabel = true;
+    [SerializeField] protected int stateLabelFontSize = 16;
+
+#if UNITY_EDITOR
+    protected virtual void OnDrawGizmos()
+    {
+        if (drawStateLabel)
+        {
+            DrawStateLabel();
+        }
+    }
+#endif
+
     protected virtual void OnDrawGizmosSelected()
     {
         if (!drawPathGizmos || currentPath == null)
@@ -371,5 +432,52 @@ public abstract class EnemyBase : MonoBehaviour
             Gizmos.DrawSphere(currentPath[i], 0.1f);
         }
     }
+
+#if UNITY_EDITOR
+    /// <summary>
+    /// Draws a text label above the enemy's head showing current state.
+    /// Subclasses can override GetGizmoLabelText() to add more info.
+    /// </summary>
+    private void DrawStateLabel()
+    {
+        Vector3 labelPos = transform.position + Vector3.up * 2.8f;
+        string label = GetGizmoLabelText();
+
+        GUIStyle style = new GUIStyle(UnityEditor.EditorStyles.boldLabel);
+        style.normal.textColor = GetStateLabelColor();
+        style.fontSize = stateLabelFontSize;
+        style.alignment = TextAnchor.MiddleCenter;
+
+        UnityEditor.Handles.Label(labelPos, label, style);
+    }
+
+    /// <summary>
+    /// Returns the text to draw above the enemy's head. Override in subclasses for more detail.
+    /// </summary>
+    protected virtual string GetGizmoLabelText()
+    {
+        return $"{currentState}";
+    }
+
+    /// <summary>
+    /// Returns the color for the state label gizmo.
+    /// </summary>
+    protected virtual Color GetStateLabelColor()
+    {
+        switch (currentState)
+        {
+            case EnemyState.Idle: return Color.white;
+            case EnemyState.Moving: return Color.yellow;
+            case EnemyState.Attacking: return Color.red;
+            case EnemyState.Resting: return Color.cyan;
+            case EnemyState.Threatening: return new Color(1f, 0.5f, 0f); // orange
+            case EnemyState.Dead: return Color.gray;
+            case EnemyState.Chasing: return new Color(1f, 0.3f, 0f); // dark orange
+            case EnemyState.Alerted: return Color.magenta;
+            case EnemyState.Roaming: return Color.green;
+            default: return Color.white;
+        }
+    }
+#endif
     #endregion
 }

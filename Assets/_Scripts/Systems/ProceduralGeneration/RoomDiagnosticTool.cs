@@ -66,11 +66,15 @@ namespace _Scripts.Systems.ProceduralGeneration
         private string[] _socketNames = System.Array.Empty<string>();
         private List<SimulationResult> _simulationResults = new();
 
+        // Obstacle analysis
+        private List<DiagMessage> _obstacleMessages = new();
+
         // Foldouts
         private bool _foldHealth = true;
         private bool _foldSockets = true;
         private bool _foldDatabase = true;
         private bool _foldSimulation = true;
+        private bool _foldObstacles = true;
 
         // Styles (lazy init)
         private GUIStyle _passStyle;
@@ -158,6 +162,16 @@ namespace _Scripts.Systems.ProceduralGeneration
             GUI.backgroundColor = Color.white;
             EditorGUILayout.EndHorizontal();
 
+            if (_hasRun)
+            {
+                GUI.backgroundColor = new Color(1f, 0.85f, 0.4f);
+                if (GUILayout.Button("Copy Report to Clipboard", GUILayout.Height(24)))
+                {
+                    CopyReportToClipboard();
+                }
+                GUI.backgroundColor = Color.white;
+            }
+
             if (!_hasRun)
             {
                 EditorGUILayout.Space(10);
@@ -178,6 +192,8 @@ namespace _Scripts.Systems.ProceduralGeneration
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
 
             DrawPrefabHealthSection();
+            EditorGUILayout.Space(4);
+            DrawObstacleAnalysisSection();
             EditorGUILayout.Space(4);
             DrawSocketDetailsSection();
             EditorGUILayout.Space(4);
@@ -562,6 +578,20 @@ namespace _Scripts.Systems.ProceduralGeneration
 
                 // Check against actual geometry
                 CheckBoundsVsGeometry();
+
+                // Sub-bounds info
+                if (_boundsChecker.HasCompoundBounds)
+                {
+                    _healthMessages.Add(new DiagMessage(DiagLevel.Pass,
+                        $"Compound bounds: {_boundsChecker.SubBoundsCount} sub-bounds defined"));
+
+                    foreach (var sub in _boundsChecker.SubBoundsList)
+                    {
+                        string label = string.IsNullOrEmpty(sub.label) ? "unnamed" : sub.label;
+                        _healthMessages.Add(new DiagMessage(DiagLevel.Pass,
+                            $"  Sub-bound \"{label}\": center={FormatV3(sub.center)}, size={FormatV3(sub.size)}"));
+                    }
+                }
             }
 
             // Sockets
@@ -620,6 +650,9 @@ namespace _Scripts.Systems.ProceduralGeneration
             {
                 _healthMessages.Add(new DiagMessage(DiagLevel.Pass, "Scale is (1, 1, 1)"));
             }
+
+            // --- Obstacle/Collider Analysis ---
+            AnalyzeObstacles();
 
             // --- Database Status ---
             CheckDatabaseStatus();
@@ -688,20 +721,10 @@ namespace _Scripts.Systems.ProceduralGeneration
             }
 
             // Also check special rooms
-            if (!_isInDatabase && _database.EntryElevatorRoom?.prefab == _roomPrefab)
+            if (!_isInDatabase && _database.SafeElevatorRoom?.prefab == _roomPrefab)
             {
                 _isInDatabase = true;
-                _databaseEntry = _database.EntryElevatorRoom;
-            }
-            if (!_isInDatabase && _database.ExitElevatorRoom?.prefab == _roomPrefab)
-            {
-                _isInDatabase = true;
-                _databaseEntry = _database.ExitElevatorRoom;
-            }
-            if (!_isInDatabase && _database.SafeRoom?.prefab == _roomPrefab)
-            {
-                _isInDatabase = true;
-                _databaseEntry = _database.SafeRoom;
+                _databaseEntry = _database.SafeElevatorRoom;
             }
 
             // Check cache staleness
@@ -738,6 +761,221 @@ namespace _Scripts.Systems.ProceduralGeneration
                 _reachableCounts[type] = compatible.Count;
                 _reachableCategories[type] = compatible.Select(r => r.category).Distinct().ToList();
             }
+        }
+
+        private void AnalyzeObstacles()
+        {
+            _obstacleMessages.Clear();
+
+            Collider[] colliders = _roomPrefab.GetComponentsInChildren<Collider>(true);
+            if (colliders.Length == 0)
+            {
+                _obstacleMessages.Add(new DiagMessage(DiagLevel.Warning, "No colliders found on this prefab"));
+                return;
+            }
+
+            // Group colliders by layer
+            Dictionary<string, List<Collider>> collidersByLayer = new();
+            foreach (Collider col in colliders)
+            {
+                // Skip socket children
+                if (col.GetComponentInParent<ConnectionSocket>() != null) continue;
+
+                string layerName = LayerMask.LayerToName(col.gameObject.layer);
+                if (string.IsNullOrEmpty(layerName)) layerName = $"Layer {col.gameObject.layer}";
+                if (!collidersByLayer.ContainsKey(layerName))
+                    collidersByLayer[layerName] = new List<Collider>();
+                collidersByLayer[layerName].Add(col);
+            }
+
+            // Report by layer
+            foreach (var kvp in collidersByLayer)
+            {
+                _obstacleMessages.Add(new DiagMessage(DiagLevel.Pass,
+                    $"Layer \"{kvp.Key}\": {kvp.Value.Count} collider(s)"));
+            }
+
+            // Analyze wall/obstacle colliders — find anything on layers containing "obstacle", "wall", "default"
+            // Also just report all colliders with their sizes
+            _obstacleMessages.Add(new DiagMessage(DiagLevel.Pass, ""));
+            _obstacleMessages.Add(new DiagMessage(DiagLevel.Pass, "--- Collider Dimensions ---"));
+
+            // Find the thinnest collider dimension (likely wall thickness)
+            float thinnestDimension = float.MaxValue;
+            string thinnestName = "";
+
+            foreach (Collider col in colliders)
+            {
+                if (col.GetComponentInParent<ConnectionSocket>() != null) continue;
+
+                Vector3 size = Vector3.zero;
+                string typeName = "";
+
+                if (col is BoxCollider box)
+                {
+                    size = Vector3.Scale(box.size, box.transform.lossyScale);
+                    typeName = "Box";
+                }
+                else if (col is MeshCollider mesh)
+                {
+                    if (mesh.sharedMesh != null)
+                    {
+                        size = Vector3.Scale(mesh.sharedMesh.bounds.size, mesh.transform.lossyScale);
+                    }
+                    typeName = "Mesh";
+                }
+                else if (col is CapsuleCollider capsule)
+                {
+                    float scaledRadius = capsule.radius * Mathf.Max(capsule.transform.lossyScale.x, capsule.transform.lossyScale.z);
+                    float scaledHeight = capsule.height * capsule.transform.lossyScale.y;
+                    size = new Vector3(scaledRadius * 2f, scaledHeight, scaledRadius * 2f);
+                    typeName = "Capsule";
+                }
+
+                if (size.sqrMagnitude > 0.001f)
+                {
+                    float minDim = Mathf.Min(size.x, Mathf.Min(size.y, size.z));
+                    if (minDim < thinnestDimension && minDim > 0.01f)
+                    {
+                        thinnestDimension = minDim;
+                        thinnestName = col.gameObject.name;
+                    }
+
+                    _obstacleMessages.Add(new DiagMessage(DiagLevel.Pass,
+                        $"  [{typeName}] {col.gameObject.name}: {size.x:F2} x {size.y:F2} x {size.z:F2}"));
+                }
+            }
+
+            if (thinnestDimension < float.MaxValue)
+            {
+                _obstacleMessages.Add(new DiagMessage(DiagLevel.Pass, ""));
+                _obstacleMessages.Add(new DiagMessage(DiagLevel.Pass,
+                    $"Thinnest collider dimension: {thinnestDimension:F2}m ({thinnestName})"));
+                _obstacleMessages.Add(new DiagMessage(DiagLevel.Pass,
+                    $"Suggested max door-overlap depth: ~{thinnestDimension:F2}m (wall thickness)"));
+            }
+        }
+
+        #endregion
+
+        #region Section 5: Obstacle Analysis
+
+        private void DrawObstacleAnalysisSection()
+        {
+            _foldObstacles = EditorGUILayout.BeginFoldoutHeaderGroup(_foldObstacles, "Obstacle / Collider Analysis");
+            if (!_foldObstacles) { EditorGUILayout.EndFoldoutHeaderGroup(); return; }
+
+            EditorGUILayout.BeginVertical(_boxStyle);
+            if (_obstacleMessages.Count == 0)
+            {
+                EditorGUILayout.HelpBox("Run diagnostic first.", MessageType.Info);
+            }
+            else
+            {
+                foreach (DiagMessage msg in _obstacleMessages)
+                {
+                    if (string.IsNullOrEmpty(msg.Text))
+                        EditorGUILayout.Space(2);
+                    else
+                        DrawDiagMessage(msg);
+                }
+            }
+            EditorGUILayout.EndVertical();
+            EditorGUILayout.EndFoldoutHeaderGroup();
+        }
+
+        #endregion
+
+        #region Copy Report
+
+        private void CopyReportToClipboard()
+        {
+            System.Text.StringBuilder sb = new();
+            sb.AppendLine($"=== Room Diagnostic Report: {(_roomPrefab != null ? _roomPrefab.name : "null")} ===");
+            sb.AppendLine();
+
+            // Health
+            sb.AppendLine("--- Prefab Health ---");
+            foreach (DiagMessage msg in _healthMessages)
+            {
+                string prefix = msg.Level switch
+                {
+                    DiagLevel.Pass => "[PASS]",
+                    DiagLevel.Warning => "[WARN]",
+                    DiagLevel.Fail => "[FAIL]",
+                    _ => "      "
+                };
+                sb.AppendLine($"  {prefix} {msg.Text}");
+            }
+            sb.AppendLine();
+
+            // Obstacles
+            sb.AppendLine("--- Obstacle / Collider Analysis ---");
+            foreach (DiagMessage msg in _obstacleMessages)
+            {
+                if (string.IsNullOrEmpty(msg.Text))
+                    continue;
+                sb.AppendLine($"  {msg.Text}");
+            }
+            sb.AppendLine();
+
+            // Sockets
+            sb.AppendLine($"--- Sockets ({_sockets.Length}) ---");
+            for (int i = 0; i < _sockets.Length; i++)
+            {
+                ConnectionSocket s = _sockets[i];
+                if (s == null) continue;
+                sb.AppendLine($"  [{i}] \"{s.gameObject.name}\" type={s.SocketType} connected={s.IsConnected}");
+                sb.AppendLine($"      position={FormatV3(s.Position)} forward={FormatV3(s.Forward)}");
+                if (s.HasBounds)
+                    sb.AppendLine($"      boundsCenter={FormatV3(s.BoundsCenter)} boundsSize={FormatV3(s.BoundsSize)}");
+            }
+            sb.AppendLine();
+
+            // Database
+            sb.AppendLine("--- Database Status ---");
+            if (_database == null)
+            {
+                sb.AppendLine("  No database assigned");
+            }
+            else if (_isInDatabase)
+            {
+                sb.AppendLine($"  Found in database as \"{_databaseEntry.displayName}\"");
+                sb.AppendLine($"  Enabled: {_databaseEntry.isEnabled}, Weight: {_databaseEntry.spawnWeight}, Category: {_databaseEntry.category}");
+                sb.AppendLine($"  Cache stale: {_databaseCacheStale}");
+            }
+            else
+            {
+                sb.AppendLine("  NOT found in database!");
+            }
+            foreach (var kvp in _reachableCounts)
+            {
+                sb.AppendLine($"  Reachability [{kvp.Key}]: {kvp.Value} compatible rooms");
+            }
+            sb.AppendLine();
+
+            // Simulation
+            if (_simulationResults.Count > 0)
+            {
+                int passCount = _simulationResults.Count(r => r.WouldConnect);
+                int failCount = _simulationResults.Count(r => r.Simulated && !r.WouldConnect);
+                sb.AppendLine($"--- Connection Simulation (socket {_selectedSocketIndex}) ---");
+                sb.AppendLine($"  {passCount} would connect, {failCount} would fail");
+                foreach (SimulationResult result in _simulationResults)
+                {
+                    string roomName = !string.IsNullOrEmpty(result.RoomEntry.displayName)
+                        ? result.RoomEntry.displayName
+                        : (result.RoomEntry.prefab != null ? result.RoomEntry.prefab.name : "???");
+                    string status = result.WouldConnect ? "PASS" : $"FAIL: {result.FailReason}";
+                    sb.AppendLine($"  [{status}] {roomName} ({result.RoomEntry.category})");
+                }
+            }
+
+            sb.AppendLine();
+            sb.AppendLine("--- End Report ---");
+
+            EditorGUIUtility.systemCopyBuffer = sb.ToString();
+            Debug.Log("[RoomDiagnostic] Report copied to clipboard.");
         }
 
         #endregion

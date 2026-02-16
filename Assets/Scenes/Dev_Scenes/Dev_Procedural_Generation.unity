@@ -1975,7 +1975,7 @@ Light:
   serializedVersion: 11
   m_Type: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 1
+  m_Intensity: 3
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -9401,6 +9401,7 @@ MonoBehaviour:
   _currentFloorNumber: 1
   _currentSeed: 11264
   _useSeedBasedGeneration: 1
+  _showGizmos: 1
   _spawnedRooms: []
   _spawnedBlockades: []
   _availableSockets: []
@@ -9438,8 +9439,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.ProceduralGeneration.OccupiedSpaceRegistry
   _autoUpdateMovedRooms: 1
   _moveCheckInterval: 1
+  _maxSourceOverlapFraction: 0.5
   _showDebugLogs: 0
-  _showGizmos: 1
+  _showGizmos: 0
   _occupiedSpaceColor: {r: 1, g: 0, b: 0, a: 0.3}
   _occupiedSpaces: []
 --- !u!114 &1466747775
@@ -9988,8 +9990,10 @@ MonoBehaviour:
   groundCheckDistance: 2
   maxWalkableSearchRadius: 4
   drawGizmos: 0
+  gizmoViewRadius: 15
   walkableColor: {r: 1, g: 1, b: 1, a: 1}
   unwalkableColor: {r: 1, g: 0, b: 0, a: 1}
+  airRejectedColor: {r: 1, g: 1, b: 0, a: 0.15}
   gridCenterYOffset: 1
 --- !u!4 &1519810843
 Transform:

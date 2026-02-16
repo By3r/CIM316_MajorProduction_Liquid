@@ -58,6 +58,8 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
         [Header("Debug")]
         [Tooltip("Show debug information in console when spawning?")]
         [SerializeField] private bool _showDebugLogs = false;
+        [Tooltip("Show spawn point gizmos in Scene view.")]
+        [SerializeField] private bool _showGizmos = false;
 
         #endregion
 
@@ -581,6 +583,8 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
 
         private void OnDrawGizmos()
         {
+            if (!_showGizmos) return;
+
             // Red sphere for enemy spawn points, yellow for vents
             Gizmos.color = _isVent ? Color.yellow : Color.red;
             Gizmos.DrawWireSphere(transform.position, 0.3f);
@@ -592,6 +596,8 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
 
         private void OnDrawGizmosSelected()
         {
+            if (!_showGizmos) return;
+
             Gizmos.color = _isVent ? new Color(1f, 1f, 0f, 0.3f) : new Color(1f, 0f, 0f, 0.3f);
             Gizmos.DrawSphere(transform.position, 0.5f);
         }

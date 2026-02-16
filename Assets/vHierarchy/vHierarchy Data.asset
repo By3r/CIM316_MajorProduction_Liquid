@@ -18,6 +18,7 @@ MonoBehaviour:
     - 4c6321b3a9c95334d90ffcab10a45d03
     - 8cc30a3974b42ed4e90fd99f03f611d6
     - 25a48a5d8784e494d91d56e2c4e82bb4
+    - c1649502282cdd349b1c79b701ae281d
     values:
     - goDatas_byGlobalId:
         keys:
@@ -93,8 +94,8 @@ MonoBehaviour:
           iconNameOrGuid: StandaloneInputModule Icon
           isIconRecursive: 0
           isColorRecursive: 0
-        - colorIndex: 0
-          iconNameOrGuid: Settings Icon
+        - colorIndex: 7
+          iconNameOrGuid: PreMatQuad
           isIconRecursive: 0
           isColorRecursive: 0
         - colorIndex: 0
@@ -203,6 +204,19 @@ MonoBehaviour:
           iconNameOrGuid: Favorite
           isIconRecursive: 0
           isColorRecursive: 0
+        - colorIndex: 8
+          iconNameOrGuid: SceneLoadOut
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 5
+          iconNameOrGuid: editconstraints_32
+          isIconRecursive: 0
+          isColorRecursive: 0
+    - goDatas_byGlobalId:
+        keys:
+        - globalObjectIdString: GlobalObjectId_V1-1-c1649502282cdd349b1c79b701ae281d-7912803439716468786-0
+        - globalObjectIdString: GlobalObjectId_V1-1-c1649502282cdd349b1c79b701ae281d-3821786593894199118-0
+        values:
         - colorIndex: 8
           iconNameOrGuid: SceneLoadOut
           isIconRecursive: 0

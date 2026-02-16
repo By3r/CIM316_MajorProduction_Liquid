@@ -195,8 +195,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.ProceduralGeneration.BoundsChecker
   _autoRegisterWithRegistry: 1
   _registerOnStart: 1
-  _boundsCenter: {x: 11.999586, y: 4.4999986, z: 8.668723}
-  _boundsSize: {x: 24.402119, y: 11.000002, z: 18.962572}
+  _boundsCenter: {x: 11.999999, y: 4.1387687, z: 8.668723}
+  _boundsSize: {x: 24.300018, y: 10.277542, z: 18.962572}
+  _subBounds: []
   _showGizmos: 1
   _boundsColor: {r: 0, g: 1, b: 0, a: 1}
   _cachedSockets:
@@ -275,68 +276,6 @@ Transform:
   - {fileID: 602178411557234874}
   m_Father: {fileID: 8342433319845805322}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &4220664728607909551
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4191632433477919733}
-  m_Layer: 0
-  m_Name: Door Spawn Position
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &4191632433477919733
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4220664728607909551}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0.000000021855694, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 3}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2050683024148930664}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &4679287099024327899
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 5775978999723639451}
-  m_Layer: 0
-  m_Name: Door Spawn Position
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &5775978999723639451
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4679287099024327899}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0.000000021855694, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 3}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 8138574115427138928}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4903016399100092177
 GameObject:
   m_ObjectHideFlags: 0
@@ -396,6 +335,7 @@ MonoBehaviour:
   _isVent: 0
   _spawnInactive: 0
   _showDebugLogs: 0
+  _showGizmos: 0
 --- !u!1 &4987311118658318629
 GameObject:
   m_ObjectHideFlags: 0
@@ -594,49 +534,20 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 6296517993742954812, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
+      propertyPath: _forwardAngleOffset
+      value: 90
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 2025503266058409176, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 4191632433477919733}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2025503266058111224, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2381956478473349572}
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
 --- !u!4 &2050683024148930664 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2025503266058409176, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
   m_PrefabInstance: {fileID: 29683675832267952}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &2050683024149167176 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2025503266058111224, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
-  m_PrefabInstance: {fileID: 29683675832267952}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2381956478473349572
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2050683024149167176}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ac0f31e04964e5ba79ffdb991abcb59, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.ProceduralGeneration.Doors.ConnectionSocket
-  _socketType: 0
-  _isConnected: 0
-  _forwardAngleOffset: 90
-  _boundsCenter: {x: -0.00041389465, y: 4.000009, z: 2.9999998}
-  _boundsSize: {x: 0.40211868, y: 9.999982, z: 6.000006}
-  _doorPrefab: {fileID: 2023411272611092658, guid: a95030338a17797419a2cb043f8c3b85, type: 3}
-  _doorSpawnPoint: {fileID: 4191632433477919733}
-  _blockadePrefabs: []
-  _spawnBlockadeIfUnconnected: 0
-  _showGizmos: 1
 --- !u!1001 &635056407657244430
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2671,47 +2582,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects:
-    - targetCorrespondingSourceObject: {fileID: 2025503266058409176, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5775978999723639451}
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 2025503266058111224, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 5336804392615325340}
+    m_AddedGameObjects: []
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
 --- !u!4 &8138574115427138928 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 2025503266058409176, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
   m_PrefabInstance: {fileID: 7849227094364465576}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &8138574115427492176 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2025503266058111224, guid: 01f7094c0e795ad47b0ef77f3cf2ae66, type: 3}
-  m_PrefabInstance: {fileID: 7849227094364465576}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &5336804392615325340
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8138574115427492176}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ac0f31e04964e5ba79ffdb991abcb59, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.ProceduralGeneration.Doors.ConnectionSocket
-  _socketType: 0
-  _isConnected: 0
-  _forwardAngleOffset: 270
-  _boundsCenter: {x: -0.0004132688, y: 4.000009, z: 3}
-  _boundsSize: {x: 0.40211964, y: 9.999982, z: 6.0000057}
-  _doorPrefab: {fileID: 2023411272611092658, guid: a95030338a17797419a2cb043f8c3b85, type: 3}
-  _doorSpawnPoint: {fileID: 5775978999723639451}
-  _blockadePrefabs: []
-  _spawnBlockadeIfUnconnected: 0
-  _showGizmos: 1
 --- !u!1001 &7880609954044990830
 PrefabInstance:
   m_ObjectHideFlags: 0

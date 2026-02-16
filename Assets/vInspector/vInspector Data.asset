@@ -12,4 +12,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b7915df4cd4da490ab52fc8fa9ee9127, type: 3}
   m_Name: vInspector Data
   m_EditorClassIdentifier: VInspector::VInspector.VInspectorData
-  bookmarks: []
+  bookmarks:
+  - _obj: {fileID: 11400000, guid: cba51869bb87f514eb2e0208d6e38005, type: 2}
+    globalId:
+      globalObjectIdString: GlobalObjectId_V1-3-cba51869bb87f514eb2e0208d6e38005-11400000-0
+    isSceneGameObject: 0
+    isAsset: 1
+    _typeString: _Scripts.Systems.ProceduralGeneration.RoomPrefabDatabase, Assembly-CSharp,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
