@@ -265,15 +265,16 @@ namespace _Scripts.Systems.Weapon
             transform.localPosition = finalPos;
             transform.localRotation = baseRot;
 
-            // ADS FOV transition
-            if (_playerCamera != null && _weaponData.adsFOV > 0)
+            // ADS FOV transition (adsFOV is an offset: negative = zoom in, positive = zoom out)
+            if (_playerCamera != null && Mathf.Abs(_weaponData.adsFOV) > 0.01f)
             {
-                float aimFOV = Mathf.Lerp(_baseFOV, _weaponData.adsFOV, _adsLerpT);
-
-                if (_adsLerpT > 0.01f)
-                {
-                    _playerCamera.fieldOfView = aimFOV;
-                }
+                float targetFOV = _baseFOV + _weaponData.adsFOV;
+                _playerCamera.fieldOfView = Mathf.Lerp(_baseFOV, targetFOV, _adsLerpT);
+            }
+            else if (_playerCamera != null)
+            {
+                // No offset configured — restore base FOV when transitioning out of ADS
+                _playerCamera.fieldOfView = Mathf.Lerp(_playerCamera.fieldOfView, _baseFOV, Time.deltaTime * _weaponData.adsTransitionSpeed);
             }
         }
 

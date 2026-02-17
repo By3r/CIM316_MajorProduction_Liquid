@@ -184,20 +184,31 @@ namespace _Scripts.Systems.Weapon
         #region Bullet Trail VFX
 
         /// <summary>
-        /// Spawns a bullet trail (thin LineRenderer) from the muzzle to the end point.
-        /// Uses trail configuration from this weapon's WeaponDataSO.
-        /// The trail self-destructs after trailDuration seconds.
+        /// Spawns a bullet trail from the muzzle to the end point.
+        /// If a trailPrefab is assigned on the WeaponDataSO, instantiates it and moves it
+        /// from muzzle to endpoint via BulletTrailMover so the TrailRenderer draws behind it.
+        /// Otherwise falls back to a simple LineRenderer approach.
         /// </summary>
         private void SpawnBulletTrail(Vector3 endPoint)
         {
-            if (_weaponData.bulletTrailMaterial == null) return;
-
             Vector3 startPos = GetMuzzleWorldPosition();
 
-            GameObject trailObj = new GameObject("BulletTrail");
-            trailObj.transform.position = startPos;
+            // Prefab-based trail (TrailRenderer on a moving object)
+            if (_weaponData.trailPrefab != null)
+            {
+                GameObject trailObj = Instantiate(_weaponData.trailPrefab, startPos, Quaternion.identity);
+                BulletTrailMover mover = trailObj.AddComponent<BulletTrailMover>();
+                mover.Initialise(startPos, endPoint, _weaponData.trailSpeed);
+                return;
+            }
 
-            LineRenderer lr = trailObj.AddComponent<LineRenderer>();
+            // Fallback: instant LineRenderer trail
+            if (_weaponData.bulletTrailMaterial == null) return;
+
+            GameObject lineObj = new GameObject("BulletTrail");
+            lineObj.transform.position = startPos;
+
+            LineRenderer lr = lineObj.AddComponent<LineRenderer>();
             lr.material = _weaponData.bulletTrailMaterial;
             lr.startColor = _weaponData.trailColor;
             lr.endColor = new Color(_weaponData.trailColor.r, _weaponData.trailColor.g, _weaponData.trailColor.b, 0f);
@@ -210,7 +221,7 @@ namespace _Scripts.Systems.Weapon
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows = false;
 
-            Object.Destroy(trailObj, _weaponData.trailDuration);
+            Object.Destroy(lineObj, _weaponData.trailDuration);
         }
 
         /// <summary>

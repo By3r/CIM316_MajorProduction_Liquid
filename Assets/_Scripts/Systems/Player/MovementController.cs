@@ -119,7 +119,8 @@ namespace _Scripts.Systems.Player
             if (_isGrounded && _velocity.y < 0) _velocity.y = -2f;
 
             _moveInput = InputManager.Instance.MoveInput;
-            _isSprinting = InputManager.Instance.IsSprinting && !_isCrouching;
+            bool hasMovementInput = _moveInput.sqrMagnitude > 0.01f;
+            _isSprinting = InputManager.Instance.IsSprinting && !_isCrouching && hasMovementInput;
 
             if (InputManager.Instance.CrouchPressed) HandleCrouchToggle();
             if (InputManager.Instance.WalkTogglePressed) IsWalkingToggled = !IsWalkingToggled;

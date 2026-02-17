@@ -78,6 +78,7 @@ namespace _Scripts.Systems.Weapon
         protected static readonly int AnimDraw = Animator.StringToHash("Draw");
         protected static readonly int AnimHolster = Animator.StringToHash("Holster");
         protected static readonly int AnimMelee = Animator.StringToHash("MeleeAttack");
+        protected static readonly int AnimSprinting = Animator.StringToHash("Sprinting");
 
         #endregion
 
@@ -273,6 +274,19 @@ namespace _Scripts.Systems.Weapon
             else if (!aiming && _currentState == WeaponState.Aiming)
             {
                 _currentState = WeaponState.Idle;
+            }
+        }
+
+        /// <summary>
+        /// Sets or clears the Sprinting bool on the Animator.
+        /// Called by WeaponManager each frame so the weapon can play sprint animations.
+        /// Does not affect weapon state — sprint blocking is handled by WeaponManager.
+        /// </summary>
+        public virtual void SetSprinting(bool sprinting)
+        {
+            if (HasAnimatorParameter(AnimSprinting))
+            {
+                _animator.SetBool(AnimSprinting, sprinting);
             }
         }
 

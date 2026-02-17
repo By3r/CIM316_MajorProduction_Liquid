@@ -44,8 +44,9 @@ namespace _Scripts.Systems.Weapon
         [Tooltip("Speed of transitioning between hip and ADS positions.")]
         public float adsTransitionSpeed = 10f;
 
-        [Tooltip("FOV when aiming down sights (0 = no FOV change).")]
-        public float adsFOV = 50f;
+        [Tooltip("FOV offset when aiming down sights. Negative = zoom in, positive = zoom out. " +
+                 "Added to the player's base FOV (e.g. -15 means 15 degrees narrower). 0 = no change.")]
+        public float adsFOV = -15f;
 
         #endregion
 
@@ -117,19 +118,31 @@ namespace _Scripts.Systems.Weapon
         #region Bullet Trail
 
         [Header("-- Bullet Trail --")]
-        [Tooltip("Material for the bullet trail LineRenderer. If null, trails are disabled for this weapon.")]
+        [Tooltip("Optional prefab with a TrailRenderer component. If assigned, this is spawned and moved " +
+                 "from muzzle to hit point so the TrailRenderer draws behind it. Configure duration, width, " +
+                 "color, and fade on the TrailRenderer component in the prefab itself. " +
+                 "If null, falls back to the LineRenderer settings below.")]
+        public GameObject trailPrefab;
+
+        [Tooltip("How fast the trail prefab travels from muzzle to hit point (meters/second). " +
+                 "Higher = snappier trail. Only used when trailPrefab is assigned.")]
+        public float trailSpeed = 300f;
+
+        [Header("-- Bullet Trail (LineRenderer Fallback) --")]
+        [Tooltip("Material for the fallback LineRenderer trail. Only used when Trail Prefab is empty. " +
+                 "If both Trail Prefab and this are null, trails are disabled for this weapon.")]
         public Material bulletTrailMaterial;
 
-        [Tooltip("Start width of the bullet trail.")]
+        [Tooltip("Start width of the LineRenderer trail.")]
         public float trailStartWidth = 0.02f;
 
-        [Tooltip("End width of the bullet trail.")]
+        [Tooltip("End width of the LineRenderer trail.")]
         public float trailEndWidth = 0.005f;
 
-        [Tooltip("How long the trail lasts in seconds.")]
+        [Tooltip("How long the LineRenderer trail lasts in seconds.")]
         public float trailDuration = 0.08f;
 
-        [Tooltip("Color of the bullet trail.")]
+        [Tooltip("Color of the LineRenderer trail.")]
         public Color trailColor = new Color(1f, 0.9f, 0.5f, 0.8f);
 
         #endregion

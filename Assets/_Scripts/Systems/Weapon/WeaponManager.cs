@@ -45,6 +45,11 @@ namespace _Scripts.Systems.Weapon
         [Tooltip("Key to holster or unholster the current weapon.")]
         [SerializeField] private KeyCode _holsterKey = KeyCode.H;
 
+        [Header("-- Sprint Behavior --")]
+        [Tooltip("If true, the player can fire, reload, and aim while sprinting. " +
+                 "Intended as a future upgrade/ability unlock.")]
+        [SerializeField] private bool _canUseWeaponWhileSprinting = false;
+
         [Header("-- Debug --")]
         [SerializeField] private bool _showDebugLogs = false;
 
@@ -61,6 +66,9 @@ namespace _Scripts.Systems.Weapon
         private bool _isSwitching;                     // true during holster->draw transition
         private bool _isAiming;                        // true when player is holding aim
         private List<WeaponDataSO> _wheelWeapons;      // ordered list of weapons currently in the wheel
+
+        // Cached reference
+        private MovementController _movementController;
 
         // Lookup: InventoryItemData -> WeaponDataSO
         private Dictionary<InventoryItemData, WeaponDataSO> _itemToWeaponMap;
@@ -94,12 +102,23 @@ namespace _Scripts.Systems.Weapon
         /// <summary>The ViewmodelMotion component on the ViewmodelRoot.</summary>
         public ViewmodelMotion ViewmodelMotion => _viewmodelMotion;
 
+        /// <summary>
+        /// When true, the player can fire, reload, and aim while sprinting.
+        /// Set this from an upgrade/ability system to unlock the behavior.
+        /// </summary>
+        public bool CanUseWeaponWhileSprinting
+        {
+            get => _canUseWeaponWhileSprinting;
+            set => _canUseWeaponWhileSprinting = value;
+        }
+
         #endregion
 
         #region Initialization
 
         private void Awake()
         {
+            _movementController = GetComponent<MovementController>();
             BuildItemToWeaponMap();
             CreateViewmodelRoot();
         }
@@ -167,6 +186,24 @@ namespace _Scripts.Systems.Weapon
         {
             // Block all weapon input during switch transitions
             if (_isSwitching) return;
+
+            bool isSprinting = _movementController != null && _movementController.IsSprinting;
+
+            // Sync sprint animation on the weapon every frame
+            _currentWeapon?.SetSprinting(isSprinting);
+
+            // If sprinting and the ability isn't unlocked, cancel ADS and block weapon actions
+            if (isSprinting && !_canUseWeaponWhileSprinting)
+            {
+                if (_isAiming) SetAiming(false);
+
+                // Still allow holster/switch while sprinting
+                HandleScrollSwitchInput();
+                HandleHolsterInput();
+
+                _currentWeapon?.Tick();
+                return;
+            }
 
             HandleFireInput();
             HandleReloadInput();

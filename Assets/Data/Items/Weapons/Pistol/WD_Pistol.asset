@@ -15,6 +15,12 @@ MonoBehaviour:
   inventoryItem: {fileID: 11400000, guid: 146f13ff74f7e5c448daf7d619a75106, type: 2}
   weaponType: 0
   viewmodelPrefab: {fileID: 7101341124382711461, guid: 7fa24eed78795af4b8e35dcf9c558eaa, type: 3}
+  hipPosition: {x: 0.2, y: -0.2, z: 0.29}
+  hipRotation: {x: 0, y: 0, z: 0}
+  adsPosition: {x: 0, y: -0.14, z: 0.25}
+  adsRotation: {x: 0, y: 0, z: 0}
+  adsTransitionSpeed: 10
+  adsFOV: 0
   damage: 25
   fireRate: 0.15
   magazineSize: 30
@@ -26,7 +32,18 @@ MonoBehaviour:
   meleeRange: 2
   meleeAngle: 60
   meleeCooldown: 0.5
-  fireNoiseLevel: 2
+  fireNoiseLevel: 0
   meleeNoiseLevel: 1
   recoilKickback: 1
   recoilRecoverySpeed: 5
+  trailPrefab: {fileID: 4173135513872233592, guid: 8d436f2ff421ab04a91d8b59cc766c82, type: 3}
+  trailSpeed: 300
+  bulletTrailMaterial: {fileID: 2100000, guid: 29ffb7be240f44d47853189abbe4fab0, type: 2}
+  trailStartWidth: 0.02
+  trailEndWidth: 0.005
+  trailDuration: 0.08
+  trailColor: {r: 0.4009434, g: 0.4009434, b: 0.4009434, a: 0.8}
+  impactEffectPrefab: {fileID: 0}
+  impactEffectLifetime: 2
+  bulletHoleDecalPrefab: {fileID: 0}
+  decalLifetime: 30
