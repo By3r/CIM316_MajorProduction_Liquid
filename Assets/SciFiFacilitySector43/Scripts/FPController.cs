@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace SciFiFacilitySector43
+{
 public class FPController : MonoBehaviour {
 
 	public float speed = 6f;
@@ -57,4 +59,5 @@ public class FPController : MonoBehaviour {
 
 
 	}
+}
 }

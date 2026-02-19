@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace SciFiFacilitySector43
+{
 public class Door : MonoBehaviour {
 
     
@@ -40,4 +42,5 @@ public class Door : MonoBehaviour {
     }
 
 
+}
 }

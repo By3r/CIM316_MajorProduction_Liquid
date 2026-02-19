@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace SciFiFacilitySector43
+{
 public class DoorTrigger : MonoBehaviour
 {
     private Door door;
@@ -20,4 +22,5 @@ public class DoorTrigger : MonoBehaviour
     void OnTriggerExit(Collider c) {
         door.closeDoor(c);
     }
+}
 }

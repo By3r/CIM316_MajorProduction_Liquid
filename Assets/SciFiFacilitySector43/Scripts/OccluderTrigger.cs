@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace SciFiFacilitySector43
+{
 public class OccluderTrigger : MonoBehaviour
 {
    
@@ -33,4 +35,5 @@ public class OccluderTrigger : MonoBehaviour
         }
         
     }
+}
 }

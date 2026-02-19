@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+namespace SciFiFacilitySector43
+{
 public class Occluder : MonoBehaviour
 {
     public static bool EnableZone;
@@ -23,5 +25,6 @@ public class Occluder : MonoBehaviour
         }
     }
 
-   
+
+}
 }
