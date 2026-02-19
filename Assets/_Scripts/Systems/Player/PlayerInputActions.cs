@@ -262,6 +262,15 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Lean"",
+                    ""type"": ""Value"",
+                    ""id"": ""80b8c9d0-e1f2-a3b4-c5d6-778899001122"",
+                    ""expectedControlType"": ""Axis"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
                 }
             ],
             ""bindings"": [
@@ -367,7 +376,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""e0f1a2b3-1234-5678-9abc-123456789abc"",
-                    ""path"": ""<Keyboard>/e"",
+                    ""path"": ""<Keyboard>/f"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -499,7 +508,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""66f7a8b9-c0d1-e2f3-a4b5-ff0011223366"",
-                    ""path"": ""<Keyboard>/f"",
+                    ""path"": ""<Keyboard>/v"",
                     ""interactions"": """",
                     ""processors"": """",
                     ""groups"": """",
@@ -517,6 +526,39 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""action"": ""FreeLook"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""QE"",
+                    ""id"": ""88b9c0d1-e2f3-a4b5-c6d7-112233445588"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Lean"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""99c0d1e2-f3a4-b5c6-d7e8-223344556699"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Lean"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""aad1e2f3-a4b5-c6d7-e8f9-334455667700"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Lean"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
                 }
             ]
         },
@@ -676,6 +718,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Player_ChangeFireMode = m_Player.FindAction("ChangeFireMode", throwIfNotFound: true);
         m_Player_EquipNextWeapon = m_Player.FindAction("EquipNextWeapon", throwIfNotFound: true);
         m_Player_FreeLook = m_Player.FindAction("FreeLook", throwIfNotFound: true);
+        m_Player_Lean = m_Player.FindAction("Lean", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Pause = m_UI.FindAction("Pause", throwIfNotFound: true);
@@ -782,6 +825,7 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_ChangeFireMode;
     private readonly InputAction m_Player_EquipNextWeapon;
     private readonly InputAction m_Player_FreeLook;
+    private readonly InputAction m_Player_Lean;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -870,6 +914,10 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// </summary>
         public InputAction @FreeLook => m_Wrapper.m_Player_FreeLook;
         /// <summary>
+        /// Provides access to the underlying input action "Player/Lean".
+        /// </summary>
+        public InputAction @Lean => m_Wrapper.m_Player_Lean;
+        /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
         public InputActionMap Get() { return m_Wrapper.m_Player; }
@@ -952,6 +1000,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @FreeLook.started += instance.OnFreeLook;
             @FreeLook.performed += instance.OnFreeLook;
             @FreeLook.canceled += instance.OnFreeLook;
+            @Lean.started += instance.OnLean;
+            @Lean.performed += instance.OnLean;
+            @Lean.canceled += instance.OnLean;
         }
 
         /// <summary>
@@ -1020,6 +1071,9 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @FreeLook.started -= instance.OnFreeLook;
             @FreeLook.performed -= instance.OnFreeLook;
             @FreeLook.canceled -= instance.OnFreeLook;
+            @Lean.started -= instance.OnLean;
+            @Lean.performed -= instance.OnLean;
+            @Lean.canceled -= instance.OnLean;
         }
 
         /// <summary>
@@ -1322,6 +1376,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnFreeLook(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Lean" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnLean(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.

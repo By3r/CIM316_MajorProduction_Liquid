@@ -99,14 +99,22 @@ namespace _Scripts.UI.Interaction
         {
             if (_playerCamera == null)
             {
+                // Try to find the camera on the player (Kinemation's FPSCameraAnimator has a Camera on a child).
+                var playerManager = _Scripts.Systems.Player.PlayerManager.Instance;
+                if (playerManager != null && playerManager.CurrentPlayer != null)
+                {
+                    _playerCamera = playerManager.CurrentPlayer.GetComponentInChildren<Camera>();
+                }
+            }
+
+            if (_playerCamera == null)
+            {
                 _playerCamera = Camera.main;
             }
 
             if (_playerCamera == null)
             {
-                Debug.LogError("[ObjectHighlightingSystem] No camera found!");
-                enabled = false;
-                return;
+                Debug.LogWarning("[ObjectHighlightingSystem] No camera found at Start — will retry each frame.");
             }
             
             SetHighlightVisibility(false);
@@ -131,6 +139,24 @@ namespace _Scripts.UI.Interaction
 
         #region Target Detection
 
+        /// <summary>
+        /// Attempts to find the player camera if not yet assigned.
+        /// Looks on the player GameObject first (Kinemation setup), then falls back to Camera.main.
+        /// </summary>
+        private void TryFindCamera()
+        {
+            var playerManager = _Scripts.Systems.Player.PlayerManager.Instance;
+            if (playerManager != null && playerManager.CurrentPlayer != null)
+            {
+                _playerCamera = playerManager.CurrentPlayer.GetComponentInChildren<Camera>();
+            }
+
+            if (_playerCamera == null)
+            {
+                _playerCamera = Camera.main;
+            }
+        }
+
         private void CalculateCombinedLayerMask()
         {
             _combinedLayerMask = 0;
@@ -146,7 +172,10 @@ namespace _Scripts.UI.Interaction
         private void CheckForHighlightTarget()
         {
             if (_playerCamera == null)
-                return;
+            {
+                TryFindCamera();
+                if (_playerCamera == null) return;
+            }
 
             Ray ray = _playerCamera.ViewportPointToRay(new Vector3(0.5f, 0.5f, 0f));
             RaycastHit hit;
@@ -643,7 +672,10 @@ namespace _Scripts.UI.Interaction
         
         private void SetHighlightVisibility(bool visible)
         {
-            // Visibility controlled by CanvasGroup alpha
+            if (_highlightFrame != null)
+            {
+                _highlightFrame.gameObject.SetActive(visible);
+            }
         }
 
         #endregion
@@ -658,6 +690,18 @@ namespace _Scripts.UI.Interaction
         {
             CalculateCombinedLayerMask();
         }
+
+        // --- Diagnostic accessors for console command ---
+        public Camera PlayerCamera => _playerCamera;
+        public bool IsHighlightActive => _isHighlightActive;
+        public GameObject CurrentTargetObject => _currentTargetObject;
+        public float CurrentAlpha => _currentAlpha;
+        public float TargetAlpha => _targetAlpha;
+        public LayerMask CombinedLayerMask => _combinedLayerMask;
+        public List<LayerHighlightConfig> LayerConfigs => _layerConfigs;
+        public CanvasGroup HighlightCanvasGroup => _highlightCanvasGroup;
+        public Image[] CornerBrackets => _cornerBrackets;
+        public RectTransform HighlightFrame => _highlightFrame;
 
         #endregion
     }

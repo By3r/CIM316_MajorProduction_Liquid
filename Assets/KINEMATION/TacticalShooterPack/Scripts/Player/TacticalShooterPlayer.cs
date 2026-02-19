@@ -318,8 +318,12 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                 }
             }
 
-            // --- Aim (toggle on press) ---
-            if (InputManager.Instance.AimJustPressed)
+            // --- Aim (hold to aim) ---
+            if (InputManager.Instance.AimJustPressed && !_isAiming)
+            {
+                OnAim();
+            }
+            else if (InputManager.Instance.AimJustReleased && _isAiming)
             {
                 OnAim();
             }
@@ -381,11 +385,20 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                 OnChangeFireMode();
             }
 
-            // --- Free look (Left Alt) ---
-            if (InputManager.Instance.FreeLookPressed)
+            // --- Free look (Left Alt, hold) ---
+            if (InputManager.Instance.FreeLookJustPressed && !fpsCamera.UseFreeLook)
             {
                 OnFreeLook();
             }
+            else if (InputManager.Instance.FreeLookJustReleased && fpsCamera.UseFreeLook)
+            {
+                OnFreeLook();
+            }
+
+            // --- Lean (Q = left / E = right) ---
+            // LeanInput returns -1..+1 axis. TacticalProceduralAnimation expects degrees (-90..90).
+            float leanAxis = InputManager.Instance.LeanInput;
+            _leanInput = leanAxis * 45f; // ±45° lean angle
         }
 
         #endregion

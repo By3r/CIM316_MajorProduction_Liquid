@@ -78,7 +78,7 @@ GameObject:
   - component: {fileID: 3146831077171761914}
   m_Layer: 0
   m_Name: FPCamera
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -405,9 +405,11 @@ GameObject:
   - component: {fileID: 834687043308033374}
   - component: {fileID: 9070476349331968760}
   - component: {fileID: 688424392801810396}
+  - component: {fileID: 5266749802887909107}
+  - component: {fileID: 213106240631212052}
   m_Layer: 0
   m_Name: === Player ===
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -657,13 +659,13 @@ CharacterController:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Height: 2
-  m_Radius: 0.5
+  m_Height: 1.8
+  m_Radius: 0.25
   m_SlopeLimit: 45
   m_StepOffset: 0.3
   m_SkinWidth: 0.08
   m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Center: {x: 0, y: 0.8, z: 0}
 --- !u!114 &834687043308033374
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -676,15 +678,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4adfa2b309a64bc88a49b541dc64fdd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Player.MovementController
-  _walkSpeed: 5
-  _sprintSpeed: 8
+  _walkSpeed: 2.5
+  _sprintSpeed: 5
   _crouchSpeed: 2.5
   _walkToggleSpeed: 2.5
   _jumpForce: 5
   _gravity: -9.81
   _crouchHeightMultiplier: 0.5
   _crouchTransitionDuration: 0.25
-  _groundCheck: {fileID: 0}
+  _groundCheck: {fileID: 6839233048091452460}
   _groundDistance: 0.4
   _groundMask:
     serializedVersion: 2
@@ -708,7 +710,7 @@ MonoBehaviour:
   _interactionDistance: 3
   _interactionLayerMask:
     serializedVersion: 2
-    m_Bits: 64
+    m_Bits: 192
   _showDebugRays: 0
   _dialogueUI: {fileID: 0}
 --- !u!114 &688424392801810396
@@ -730,6 +732,65 @@ MonoBehaviour:
   _activationSlider: {fileID: 0}
   _activationSliderCanvasGroup: {fileID: 0}
   _ceilingAvailableIcon: {fileID: 0}
+--- !u!114 &5266749802887909107
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7911476115181372285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1bcf5b58cf7a474f8e8dcc800de4bf49, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.UI.Interaction.ObjectHighlightingSystem
+  _raycastDistance: 5
+  _playerCamera: {fileID: 2831704319008815921}
+  _layerConfigs:
+  - configName: Pickup
+    enabled: 1
+    layer: 7
+    showBrackets: 1
+    showText: 1
+    displayText: Interact
+    bracketColor: {r: 0, g: 0.5489923, b: 0.5518868, a: 1}
+    bracketSize: 20
+    bracketSprite: {fileID: 0}
+    textColor: {r: 1, g: 1, b: 1, a: 1}
+    textFontSize: 16
+    fadeCrosshair: 1
+  _animationSpeed: 12
+  _fadeSpeed: 15
+  _minFrameSize: 60
+  _framePadding: 15
+  _highlightCanvas: {fileID: 0}
+  _highlightFrame: {fileID: 0}
+  _highlightText: {fileID: 0}
+  _cornerBrackets:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  _crosshairManager: {fileID: 0}
+  _fadeCrosshairOnHighlight: 1
+  _crosshairFadeSpeed: 100
+  _animateBracketsFromCenter: 1
+  _showDebugLogs: 0
+--- !u!114 &213106240631212052
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7911476115181372285}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ca27e47e0a82894dbba436b0df2d1fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Inventory.PlayerInventory
+  _slotCount: 3
+  _arGramsCap: 100
+  _showDebugLogs: 0
 --- !u!1001 &2330263951963145548
 PrefabInstance:
   m_ObjectHideFlags: 0

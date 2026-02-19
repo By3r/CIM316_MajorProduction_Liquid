@@ -540,6 +540,12 @@ namespace _Scripts.Systems.Player
         {
             _interactionDistance = Mathf.Max(0.5f, distance);
         }
+
+        // --- Diagnostic accessors for console command ---
+        public Camera DiagCamera => _playerCamera;
+        public float DiagInteractionDistance => _interactionDistance;
+        public LayerMask DiagLayerMask => _interactionLayerMask;
+
         #endregion
 
         #region Debug

@@ -47,6 +47,7 @@ namespace _Scripts.Core.Managers
         private InputAction _changeFireModeAction;
         private InputAction _equipNextWeaponAction;
         private InputAction _freeLookAction;
+        private InputAction _leanAction;
 
         private bool _isInitialized = false;
 
@@ -77,7 +78,9 @@ namespace _Scripts.Core.Managers
         public bool QuickDrawPistolPressed => _isInitialized && _quickDrawPistolAction != null && _quickDrawPistolAction.WasPressedThisFrame();
         public bool ChangeFireModePressed => _isInitialized && _changeFireModeAction != null && _changeFireModeAction.WasPressedThisFrame();
         public bool EquipNextWeaponPressed => _isInitialized && _equipNextWeaponAction != null && _equipNextWeaponAction.WasPressedThisFrame();
-        public bool FreeLookPressed => _isInitialized && _freeLookAction != null && _freeLookAction.WasPressedThisFrame();
+        public bool FreeLookJustPressed => _isInitialized && _freeLookAction != null && _freeLookAction.WasPressedThisFrame();
+        public bool FreeLookJustReleased => _isInitialized && _freeLookAction != null && _freeLookAction.WasReleasedThisFrame();
+        public float LeanInput => _isInitialized && _leanAction != null ? _leanAction.ReadValue<float>() : 0f;
 
         private void Awake()
         {
@@ -131,6 +134,7 @@ namespace _Scripts.Core.Managers
             _changeFireModeAction = _playerActionMap.FindAction("ChangeFireMode");
             _equipNextWeaponAction = _playerActionMap.FindAction("EquipNextWeapon");
             _freeLookAction = _playerActionMap.FindAction("FreeLook");
+            _leanAction = _playerActionMap.FindAction("Lean");
 
             _pauseAction = _uiActionMap.FindAction("Pause");
             _navigateAction = _uiActionMap.FindAction("Navigate");
