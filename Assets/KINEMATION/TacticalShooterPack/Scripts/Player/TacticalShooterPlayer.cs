@@ -79,6 +79,15 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         // Liquid: Reference to MovementController for reading gait state.
         protected MovementController _movementController;
 
+        // Liquid: Animator parameter hashes for lower body locomotion blend tree.
+        private static readonly int MoveXHash = Animator.StringToHash("MoveX");
+        private static readonly int MoveYHash = Animator.StringToHash("MoveY");
+
+        // Liquid: Smoothed locomotion values to prevent snappy blend tree transitions.
+        private float _smoothMoveX;
+        private float _smoothMoveY;
+        private const float LocomotionSmoothSpeed = 8f;
+
         #region Public Accessors (Liquid)
 
         /// <summary>
@@ -288,8 +297,13 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         {
             if (InputManager.Instance == null) return;
 
-            // --- Movement input (fed to procedural animation for gait/sway) ---
-            _tacProceduralAnimation.moveInput = InputManager.Instance.MoveInput;
+            // --- Movement input (fed to procedural animation for gait/sway + lower body locomotion layer) ---
+            Vector2 moveInput = InputManager.Instance.MoveInput;
+            _tacProceduralAnimation.moveInput = moveInput;
+            _smoothMoveX = Mathf.Lerp(_smoothMoveX, moveInput.x, Time.deltaTime * LocomotionSmoothSpeed);
+            _smoothMoveY = Mathf.Lerp(_smoothMoveY, moveInput.y, Time.deltaTime * LocomotionSmoothSpeed);
+            _animator.SetFloat(MoveXHash, _smoothMoveX);
+            _animator.SetFloat(MoveYHash, _smoothMoveY);
 
             // --- Look input ---
             Vector2 lookDelta = InputManager.Instance.LookInput * lookSensitivity;
