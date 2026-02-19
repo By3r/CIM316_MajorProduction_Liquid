@@ -1,6 +1,9 @@
-﻿// Copyright (c) 2026 KINEMATION.
+// Copyright (c) 2026 KINEMATION.
 // All rights reserved.
+//
+// Modified for Liquid project: InputManager integration, body rotation, MovementController bridge.
 
+using System.Collections;
 using System.Collections.Generic;
 using KINEMATION.Shared.KAnimationCore.Runtime.Attributes;
 using KINEMATION.Shared.KAnimationCore.Runtime.Core;
@@ -11,8 +14,10 @@ using KINEMATION.KShooterCore.Runtime.Weapon;
 using KINEMATION.TacticalShooterPack.Scripts.Animation;
 using KINEMATION.TacticalShooterPack.Scripts.Weapon;
 
+using _Scripts.Core.Managers;
+using _Scripts.Systems.Player;
+
 using UnityEngine;
-using UnityEngine.InputSystem;
 using Random = UnityEngine.Random;
 
 namespace KINEMATION.TacticalShooterPack.Scripts.Player
@@ -25,34 +30,33 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         [SerializeField] protected float lookSensitivity = 1f;
         [SerializeField, Range(0f, 1f)] protected float timeScale = 1f;
 
-        [Header("Weapons & Camera")] [SerializeField]
-        protected GameObject[] weaponPrefabs;
-
+        [Header("Weapons & Camera")]
+        [SerializeField] protected GameObject[] weaponPrefabs;
         [SerializeField] protected FPSCameraAnimator fpsCamera;
-        
+
         [Tab("Animation")]
         [SerializeField] protected IKMotion aimIkMotion;
         [SerializeField] protected IKMotion fireModeIkMotion;
-        
+
         [Tab("Sounds")]
-        
+
         [Header("Actions")]
         [SerializeField] protected AudioClip quickDrawSound;
         [SerializeField] protected AudioClip quickHolsterSound;
         [SerializeField] protected AudioClip jumpSound;
         [SerializeField] protected AudioClip landSound;
-        
+
         [Header("Movement")]
         [SerializeField] private List<AudioClip> walkSounds;
         [SerializeField] private List<AudioClip> sprintSounds;
         [SerializeField] private float walkDelay = 0.4f;
         [SerializeField] private float sprintDelay = 0.4f;
-        
+
         protected TacticalWeaponSettings _weaponSettings;
 
         protected List<TacticalShooterWeapon> _weapons;
         protected int _activeWeaponIndex;
-        
+
         // Pistol quick draw.
         protected int _quickDrawWeaponIndex;
         protected bool _quickDrawPistol;
@@ -63,11 +67,35 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
 
         protected AudioSource _audioSource;
         protected TacticalProceduralAnimation _tacProceduralAnimation;
-        
+
         protected float _playback = 0f;
         protected bool _hasActiveAction;
 
         protected float _leanInput;
+
+        // Liquid: Accumulated body yaw for world-space rotation.
+        protected float _bodyYaw;
+
+        // Liquid: Reference to MovementController for reading gait state.
+        protected MovementController _movementController;
+
+        #region Public Accessors (Liquid)
+
+        /// <summary>
+        /// Public accessor for the camera animator (used by SettingsUI, etc.)
+        /// </summary>
+        public FPSCameraAnimator FpsCamera => fpsCamera;
+
+        /// <summary>
+        /// Public accessor for look sensitivity (used by SettingsUI).
+        /// </summary>
+        public float LookSensitivity
+        {
+            get => lookSensitivity;
+            set => lookSensitivity = value;
+        }
+
+        #endregion
 
         public void OnActionStarted()
         {
@@ -83,6 +111,9 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         private void Awake()
         {
             if (fpsCamera == null) fpsCamera = transform.root.GetComponentInChildren<FPSCameraAnimator>();
+
+            // Liquid: Cache MovementController sibling.
+            _movementController = GetComponent<MovementController>();
         }
 
         public override KShooterWeapon GetActiveShooterWeapon()
@@ -103,7 +134,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         private void Start()
         {
             Cursor.visible = false;
-            
+
             _tacProceduralAnimation = GetComponent<TacticalProceduralAnimation>();
             _audioSource = GetComponent<AudioSource>();
             _weapons = new List<TacticalShooterWeapon>();
@@ -115,12 +146,29 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                 var weapon = Instantiate(prefab, bones.ikHandGun).GetComponentInChildren<TacticalShooterWeapon>();
                 weapon.Initialize(gameObject, bones.rightHand);
                 weapon.HideWeapon();
-                
+
                 _weapons.Add(weapon);
             }
-            
+
             _animator = GetComponentInChildren<Animator>();
             EquipWeapon();
+
+            // Liquid: Sync initial body yaw with current rotation.
+            _bodyYaw = transform.eulerAngles.y;
+
+            // Liquid: Register with PlayerManager.
+            if (PlayerManager.Instance != null)
+            {
+                PlayerManager.Instance.RegisterPlayer(gameObject);
+            }
+            else
+            {
+                Debug.LogWarning($"[TacticalShooterPlayer] PlayerManager.Instance is null during Start(). " +
+                    $"Registration deferred. Ensure PlayerManager Awake runs before this Start. " +
+                    $"(PlayerManager needs DefaultExecutionOrder lower than 0).");
+                // Defer registration to next frame when singletons should be ready.
+                StartCoroutine(DeferredRegister());
+            }
         }
 
         private void UpdateCurveAnimIntensity(TacCurveAnimIntensity intensity, AnimatorStateName stateName)
@@ -149,19 +197,19 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
 
             return desiredGait;
         }
-        
+
         protected void PlayWalkSound()
         {
-            if (_audioSource == null) return;
+            if (_audioSource == null || walkSounds == null || walkSounds.Count == 0) return;
             _audioSource.PlayOneShot(walkSounds[Random.Range(0, walkSounds.Count - 1)]);
         }
-        
+
         protected void PlaySprintSound()
         {
-            if (_audioSource == null) return;
+            if (_audioSource == null || sprintSounds == null || sprintSounds.Count == 0) return;
             _audioSource.PlayOneShot(sprintSounds[Random.Range(0, sprintSounds.Count - 1)]);
         }
-        
+
         protected void PlayMovementSounds(float gait, float error = 0.4f)
         {
             if (Mathf.Approximately(gait, 0f) || _animator.GetBool(TacShooterUtility.Animator_IsInAir.hash))
@@ -171,7 +219,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             }
 
             _playback += Time.deltaTime;
-            
+
             if (gait >= error && gait <= 1f + error)
             {
                 if (_playback >= walkDelay)
@@ -194,10 +242,13 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
 
         private void Update()
         {
+            // Liquid: Read all input from InputManager singleton.
+            ReadInputFromInputManager();
+
             float aimingSpeed = GetPrimaryWeapon().AimingSpeed * (_isAiming ? 1f : -1f);
             _tacProceduralAnimation.aimingWeight += Time.deltaTime * aimingSpeed;
             _tacProceduralAnimation.aimingWeight = Mathf.Clamp01(_tacProceduralAnimation.aimingWeight);
-            
+
             Transform aimPoint = GetPrimaryWeapon().GetAimPoint();
             KTransform aimTransform = KTransform.Identity;
             if (aimPoint != null)
@@ -213,22 +264,131 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             UpdateCurveAnimIntensity(_weaponSettings.idleIntensity, TacShooterUtility.Animator_IdleIntensity);
             UpdateCurveAnimIntensity(_weaponSettings.walkIntensity, TacShooterUtility.Animator_WalkIntensity);
 
+            // Liquid: Camera gets pitch from procedural animation, yaw is always 0 (body handles yaw).
             fpsCamera.lookInput.y = _tacProceduralAnimation.pitchInput;
             fpsCamera.lookInput.x = _tacProceduralAnimation.yawInput;
 
             _tacProceduralAnimation.leanInput = KMath.FloatInterp(_tacProceduralAnimation.leanInput, _leanInput,
                 8f, Time.deltaTime);
-            
+
             float gait = _animator.GetFloat(TacShooterUtility.Animator_Gait.hash);
             gait = KMath.FloatInterp(gait, GetDesiredGait(), 6f, Time.deltaTime);
             _animator.SetFloat(TacShooterUtility.Animator_Gait.hash, gait);
-            
+
             PlayMovementSounds(gait);
-            
-#if !ENABLE_INPUT_SYSTEM
-            UpdateLegacyInputs();
-#endif
         }
+
+        #region Liquid Input (reads from InputManager)
+
+        /// <summary>
+        /// Reads all player input from the Liquid InputManager singleton.
+        /// Replaces Kinemation's PlayerInput + SendMessages approach.
+        /// </summary>
+        private void ReadInputFromInputManager()
+        {
+            if (InputManager.Instance == null) return;
+
+            // --- Movement input (fed to procedural animation for gait/sway) ---
+            _tacProceduralAnimation.moveInput = InputManager.Instance.MoveInput;
+
+            // --- Look input ---
+            Vector2 lookDelta = InputManager.Instance.LookInput * lookSensitivity;
+            UpdateLookInput(lookDelta);
+
+            // --- Sprint ---
+            if (!_hasActiveAction)
+            {
+                _wantsToSprint = InputManager.Instance.IsSprinting;
+            }
+
+            // --- Fire ---
+            if (_hasActiveAction)
+            {
+                if (GetPrimaryWeapon().IsFiring) GetPrimaryWeapon().StopFiring();
+            }
+            else
+            {
+                if (InputManager.Instance.FireJustPressed)
+                {
+                    GetPrimaryWeapon().StartFiring();
+                }
+                else if (!InputManager.Instance.FirePressed && GetPrimaryWeapon().IsFiring)
+                {
+                    GetPrimaryWeapon().StopFiring();
+                }
+            }
+
+            // --- Aim (toggle on press) ---
+            if (InputManager.Instance.AimJustPressed)
+            {
+                OnAim();
+            }
+
+            // --- Reload ---
+            if (InputManager.Instance.ReloadPressed)
+            {
+                OnReload();
+            }
+
+            // --- Weapon switch (scroll wheel) ---
+            float scrollInput = InputManager.Instance.SwitchWeaponInput;
+            if (!_hasActiveAction && !_quickDrawPistol && !Mathf.Approximately(scrollInput, 0f))
+            {
+                if (scrollInput > 0f)
+                {
+                    EquipNextWeapon();
+                }
+                else
+                {
+                    EquipPreviousWeapon();
+                }
+                GetActiveWeapon().RestoreWeaponVisibility();
+            }
+
+            // --- Equip next weapon (F key) ---
+            if (InputManager.Instance.EquipNextWeaponPressed)
+            {
+                OnChangeWeapon();
+            }
+
+            // --- Inspect (I key) ---
+            if (InputManager.Instance.InspectPressed)
+            {
+                OnInspect();
+            }
+
+            // --- Mag check (M key) ---
+            if (InputManager.Instance.MagCheckPressed)
+            {
+                OnMagCheck();
+            }
+
+            // --- Toggle attachment (N key) ---
+            if (InputManager.Instance.ToggleAttachmentPressed)
+            {
+                OnToggleAttachment();
+            }
+
+            // --- Quick draw pistol (X key) ---
+            if (InputManager.Instance.QuickDrawPistolPressed)
+            {
+                OnQuickPistolDraw();
+            }
+
+            // --- Change fire mode (B key) ---
+            if (InputManager.Instance.ChangeFireModePressed)
+            {
+                OnChangeFireMode();
+            }
+
+            // --- Free look (Left Alt) ---
+            if (InputManager.Instance.FreeLookPressed)
+            {
+                OnFreeLook();
+            }
+        }
+
+        #endregion
 
         private void OnValidate()
         {
@@ -241,37 +401,37 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             weaponTransform.parent = _tacProceduralAnimation.bones.ikHandGun;
             weaponTransform.localPosition = Vector3.zero;
             weaponTransform.localRotation = Quaternion.identity;
-            
+
             _weaponSettings = GetActiveWeapon().tacWeaponSettings;
             _tacProceduralAnimation.UpdateAnimationSettings(_weaponSettings);
-            
+
             GetActiveWeapon().Draw(playDraw, true, playDraw ? 0.03f : -1f);
         }
 
         protected void EquipNextWeapon()
         {
             GetActiveWeapon().HideWeapon();
-            
+
             _activeWeaponIndex++;
             _activeWeaponIndex = _activeWeaponIndex > _weapons.Count - 1 ? 0 : _activeWeaponIndex;
-            
+
             EquipWeapon(false);
         }
 
         protected void EquipPreviousWeapon()
         {
             GetActiveWeapon().HideWeapon();
-            
+
             _activeWeaponIndex--;
             _activeWeaponIndex = _activeWeaponIndex < 0 ? _weapons.Count - 1 : _activeWeaponIndex;
-            
+
             EquipWeapon(false);
         }
 
         protected void ChangeWeapon()
         {
             GetActiveWeapon().HideWeapon();
-            
+
             _activeWeaponIndex++;
             _activeWeaponIndex = _activeWeaponIndex > _weapons.Count - 1 ? 0 : _activeWeaponIndex;
 
@@ -289,7 +449,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         {
             var prevFireMode = GetActiveWeapon().FireMode;
             GetActiveWeapon().ChangeFireMode();
-            
+
             if(GetActiveWeapon().FireMode != prevFireMode) _tacProceduralAnimation.PlayIkMotion(fireModeIkMotion);
         }
 
@@ -316,11 +476,11 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             if (_hasActiveAction || _quickDrawPistol) return;
             GetActiveWeapon().ToggleAttachment();
         }
-        
+
         public void OnQuickPistolDraw()
         {
             if (_hasActiveAction && !_quickDrawPistol) return;
-            
+
             if (!_quickDrawPistol)
             {
                 _quickDrawWeaponIndex = -1;
@@ -355,7 +515,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
 
                 // Update the right-handed pose.
                 _tacProceduralAnimation.UpdateRightHandPose(GetPrimaryWeapon().gunRightHandPose);
-                
+
                 // Parent the weapon to the main gun bone.
                 Transform weaponTransform = GetPrimaryWeapon().GetWeaponRoot();
                 weaponTransform.parent = _tacProceduralAnimation.bones.ikHandGun.parent;
@@ -369,7 +529,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                 _quickDrawPistol = false;
                 _quickDrawWeaponIndex = -1;
             }
-            
+
             if(_audioSource != null) _audioSource.PlayOneShot(_quickDrawPistol ? quickDrawSound : quickHolsterSound);
             _animator.SetBool(TacShooterUtility.Animator_UseQuickDraw.hash, _quickDrawPistol);
         }
@@ -383,12 +543,16 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             float aimFov = GetPrimaryWeapon().tacWeaponSettings.aimFov;
             fpsCamera.SetTargetFOV(_isAiming ? aimFov : fpsCamera.BaseFOV, 6f);
         }
-        
+
         public void OnFreeLook()
         {
             fpsCamera.ToggleFreeLook();
         }
 
+        /// <summary>
+        /// Updates look input: body yaw rotation + pitch for procedural animation.
+        /// Liquid modification: Body rotates with yaw, spine yaw stays at 0.
+        /// </summary>
         private void UpdateLookInput(Vector2 delta)
         {
             if (fpsCamera.UseFreeLook)
@@ -396,87 +560,34 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                 fpsCamera.AddFreeLookInput(delta);
                 return;
             }
-            
+
             _tacProceduralAnimation.deltaLookInput = delta;
 
+            // Pitch: Procedural animation distributes across spine bones.
             _tacProceduralAnimation.pitchInput -= delta.y;
-            _tacProceduralAnimation.yawInput += delta.x;
-
             _tacProceduralAnimation.pitchInput = Mathf.Clamp(_tacProceduralAnimation.pitchInput, -90f, 90f);
-            _tacProceduralAnimation.yawInput = Mathf.Clamp(_tacProceduralAnimation.yawInput, -90f, 90f);
+
+            // Yaw: Body rotates in world space. Spine yaw stays at 0 (body faces where you look).
+            _bodyYaw += delta.x;
+            transform.rotation = Quaternion.Euler(0f, _bodyYaw, 0f);
+            _tacProceduralAnimation.yawInput = 0f;
         }
 
-        private void UpdateLegacyInputs()
+        /// <summary>
+        /// Fallback: waits one frame for singletons to initialize, then registers.
+        /// </summary>
+        private IEnumerator DeferredRegister()
         {
-            if(Input.GetKeyDown(KeyCode.Mouse1)) OnAim();
-            if(Input.GetKeyDown(KeyCode.Mouse0)) GetPrimaryWeapon().StartFiring();
-            if(Input.GetKeyUp(KeyCode.Mouse0)) GetPrimaryWeapon().StopFiring();
-            if(Input.GetKeyDown(KeyCode.T)) OnFreeLook();
-
-            _tacProceduralAnimation.moveInput.x = Input.GetAxis("Horizontal");
-            _tacProceduralAnimation.moveInput.y = Input.GetAxis("Vertical");
-
-            Vector2 deltaLook = new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
-            UpdateLookInput(deltaLook);
-        }
-
-#if ENABLE_INPUT_SYSTEM
-        public void OnFire(InputValue value)
-        {
-            if (_hasActiveAction)
+            yield return null;
+            if (PlayerManager.Instance != null)
             {
-                if (GetPrimaryWeapon().IsFiring) GetPrimaryWeapon().StopFiring();
-                return;
+                PlayerManager.Instance.RegisterPlayer(gameObject);
+                Debug.Log("[TacticalShooterPlayer] Deferred registration successful.");
             }
-            
-            if (value.isPressed)
+            else
             {
-                GetPrimaryWeapon().StartFiring();
-                return;
+                Debug.LogError("[TacticalShooterPlayer] PlayerManager.Instance is STILL null after deferral. Player will not be registered.");
             }
-            
-            GetPrimaryWeapon().StopFiring();
         }
-        
-        public void OnMove(InputValue value)
-        {
-            _tacProceduralAnimation.moveInput = value.Get<Vector2>();
-        }
-
-        public void OnLook(InputValue value)
-        {
-            UpdateLookInput(value.Get<Vector2>() * lookSensitivity);
-        }
-
-        public void OnLean(InputValue value)
-        {
-            _leanInput = -value.Get<float>() * 30f;
-        }
-
-        public void OnSprint(InputValue value)
-        {
-            if (_hasActiveAction) return;
-            
-            _wantsToSprint = value.isPressed;
-        }
-
-        public void OnMouseScroll(InputValue value)
-        {
-            if (_hasActiveAction || _quickDrawPistol) return;
-            
-            float direction = value.Get<float>();
-            
-            if (direction > 0f)
-            {
-                EquipNextWeapon();
-            }
-            else if (direction < 0f)
-            {
-                EquipPreviousWeapon();
-            }
-            
-            GetActiveWeapon().RestoreWeaponVisibility();
-        }
-#endif
     }
 }

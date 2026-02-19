@@ -45,6 +45,7 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-402940315-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-620862091-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-82160491-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1455423802687713497-495932147
         values:
         - colorIndex: 6
           iconNameOrGuid: Canvas Icon
@@ -136,6 +137,10 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 1
           iconNameOrGuid: DebuggerAttached
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: AvatarMask On Icon
           isIconRecursive: 0
           isColorRecursive: 0
     - goDatas_byGlobalId:

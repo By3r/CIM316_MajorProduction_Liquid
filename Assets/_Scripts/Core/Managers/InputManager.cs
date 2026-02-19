@@ -40,6 +40,13 @@ namespace _Scripts.Core.Managers
         private InputAction _walkToggleAction;
         private InputAction _inventoryToggleAction;
         private InputAction _aimAction;
+        private InputAction _inspectAction;
+        private InputAction _magCheckAction;
+        private InputAction _toggleAttachmentAction;
+        private InputAction _quickDrawPistolAction;
+        private InputAction _changeFireModeAction;
+        private InputAction _equipNextWeaponAction;
+        private InputAction _freeLookAction;
 
         private bool _isInitialized = false;
 
@@ -64,6 +71,13 @@ namespace _Scripts.Core.Managers
         public bool AimPressed => _isInitialized && _aimAction != null && _aimAction.IsPressed();
         public bool AimJustPressed => _isInitialized && _aimAction != null && _aimAction.WasPressedThisFrame();
         public bool AimJustReleased => _isInitialized && _aimAction != null && _aimAction.WasReleasedThisFrame();
+        public bool InspectPressed => _isInitialized && _inspectAction != null && _inspectAction.WasPressedThisFrame();
+        public bool MagCheckPressed => _isInitialized && _magCheckAction != null && _magCheckAction.WasPressedThisFrame();
+        public bool ToggleAttachmentPressed => _isInitialized && _toggleAttachmentAction != null && _toggleAttachmentAction.WasPressedThisFrame();
+        public bool QuickDrawPistolPressed => _isInitialized && _quickDrawPistolAction != null && _quickDrawPistolAction.WasPressedThisFrame();
+        public bool ChangeFireModePressed => _isInitialized && _changeFireModeAction != null && _changeFireModeAction.WasPressedThisFrame();
+        public bool EquipNextWeaponPressed => _isInitialized && _equipNextWeaponAction != null && _equipNextWeaponAction.WasPressedThisFrame();
+        public bool FreeLookPressed => _isInitialized && _freeLookAction != null && _freeLookAction.WasPressedThisFrame();
 
         private void Awake()
         {
@@ -110,6 +124,13 @@ namespace _Scripts.Core.Managers
             _walkToggleAction = _playerActionMap.FindAction("WalkToggle");
             _inventoryToggleAction = _playerActionMap.FindAction("InventoryToggle");
             _aimAction = _playerActionMap.FindAction("Aim");
+            _inspectAction = _playerActionMap.FindAction("Inspect");
+            _magCheckAction = _playerActionMap.FindAction("MagCheck");
+            _toggleAttachmentAction = _playerActionMap.FindAction("ToggleAttachment");
+            _quickDrawPistolAction = _playerActionMap.FindAction("QuickDrawPistol");
+            _changeFireModeAction = _playerActionMap.FindAction("ChangeFireMode");
+            _equipNextWeaponAction = _playerActionMap.FindAction("EquipNextWeapon");
+            _freeLookAction = _playerActionMap.FindAction("FreeLook");
 
             _pauseAction = _uiActionMap.FindAction("Pause");
             _navigateAction = _uiActionMap.FindAction("Navigate");

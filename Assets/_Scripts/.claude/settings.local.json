@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -C \"C:/Users/sales/Desktop/SAE/Unity Projects Repositories/MAJOR/Liquid\" status:*)"
+      "Bash(git -C \"C:/Users/sales/Desktop/SAE/Unity Projects Repositories/MAJOR/Liquid\" status:*)",
+      "Bash(git rm:*)"
     ]
   }
 }

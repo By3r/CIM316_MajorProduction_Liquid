@@ -199,6 +199,69 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Inspect"",
+                    ""type"": ""Button"",
+                    ""id"": ""10a1b2c3-d4e5-f6a7-b8c9-001122334455"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""MagCheck"",
+                    ""type"": ""Button"",
+                    ""id"": ""20b2c3d4-e5f6-a7b8-c9d0-112233445566"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ToggleAttachment"",
+                    ""type"": ""Button"",
+                    ""id"": ""30c3d4e5-f6a7-b8c9-d0e1-223344556677"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""QuickDrawPistol"",
+                    ""type"": ""Button"",
+                    ""id"": ""40d4e5f6-a7b8-c9d0-e1f2-334455667788"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""ChangeFireMode"",
+                    ""type"": ""Button"",
+                    ""id"": ""50e5f6a7-b8c9-d0e1-f2a3-445566778899"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""EquipNextWeapon"",
+                    ""type"": ""Button"",
+                    ""id"": ""60f6a7b8-c9d0-e1f2-a3b4-556677889900"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""FreeLook"",
+                    ""type"": ""Button"",
+                    ""id"": ""70a7b8c9-d0e1-f2a3-b4c5-667788990011"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -377,6 +440,83 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
                     ""action"": ""InventoryToggle"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""11a2b3c4-d5e6-f7a8-b9c0-aabbccddeef1"",
+                    ""path"": ""<Keyboard>/i"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Inspect"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""22b3c4d5-e6f7-a8b9-c0d1-bbccddeeff22"",
+                    ""path"": ""<Keyboard>/m"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""MagCheck"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""33c4d5e6-f7a8-b9c0-d1e2-ccddeeff0033"",
+                    ""path"": ""<Keyboard>/n"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ToggleAttachment"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""44d5e6f7-a8b9-c0d1-e2f3-ddeeff001144"",
+                    ""path"": ""<Keyboard>/x"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""QuickDrawPistol"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""55e6f7a8-b9c0-d1e2-f3a4-eeff00112255"",
+                    ""path"": ""<Keyboard>/b"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""ChangeFireMode"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""66f7a8b9-c0d1-e2f3-a4b5-ff0011223366"",
+                    ""path"": ""<Keyboard>/f"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""EquipNextWeapon"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""77a8b9c0-d1e2-f3a4-b5c6-001122334477"",
+                    ""path"": ""<Keyboard>/leftAlt"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""FreeLook"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         },
@@ -529,6 +669,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         m_Player_WalkToggle = m_Player.FindAction("WalkToggle", throwIfNotFound: true);
         m_Player_Aim = m_Player.FindAction("Aim", throwIfNotFound: true);
         m_Player_InventoryToggle = m_Player.FindAction("InventoryToggle", throwIfNotFound: true);
+        m_Player_Inspect = m_Player.FindAction("Inspect", throwIfNotFound: true);
+        m_Player_MagCheck = m_Player.FindAction("MagCheck", throwIfNotFound: true);
+        m_Player_ToggleAttachment = m_Player.FindAction("ToggleAttachment", throwIfNotFound: true);
+        m_Player_QuickDrawPistol = m_Player.FindAction("QuickDrawPistol", throwIfNotFound: true);
+        m_Player_ChangeFireMode = m_Player.FindAction("ChangeFireMode", throwIfNotFound: true);
+        m_Player_EquipNextWeapon = m_Player.FindAction("EquipNextWeapon", throwIfNotFound: true);
+        m_Player_FreeLook = m_Player.FindAction("FreeLook", throwIfNotFound: true);
         // UI
         m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
         m_UI_Pause = m_UI.FindAction("Pause", throwIfNotFound: true);
@@ -628,6 +775,13 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_WalkToggle;
     private readonly InputAction m_Player_Aim;
     private readonly InputAction m_Player_InventoryToggle;
+    private readonly InputAction m_Player_Inspect;
+    private readonly InputAction m_Player_MagCheck;
+    private readonly InputAction m_Player_ToggleAttachment;
+    private readonly InputAction m_Player_QuickDrawPistol;
+    private readonly InputAction m_Player_ChangeFireMode;
+    private readonly InputAction m_Player_EquipNextWeapon;
+    private readonly InputAction m_Player_FreeLook;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -687,6 +841,34 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/InventoryToggle".
         /// </summary>
         public InputAction @InventoryToggle => m_Wrapper.m_Player_InventoryToggle;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Inspect".
+        /// </summary>
+        public InputAction @Inspect => m_Wrapper.m_Player_Inspect;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/MagCheck".
+        /// </summary>
+        public InputAction @MagCheck => m_Wrapper.m_Player_MagCheck;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/ToggleAttachment".
+        /// </summary>
+        public InputAction @ToggleAttachment => m_Wrapper.m_Player_ToggleAttachment;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/QuickDrawPistol".
+        /// </summary>
+        public InputAction @QuickDrawPistol => m_Wrapper.m_Player_QuickDrawPistol;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/ChangeFireMode".
+        /// </summary>
+        public InputAction @ChangeFireMode => m_Wrapper.m_Player_ChangeFireMode;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/EquipNextWeapon".
+        /// </summary>
+        public InputAction @EquipNextWeapon => m_Wrapper.m_Player_EquipNextWeapon;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/FreeLook".
+        /// </summary>
+        public InputAction @FreeLook => m_Wrapper.m_Player_FreeLook;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -749,6 +931,27 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @InventoryToggle.started += instance.OnInventoryToggle;
             @InventoryToggle.performed += instance.OnInventoryToggle;
             @InventoryToggle.canceled += instance.OnInventoryToggle;
+            @Inspect.started += instance.OnInspect;
+            @Inspect.performed += instance.OnInspect;
+            @Inspect.canceled += instance.OnInspect;
+            @MagCheck.started += instance.OnMagCheck;
+            @MagCheck.performed += instance.OnMagCheck;
+            @MagCheck.canceled += instance.OnMagCheck;
+            @ToggleAttachment.started += instance.OnToggleAttachment;
+            @ToggleAttachment.performed += instance.OnToggleAttachment;
+            @ToggleAttachment.canceled += instance.OnToggleAttachment;
+            @QuickDrawPistol.started += instance.OnQuickDrawPistol;
+            @QuickDrawPistol.performed += instance.OnQuickDrawPistol;
+            @QuickDrawPistol.canceled += instance.OnQuickDrawPistol;
+            @ChangeFireMode.started += instance.OnChangeFireMode;
+            @ChangeFireMode.performed += instance.OnChangeFireMode;
+            @ChangeFireMode.canceled += instance.OnChangeFireMode;
+            @EquipNextWeapon.started += instance.OnEquipNextWeapon;
+            @EquipNextWeapon.performed += instance.OnEquipNextWeapon;
+            @EquipNextWeapon.canceled += instance.OnEquipNextWeapon;
+            @FreeLook.started += instance.OnFreeLook;
+            @FreeLook.performed += instance.OnFreeLook;
+            @FreeLook.canceled += instance.OnFreeLook;
         }
 
         /// <summary>
@@ -796,6 +999,27 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
             @InventoryToggle.started -= instance.OnInventoryToggle;
             @InventoryToggle.performed -= instance.OnInventoryToggle;
             @InventoryToggle.canceled -= instance.OnInventoryToggle;
+            @Inspect.started -= instance.OnInspect;
+            @Inspect.performed -= instance.OnInspect;
+            @Inspect.canceled -= instance.OnInspect;
+            @MagCheck.started -= instance.OnMagCheck;
+            @MagCheck.performed -= instance.OnMagCheck;
+            @MagCheck.canceled -= instance.OnMagCheck;
+            @ToggleAttachment.started -= instance.OnToggleAttachment;
+            @ToggleAttachment.performed -= instance.OnToggleAttachment;
+            @ToggleAttachment.canceled -= instance.OnToggleAttachment;
+            @QuickDrawPistol.started -= instance.OnQuickDrawPistol;
+            @QuickDrawPistol.performed -= instance.OnQuickDrawPistol;
+            @QuickDrawPistol.canceled -= instance.OnQuickDrawPistol;
+            @ChangeFireMode.started -= instance.OnChangeFireMode;
+            @ChangeFireMode.performed -= instance.OnChangeFireMode;
+            @ChangeFireMode.canceled -= instance.OnChangeFireMode;
+            @EquipNextWeapon.started -= instance.OnEquipNextWeapon;
+            @EquipNextWeapon.performed -= instance.OnEquipNextWeapon;
+            @EquipNextWeapon.canceled -= instance.OnEquipNextWeapon;
+            @FreeLook.started -= instance.OnFreeLook;
+            @FreeLook.performed -= instance.OnFreeLook;
+            @FreeLook.canceled -= instance.OnFreeLook;
         }
 
         /// <summary>
@@ -1049,6 +1273,55 @@ public partial class @PlayerInputActions: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnInventoryToggle(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Inspect" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInspect(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "MagCheck" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnMagCheck(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "ToggleAttachment" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnToggleAttachment(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "QuickDrawPistol" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnQuickDrawPistol(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "ChangeFireMode" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnChangeFireMode(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "EquipNextWeapon" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnEquipNextWeapon(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "FreeLook" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnFreeLook(InputAction.CallbackContext context);
     }
     /// <summary>
     /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
