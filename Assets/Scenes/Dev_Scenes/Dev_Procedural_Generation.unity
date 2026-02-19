@@ -9081,11 +9081,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1407940033}
   m_CullTransparentMesh: 1
---- !u!4 &1413336892 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6839233048091452460, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-  m_PrefabInstance: {fileID: 1910722712307635677}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1434595243
 GameObject:
   m_ObjectHideFlags: 0
@@ -14757,11 +14752,6 @@ MonoBehaviour:
   _canvasGroup: {fileID: 211422602}
   _fadeSpeed: 10
   _menuOffset: {x: 50, y: -25}
---- !u!1 &1455423803031429674 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7911476115181372285, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-  m_PrefabInstance: {fileID: 1910722712307635677}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1910722712307635677
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14782,18 +14772,6 @@ PrefabInstance:
       propertyPath: _activationSliderCanvasGroup
       value: 
       objectReference: {fileID: 1350198711}
-    - target: {fileID: 834687043308033374, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-      propertyPath: _walkSpeed
-      value: 2.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 834687043308033374, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-      propertyPath: _groundCheck
-      value: 
-      objectReference: {fileID: 1413336892}
-    - target: {fileID: 834687043308033374, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-      propertyPath: _sprintSpeed
-      value: 5
-      objectReference: {fileID: 0}
     - target: {fileID: 2225396863498009684, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -14834,41 +14812,42 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 3870925300629214350, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-      propertyPath: m_Height
-      value: 1.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 3870925300629214350, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-      propertyPath: m_Radius
-      value: 0.25
-      objectReference: {fileID: 0}
-    - target: {fileID: 3870925300629214350, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-      propertyPath: m_Center.y
-      value: 0.8
-      objectReference: {fileID: 0}
-    - target: {fileID: 4801903767883800317, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-      propertyPath: m_TagString
-      value: MainCamera
-      objectReference: {fileID: 0}
+    - target: {fileID: 5266749802887909107, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: _highlightFrame
+      value: 
+      objectReference: {fileID: 261769067}
+    - target: {fileID: 5266749802887909107, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: _highlightCanvas
+      value: 
+      objectReference: {fileID: 992326242}
+    - target: {fileID: 5266749802887909107, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: _crosshairManager
+      value: 
+      objectReference: {fileID: 2020094946}
+    - target: {fileID: 5266749802887909107, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: '_cornerBrackets.Array.data[0]'
+      value: 
+      objectReference: {fileID: 518022594}
+    - target: {fileID: 5266749802887909107, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: '_cornerBrackets.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1540300964}
+    - target: {fileID: 5266749802887909107, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: '_cornerBrackets.Array.data[2]'
+      value: 
+      objectReference: {fileID: 774583015}
+    - target: {fileID: 5266749802887909107, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: '_cornerBrackets.Array.data[3]'
+      value: 
+      objectReference: {fileID: 353928843}
     - target: {fileID: 7911476115181372285, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
       propertyPath: m_Name
       value: === Player ===
       objectReference: {fileID: 0}
-    - target: {fileID: 7911476115181372285, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-      propertyPath: m_TagString
-      value: Player
-      objectReference: {fileID: 0}
-    - target: {fileID: 9070476349331968760, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-      propertyPath: _interactionLayerMask.m_Bits
-      value: 192
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 7911476115181372285, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 8758189448556080221}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
 --- !u!1001 &7442874469373113298
 PrefabInstance:
@@ -14975,55 +14954,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1d3606cb8d5a37f479f378f564d56b1a, type: 3}
---- !u!20 &7847005362839196646 stripped
-Camera:
-  m_CorrespondingSourceObject: {fileID: 2831704319008815921, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
-  m_PrefabInstance: {fileID: 1910722712307635677}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &8758189448556080221
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1455423803031429674}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1bcf5b58cf7a474f8e8dcc800de4bf49, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.UI.Interaction.ObjectHighlightingSystem
-  _raycastDistance: 5
-  _playerCamera: {fileID: 7847005362839196646}
-  _layerConfigs:
-  - configName: Pickup
-    enabled: 1
-    layer: 7
-    showBrackets: 1
-    showText: 1
-    displayText: Interact
-    bracketColor: {r: 0, g: 0.5489923, b: 0.5518868, a: 1}
-    bracketSize: 20
-    bracketSprite: {fileID: 0}
-    textColor: {r: 1, g: 1, b: 1, a: 1}
-    textFontSize: 16
-    fadeCrosshair: 1
-  _animationSpeed: 12
-  _fadeSpeed: 15
-  _minFrameSize: 60
-  _framePadding: 15
-  _highlightCanvas: {fileID: 992326242}
-  _highlightFrame: {fileID: 261769067}
-  _highlightText: {fileID: 0}
-  _cornerBrackets:
-  - {fileID: 518022594}
-  - {fileID: 1540300964}
-  - {fileID: 774583015}
-  - {fileID: 353928843}
-  _crosshairManager: {fileID: 2020094946}
-  _fadeCrosshairOnHighlight: 1
-  _crosshairFadeSpeed: 100
-  _animateBracketsFromCenter: 1
-  _showDebugLogs: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
