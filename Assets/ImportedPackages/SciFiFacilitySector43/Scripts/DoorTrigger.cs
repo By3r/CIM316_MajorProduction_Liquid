@@ -1,6 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
+using PackageDoor;
 
 public class DoorTrigger : MonoBehaviour
 {
@@ -11,13 +10,15 @@ public class DoorTrigger : MonoBehaviour
         door = GetComponentInParent<Door>();
     }
 
-    void OnTriggerEnter(Collider c) {
+    void OnTriggerEnter(Collider c)
+    {
 
         door.openDoor(c);
 
     }
 
-    void OnTriggerExit(Collider c) {
+    void OnTriggerExit(Collider c)
+    {
         door.closeDoor(c);
     }
 }
