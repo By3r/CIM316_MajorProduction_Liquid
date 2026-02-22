@@ -65,18 +65,6 @@ namespace _Scripts.Systems.DebugConsole.Commands
                 string frozenTag = !enemy.enabled ? " <color=cyan>[FROZEN]</color>" : "";
                 string targetTag = enemy.PlayerTarget != null ? "" : " <color=red>[NO TARGET]</color>";
                 Vector3 pos = enemy.transform.position;
-
-                // Show GOAP goal if it's a GenericGoapEnemy
-                string goalInfo = "";
-                GenericGoapEnemy goap = enemy as GenericGoapEnemy;
-                if (goap != null)
-                {
-                    goalInfo = $" [{goap.CurrentGoal}]";
-                    if (goap.DebugPlayerInSight)
-                        goalInfo += " <color=red>[SEES PLAYER]</color>";
-                }
-
-                sb.AppendLine($"  <color={stateColor}>{enemy.name}</color> — {enemy.CurrentState}{goalInfo}{frozenTag}{targetTag} @ ({pos.x:F1}, {pos.y:F1}, {pos.z:F1})");
             }
 
             return sb.ToString();

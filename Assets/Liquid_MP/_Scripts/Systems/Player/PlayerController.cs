@@ -1,7 +1,6 @@
 using _Scripts.Core.Managers;
 using _Scripts.Systems.Weapon;
 using UnityEngine;
-// **FIX**: Add the namespace for NeutronicBoots
 using Liquid.Player.Equipment;
 
 namespace _Scripts.Systems.Player
