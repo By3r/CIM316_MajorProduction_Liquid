@@ -457,7 +457,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 66c5fe49ee7a54143b84f2d728f8d97e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tacWeaponSettings: {fileID: 11400000, guid: bdcd9565d1236a24ba84b9a41d13e954, type: 2}
+  animationData: {fileID: 11400000, guid: bdcd9565d1236a24ba84b9a41d13e954, type: 2}
+  combatData: {fileID: 11400000, guid: 52ab9477e471434e933b94e45500ba94, type: 2}
   gunRightHandPose:
     position: {x: 0, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 1}

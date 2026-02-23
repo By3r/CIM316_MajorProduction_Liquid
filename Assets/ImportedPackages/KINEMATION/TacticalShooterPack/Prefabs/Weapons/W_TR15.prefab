@@ -1438,7 +1438,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3a6d3ddd08cc044d860d076800573ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tacWeaponSettings: {fileID: 11400000, guid: 9ee58ebfc3620234295466e8f8791b7c, type: 2}
+  animationData: {fileID: 11400000, guid: 9ee58ebfc3620234295466e8f8791b7c, type: 2}
+  combatData: {fileID: 11400000, guid: 68cc21f2e105420ba12da480d0bca17b, type: 2}
   gunRightHandPose:
     position: {x: 0, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 1}

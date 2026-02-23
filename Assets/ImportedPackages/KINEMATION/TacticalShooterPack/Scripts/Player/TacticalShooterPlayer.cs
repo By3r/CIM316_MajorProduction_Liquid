@@ -52,7 +52,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         [SerializeField] private float walkDelay = 0.4f;
         [SerializeField] private float sprintDelay = 0.4f;
 
-        protected TacticalWeaponSettings _weaponSettings;
+        protected WeaponAnimationData _weaponSettings;
 
         protected List<TacticalShooterWeapon> _weapons;
         protected int _activeWeaponIndex;
@@ -437,7 +437,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             weaponTransform.localPosition = Vector3.zero;
             weaponTransform.localRotation = Quaternion.identity;
 
-            _weaponSettings = GetActiveWeapon().tacWeaponSettings;
+            _weaponSettings = GetActiveWeapon().animationData;
             _tacProceduralAnimation.UpdateAnimationSettings(_weaponSettings);
 
             GetActiveWeapon().Draw(playDraw, true, playDraw ? 0.03f : -1f);
@@ -575,7 +575,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             GetPrimaryWeapon().OnAiming(_isAiming);
             _tacProceduralAnimation.PlayIkMotion(aimIkMotion);
 
-            float aimFov = GetPrimaryWeapon().tacWeaponSettings.aimFov;
+            float aimFov = GetPrimaryWeapon().animationData.aimFov;
             fpsCamera.SetTargetFOV(_isAiming ? aimFov : fpsCamera.BaseFOV, 6f);
         }
 

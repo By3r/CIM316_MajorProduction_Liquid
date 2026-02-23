@@ -7,8 +7,8 @@ using UnityEditor;
 
 namespace KINEMATION.TacticalShooterPack.Scripts.Editor
 {
-    [CustomEditor(typeof(TacticalWeaponSettings)), CanEditMultipleObjects]
-    public class TacticalWeaponSettingsEditor : UnityEditor.Editor
+    [CustomEditor(typeof(WeaponAnimationData)), CanEditMultipleObjects]
+    public class WeaponAnimationDataEditor : UnityEditor.Editor
     {
         private TabInspectorWidget _tabInspectorWidget;
 

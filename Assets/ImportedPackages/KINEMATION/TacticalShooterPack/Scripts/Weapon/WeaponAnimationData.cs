@@ -21,7 +21,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
     }
     
     [CreateAssetMenu(fileName = "NewTacWeaponSettings", menuName = TacShooterUtility.TacAssetMenuPath + "Weapon Settings")]
-    public class TacticalWeaponSettings : ScriptableObject
+    public class WeaponAnimationData : ScriptableObject
     {
         public string weaponName = string.Empty;
         [Tab("Animation")]

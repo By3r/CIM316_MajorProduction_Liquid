@@ -295,9 +295,9 @@ namespace _Scripts.Systems.DebugConsole.Commands
                     sb.AppendLine($"  IsFiring: {activeWeapon.IsFiring}  FireMode: {activeWeapon.FireMode}  IsOneHanded: {activeWeapon.IsOneHanded}");
                     sb.AppendLine($"  Weapon root: \"{activeWeapon.GetWeaponRoot()?.name ?? "NULL"}\"");
 
-                    var settings = activeWeapon.tacWeaponSettings;
-                    CheckDetail(sb, "  TacticalWeaponSettings", settings != null, ref pass, ref fail,
-                        failHint: "Weapon has no TacticalWeaponSettings assigned. Recoil/ADS/animations won't work.");
+                    var settings = activeWeapon.animationData;
+                    CheckDetail(sb, "  WeaponAnimationData", settings != null, ref pass, ref fail,
+                        failHint: "Weapon has no WeaponAnimationData assigned. Recoil/ADS/animations won't work.");
                     if (settings != null)
                     {
                         sb.AppendLine($"  AimFOV: {settings.aimFov:F1}  AimSpeed: {settings.aimingSpeed:F1}  OneHanded: {settings.isOneHanded}");

@@ -888,17 +888,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 19112928051f12c46ad59426c939ba1c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Weapon.WeaponHitDetector
-  maxRange: 100
   hitLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  baseDamage: 25
-  shotgunPelletCount: 8
-  shotgunSpreadAngle: 5
-  bulletTrailPrefab: {fileID: 4173135513872233592, guid: 8d436f2ff421ab04a91d8b59cc766c82, type: 3}
-  trailSpeed: 200
-  hitImpactPrefab: {fileID: 0}
-  gunshotNoiseLevel: 2
   showDebugRays: 0
 --- !u!1 &71571944
 GameObject:

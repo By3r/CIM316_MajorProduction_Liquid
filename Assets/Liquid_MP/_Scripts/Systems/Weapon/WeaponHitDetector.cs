@@ -8,8 +8,8 @@ namespace _Scripts.Systems.Weapon
 {
     /// <summary>
     /// Raycasts from the camera on every weapon fire event and applies damage
-    /// to anything implementing IDamageable. Also spawns bullet trails and
-    /// emits gunshot noise for enemy awareness.
+    /// to anything implementing IDamageable. Reads all stats (damage, range,
+    /// pellet count, trail, noise) from the weapon's <see cref="WeaponCombatData"/>.
     ///
     /// Attach to the same GameObject as TacticalShooterPlayer.
     /// </summary>
@@ -18,36 +18,8 @@ namespace _Scripts.Systems.Weapon
     {
         #region Settings
 
-        [Header("Raycast")]
-        [Tooltip("Maximum distance a bullet can travel.")]
-        [SerializeField] private float maxRange = 100f;
-
         [Tooltip("Layers the raycast can hit (enemies, environment, etc). Exclude the player layer.")]
         [SerializeField] private LayerMask hitLayers = ~0;
-
-        [Header("Damage")]
-        [Tooltip("Base damage per shot (full damage for rifles, split across pellets for shotguns).")]
-        [SerializeField] private float baseDamage = 25f;
-
-        [Header("Shotgun")]
-        [Tooltip("Number of pellets per shotgun blast.")]
-        [SerializeField] private int shotgunPelletCount = 8;
-
-        [Tooltip("Maximum spread angle in degrees for each pellet.")]
-        [SerializeField] private float shotgunSpreadAngle = 5f;
-
-        [Header("Visual Feedback")]
-        [Tooltip("Prefab with a BulletTrailMover + TrailRenderer. Leave empty to skip trails.")]
-        [SerializeField] private GameObject bulletTrailPrefab;
-
-        [SerializeField] private float trailSpeed = 200f;
-
-        [Tooltip("Optional VFX spawned when hitting a non-damageable surface (sparks, dust).")]
-        [SerializeField] private GameObject hitImpactPrefab;
-
-        [Header("Noise")]
-        [Tooltip("Noise level emitted on each shot for enemy awareness.")]
-        [SerializeField] private NoiseLevel gunshotNoiseLevel = NoiseLevel.High;
 
         [Header("Debug")]
         [SerializeField] private bool showDebugRays;
@@ -70,7 +42,6 @@ namespace _Scripts.Systems.Weapon
 
         private void Start()
         {
-            // Cache the camera used for aiming. FPSCameraAnimator drives its rotation.
             _camera = Camera.main;
 
             if (_camera == null)
@@ -105,77 +76,79 @@ namespace _Scripts.Systems.Weapon
             if (_camera == null) return;
 
             TacticalShooterWeapon weapon = _player.GetPrimaryWeapon();
-            bool isShotgun = weapon is TacticalShotgun;
+            WeaponCombatData data = weapon.combatData;
 
-            if (isShotgun)
+            if (data == null)
             {
-                FireShotgunRaycasts(weapon);
+                Debug.LogWarning($"[WeaponHitDetector] {weapon.name} has no WeaponCombatData assigned.");
+                return;
             }
+
+            if (data.pelletCount > 1)
+                FireMultiPellet(weapon, data);
             else
-            {
-                FireSingleRaycast(weapon);
-            }
+                FireSingleRaycast(weapon, data);
 
-            EmitGunshotNoise(weapon);
+            EmitGunshotNoise(weapon, data);
         }
 
-        private void FireSingleRaycast(TacticalShooterWeapon weapon)
+        private void FireSingleRaycast(TacticalShooterWeapon weapon, WeaponCombatData data)
         {
             Ray ray = new Ray(_camera.transform.position, _camera.transform.forward);
             Vector3 endPoint;
 
-            if (Physics.Raycast(ray, out RaycastHit hit, maxRange, hitLayers,
+            if (Physics.Raycast(ray, out RaycastHit hit, data.range, hitLayers,
                     QueryTriggerInteraction.Ignore))
             {
                 endPoint = hit.point;
-                ProcessHit(hit, baseDamage);
+                ProcessHit(hit, data.damage, data);
 
                 if (showDebugRays)
                     Debug.DrawLine(ray.origin, hit.point, Color.red, 1f);
             }
             else
             {
-                endPoint = ray.origin + ray.direction * maxRange;
+                endPoint = ray.origin + ray.direction * data.range;
 
                 if (showDebugRays)
-                    Debug.DrawRay(ray.origin, ray.direction * maxRange, Color.yellow, 1f);
+                    Debug.DrawRay(ray.origin, ray.direction * data.range, Color.yellow, 1f);
             }
 
-            SpawnTrail(weapon.GetMuzzlePosition(), endPoint);
+            SpawnTrail(weapon.GetMuzzlePosition(), endPoint, data);
         }
 
-        private void FireShotgunRaycasts(TacticalShooterWeapon weapon)
+        private void FireMultiPellet(TacticalShooterWeapon weapon, WeaponCombatData data)
         {
-            float damagePerPellet = baseDamage / shotgunPelletCount;
+            float damagePerPellet = data.damage / data.pelletCount;
             Vector3 muzzle = weapon.GetMuzzlePosition();
 
-            for (int i = 0; i < shotgunPelletCount; i++)
+            for (int i = 0; i < data.pelletCount; i++)
             {
-                Vector2 spread = Random.insideUnitCircle * shotgunSpreadAngle;
+                Vector2 spread = Random.insideUnitCircle * data.spreadAngle;
                 Vector3 direction = Quaternion.Euler(spread.x, spread.y, 0f)
                                     * _camera.transform.forward;
 
                 Ray ray = new Ray(_camera.transform.position, direction);
                 Vector3 endPoint;
 
-                if (Physics.Raycast(ray, out RaycastHit hit, maxRange, hitLayers,
+                if (Physics.Raycast(ray, out RaycastHit hit, data.range, hitLayers,
                         QueryTriggerInteraction.Ignore))
                 {
                     endPoint = hit.point;
-                    ProcessHit(hit, damagePerPellet);
+                    ProcessHit(hit, damagePerPellet, data);
 
                     if (showDebugRays)
                         Debug.DrawLine(ray.origin, hit.point, Color.red, 1f);
                 }
                 else
                 {
-                    endPoint = ray.origin + direction * maxRange;
+                    endPoint = ray.origin + direction * data.range;
 
                     if (showDebugRays)
-                        Debug.DrawRay(ray.origin, direction * maxRange, Color.yellow, 1f);
+                        Debug.DrawRay(ray.origin, direction * data.range, Color.yellow, 1f);
                 }
 
-                SpawnTrail(muzzle, endPoint);
+                SpawnTrail(muzzle, endPoint, data);
             }
         }
 
@@ -183,7 +156,7 @@ namespace _Scripts.Systems.Weapon
 
         #region Hit Processing
 
-        private void ProcessHit(RaycastHit hit, float damage)
+        private void ProcessHit(RaycastHit hit, float damage, WeaponCombatData data)
         {
             IDamageable damageable = hit.collider.GetComponentInParent<IDamageable>();
 
@@ -200,10 +173,13 @@ namespace _Scripts.Systems.Weapon
 
                 damageable.TakeDamage(info);
             }
-            else if (hitImpactPrefab != null)
+            else if (data.impactEffectPrefab != null)
             {
-                // Spawn impact VFX on non-damageable surfaces (walls, floors, etc.)
-                Instantiate(hitImpactPrefab, hit.point, Quaternion.LookRotation(hit.normal));
+                GameObject fx = Instantiate(data.impactEffectPrefab, hit.point,
+                    Quaternion.LookRotation(hit.normal));
+
+                if (data.impactEffectLifetime > 0f)
+                    Destroy(fx, data.impactEffectLifetime);
             }
         }
 
@@ -211,16 +187,16 @@ namespace _Scripts.Systems.Weapon
 
         #region Visual Feedback
 
-        private void SpawnTrail(Vector3 start, Vector3 end)
+        private void SpawnTrail(Vector3 start, Vector3 end, WeaponCombatData data)
         {
-            if (bulletTrailPrefab == null) return;
+            if (data.trailPrefab == null) return;
 
-            GameObject trail = Instantiate(bulletTrailPrefab, start, Quaternion.identity);
+            GameObject trail = Instantiate(data.trailPrefab, start, Quaternion.identity);
             BulletTrailMover mover = trail.GetComponent<BulletTrailMover>();
 
             if (mover != null)
             {
-                mover.Initialise(start, end, trailSpeed);
+                mover.Initialise(start, end, data.trailSpeed);
             }
         }
 
@@ -228,12 +204,12 @@ namespace _Scripts.Systems.Weapon
 
         #region Noise
 
-        private void EmitGunshotNoise(TacticalShooterWeapon weapon)
+        private void EmitGunshotNoise(TacticalShooterWeapon weapon, WeaponCombatData data)
         {
             if (NoiseManager.Instance == null) return;
 
             Vector3 noisePosition = weapon.GetMuzzlePosition();
-            NoiseManager.Instance.EmitNoise(noisePosition, gunshotNoiseLevel, NoiseCategory.Gunshot);
+            NoiseManager.Instance.EmitNoise(noisePosition, data.fireNoiseLevel, NoiseCategory.Gunshot);
         }
 
         #endregion
