@@ -62,6 +62,9 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         protected bool _quickDrawPistol;
         protected bool _isAiming;
 
+        /// <summary>Whether the player is currently aiming down sights.</summary>
+        public bool IsAiming => _isAiming;
+
         protected Animator _animator;
         protected bool _wantsToSprint;
 

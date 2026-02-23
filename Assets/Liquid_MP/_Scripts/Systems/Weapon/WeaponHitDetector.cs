@@ -114,7 +114,8 @@ namespace _Scripts.Systems.Weapon
                     Debug.DrawRay(ray.origin, ray.direction * data.range, Color.yellow, 1f);
             }
 
-            SpawnTrail(weapon.GetMuzzlePosition(), endPoint, data);
+            if (!_player.IsAiming)
+                SpawnTrail(weapon.GetMuzzlePosition(), endPoint, data);
         }
 
         private void FireMultiPellet(TacticalShooterWeapon weapon, WeaponCombatData data)
@@ -148,7 +149,8 @@ namespace _Scripts.Systems.Weapon
                         Debug.DrawRay(ray.origin, direction * data.range, Color.yellow, 1f);
                 }
 
-                SpawnTrail(muzzle, endPoint, data);
+                if (!_player.IsAiming)
+                    SpawnTrail(muzzle, endPoint, data);
             }
         }
 
