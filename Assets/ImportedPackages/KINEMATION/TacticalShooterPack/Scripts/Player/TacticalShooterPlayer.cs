@@ -162,6 +162,14 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             _animator = GetComponentInChildren<Animator>();
             EquipWeapon();
 
+            // Liquid: Subscribe WeaponHitDetector to each weapon's fire event.
+            var hitDetector = GetComponent<_Scripts.Systems.Weapon.WeaponHitDetector>();
+            if (hitDetector != null)
+            {
+                foreach (var weapon in _weapons)
+                    hitDetector.SubscribeToWeapon(weapon);
+            }
+
             // Liquid: Sync initial body yaw with current rotation.
             _bodyYaw = transform.eulerAngles.y;
 

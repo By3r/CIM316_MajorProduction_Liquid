@@ -26,6 +26,9 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
         public bool IsFiring => _isFiring;
         public bool IsOneHanded => tacWeaponSettings.isOneHanded;
         public float AimingSpeed => tacWeaponSettings.aimingSpeed;
+
+        /// <summary>Raised every time this weapon fires a round. Used by WeaponHitDetector for raycasting.</summary>
+        public event System.Action OnFired;
         
         public TacticalWeaponSettings tacWeaponSettings;
         [HideInInspector] public KTransform gunRightHandPose = KTransform.Identity;
@@ -250,6 +253,8 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
                 ? TacShooterUtility.Animator_Fire.hash
                 : TacShooterUtility.Animator_FireOut.hash);
 
+            OnFired?.Invoke();
+
             if (_activeAmmo == 0 || fireMode == FireMode.Semi || fireMode == FireMode.Burst && _burstsLeft == 0)
             {
                 StopFiring();
@@ -276,6 +281,13 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
             _isFiring = false;
             if(_recoilAnimation != null) _recoilAnimation.Stop();
             CancelInvoke(nameof(Fire));
+        }
+
+        /// <summary>Returns the world-space position of the muzzle (barrel end).</summary>
+        public virtual Vector3 GetMuzzlePosition()
+        {
+            if (muzzleFlash != null) return muzzleFlash.transform.position;
+            return transform.position;
         }
 
         public virtual void Reload()
