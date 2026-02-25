@@ -1,14 +1,20 @@
 namespace _Scripts.Systems.Inventory
 {
     /// <summary>
-    /// Types of physical items that occupy inventory slots.
+    /// Categories for physical items that occupy inventory or equipment slots.
+    /// Each derived InventoryItemData subclass auto-sets its type in the constructor.
     /// </summary>
     public enum PhysicalItemType
     {
-        PowerCell,      // Used to power elevator and machines
-        Grenade,        // Throwable explosive
-        ARContainer,    // Container for AR extraction
-        KeyItem,        // Quest/progression items
-        Weapon          // Weapons (ranged and melee) — managed via weapon wheel
+        Miscellaneous,      // Generic crafting materials, junk, sellable loot
+        Schematic,          // Unlocks a crafting recipe when used
+        PrimaryWeapon,      // Equippable in Primary slot only
+        SecondaryWeapon,    // Equippable in Primary or Secondary slot
+        Throwable,          // Equippable in Throwable slot (grenades, etc.)
+        Container,          // Holds resources (AR, gasoline, etc.) — can be emptied
+        PowerCell,          // Powers elevator safe room
+        SuitProcessor,      // One-time-use suit enhancement (extra slots, silent move, etc.)
+        SuitAddon,          // Equippable in Suit Add-On slot (neutronic boots, etc.)
+        KeyItem             // Quest/progression items — cannot be dropped
     }
 }

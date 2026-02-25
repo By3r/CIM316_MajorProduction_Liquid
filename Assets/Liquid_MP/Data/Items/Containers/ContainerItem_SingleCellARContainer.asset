@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6692cafe574ab914fb6e87b8c206d86e, type: 3}
+  m_Name: ContainerItem_SingleCellARContainer
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Inventory.ItemTypes.ContainerItemData
+  itemId: ContainerItem_SingleCellARContainer
+  displayName: S. Cell AR Container
+  itemType: 5
+  icon: {fileID: 0}
+  worldPrefab: {fileID: 5725912407974990886, guid: 2e20fe3f0d4cc8340959434f13ddeabf, type: 3}
+  description: Single Cell AR Container. The magnetif field doesn't allow for massive
+    collection.
+  isStackable: 0
+  maxStackSize: 1
+  contentType: 0
+  capacity: 100
+  randomizeFill: 1
+  minFillAmount: 0
+  maxFillAmount: 50
+  defaultFillAmount: 0

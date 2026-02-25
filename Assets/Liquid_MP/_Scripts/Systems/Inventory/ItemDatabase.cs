@@ -32,7 +32,17 @@ namespace _Scripts.Systems.Inventory
         }
 
         /// <summary>
-        /// Returns all loaded InventoryItemData assets.
+        /// Finds an item by itemId and casts it to the expected derived type.
+        /// Returns null if not found or if the item is not of the expected type.
+        /// Usage: ItemDatabase.FindByItemId&lt;WeaponItemData&gt;("weapon_rifle")
+        /// </summary>
+        public static T FindByItemId<T>(string itemId) where T : InventoryItemData
+        {
+            return FindByItemId(itemId) as T;
+        }
+
+        /// <summary>
+        /// Returns all loaded InventoryItemData assets (includes all derived types).
         /// </summary>
         public static InventoryItemData[] GetAll()
         {
