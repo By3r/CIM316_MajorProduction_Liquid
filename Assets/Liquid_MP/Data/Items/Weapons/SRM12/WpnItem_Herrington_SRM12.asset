@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: SRM12
   itemType: 2
   icon: {fileID: 0}
-  worldPrefab: {fileID: 0}
+  worldPrefab: {fileID: 6356262942742611153, guid: 0f79d1bee992290448032d30c0fc3b71, type: 3}
   description: 
   isStackable: 0
   maxStackSize: 1

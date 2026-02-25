@@ -16,7 +16,7 @@ MonoBehaviour:
   displayName: AK 105
   itemType: 2
   icon: {fileID: 0}
-  worldPrefab: {fileID: 0}
+  worldPrefab: {fileID: 6356262942742611153, guid: 266f1a91ee3372b46a6c41476a220797, type: 3}
   description: 
   isStackable: 0
   maxStackSize: 1

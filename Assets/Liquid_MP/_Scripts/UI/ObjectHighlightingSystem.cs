@@ -59,7 +59,7 @@ namespace _Scripts.UI.Interaction
         private GameObject _currentTargetObject;
         private LayerHighlightConfig _currentConfig;
         private Renderer _targetRenderer;
-        private Collider _targetCollider;
+        private Collider[] _targetColliders;
         
         private Vector2 _targetFramePosition;
         private Vector2 _targetFrameSize;
@@ -223,13 +223,17 @@ namespace _Scripts.UI.Interaction
 
             _currentTargetObject = targetObject;
             _currentConfig = config;
-            _targetRenderer = targetObject.GetComponent<Renderer>();
-            _targetCollider = targetObject.GetComponent<Collider>();
-            
-            if (_targetRenderer == null)
-                _targetRenderer = targetObject.GetComponentInChildren<Renderer>();
-            if (_targetCollider == null)
-                _targetCollider = targetObject.GetComponentInChildren<Collider>();
+            // Colliders are the primary source for highlight bounds (more accurate than mesh renderers).
+            _targetColliders = targetObject.GetComponentsInChildren<Collider>();
+
+            // Mesh renderer is the fallback if no colliders are found.
+            _targetRenderer = null;
+            if (_targetColliders.Length == 0)
+            {
+                _targetRenderer = targetObject.GetComponent<Renderer>();
+                if (_targetRenderer == null)
+                    _targetRenderer = targetObject.GetComponentInChildren<Renderer>();
+            }
             
             ApplyConfigVisuals(config);
             
@@ -264,7 +268,7 @@ namespace _Scripts.UI.Interaction
             _currentTargetObject = null;
             _currentConfig = null;
             _targetRenderer = null;
-            _targetCollider = null;
+            _targetColliders = null;
             _targetAlpha = 0f;
             _isHighlightActive = false;
             
@@ -527,11 +531,21 @@ namespace _Scripts.UI.Interaction
         
         private Bounds GetObjectBounds()
         {
+            // Primary: use colliders (combined bounds if multiple).
+            if (_targetColliders != null && _targetColliders.Length > 0)
+            {
+                Bounds combined = _targetColliders[0].bounds;
+                for (int i = 1; i < _targetColliders.Length; i++)
+                {
+                    combined.Encapsulate(_targetColliders[i].bounds);
+                }
+                return combined;
+            }
+
+            // Fallback: mesh renderer.
             if (_targetRenderer != null)
                 return _targetRenderer.bounds;
-            else if (_targetCollider != null)
-                return _targetCollider.bounds;
-            
+
             return new Bounds();
         }
         

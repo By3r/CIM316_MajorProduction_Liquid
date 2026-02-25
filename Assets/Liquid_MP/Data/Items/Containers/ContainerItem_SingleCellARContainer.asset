@@ -23,7 +23,7 @@ MonoBehaviour:
   maxStackSize: 1
   contentType: 0
   capacity: 100
-  randomizeFill: 1
+  randomizeFill: 0
   minFillAmount: 0
   maxFillAmount: 50
   defaultFillAmount: 0
