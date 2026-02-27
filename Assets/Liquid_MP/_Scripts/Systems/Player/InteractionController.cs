@@ -121,12 +121,20 @@ namespace _Scripts.Systems.Player
 
         private void FindPlayerCamera()
         {
-            var cameraTransform = transform.Find("PlayerCamera");
-            if (cameraTransform != null)
+            // Try GetComponentInChildren first (Kinemation's FPSCameraAnimator has a Camera on a child).
+            _playerCamera = GetComponentInChildren<Camera>();
+
+            // Fallback: look for the old "PlayerCamera" child name.
+            if (_playerCamera == null)
             {
-                _playerCamera = cameraTransform.GetComponent<Camera>();
+                var cameraTransform = transform.Find("PlayerCamera");
+                if (cameraTransform != null)
+                {
+                    _playerCamera = cameraTransform.GetComponent<Camera>();
+                }
             }
 
+            // Last resort: Camera.main.
             if (_playerCamera == null)
             {
                 _playerCamera = Camera.main;
@@ -532,6 +540,12 @@ namespace _Scripts.Systems.Player
         {
             _interactionDistance = Mathf.Max(0.5f, distance);
         }
+
+        // --- Diagnostic accessors for console command ---
+        public Camera DiagCamera => _playerCamera;
+        public float DiagInteractionDistance => _interactionDistance;
+        public LayerMask DiagLayerMask => _interactionLayerMask;
+
         #endregion
 
         #region Debug

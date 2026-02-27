@@ -200,7 +200,7 @@ namespace _Scripts.ProceduralGeneration.Editor
             
             EditorGUILayout.Space(3);
             EditorGUILayout.HelpBox("Doors in Liquid are always openable - no keys or button activators required.", MessageType.Info);
-            EditorGUILayout.HelpBox("Interaction is handled by the PlayerController's interact input.", MessageType.Info);
+            EditorGUILayout.HelpBox("Interaction is handled by InteractionController via InputManager.", MessageType.Info);
         }
 
         private void DrawThreatSystemSettings()

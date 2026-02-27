@@ -12,7 +12,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
 
         public override void Reload()
         {
-            if (_activeAmmo == tacWeaponSettings.ammoCapacity) return;
+            if (_activeAmmo == animationData.ammoCapacity) return;
 
             _skipFirstShell = _activeAmmo > 0;
             
@@ -20,7 +20,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
                 ? TacShooterUtility.Animator_ReloadStartEmpty.hash
                 : TacShooterUtility.Animator_ReloadStart.hash);
             
-            PlaySound(_activeAmmo == 0 ? tacWeaponSettings.reloadEmptySound : tacWeaponSettings.reloadTacSound);
+            PlaySound(_activeAmmo == 0 ? animationData.reloadEmptySound : animationData.reloadTacSound);
         }
 
         public override void ReloadWeapon()
@@ -28,11 +28,11 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
             if (!_skipFirstShell) _activeAmmo++;
             _skipFirstShell = false;
 
-            bool isFull = _activeAmmo == tacWeaponSettings.ammoCapacity;
+            bool isFull = _activeAmmo == animationData.ammoCapacity;
             PlayCharacterWeaponAnimation(isFull ? TacShooterUtility.Animator_ReloadEnd.hash 
                 : TacShooterUtility.Animator_ReloadLoop.hash);
 
-            PlaySound(isFull ? tacWeaponSettings.reloadEndSound : tacWeaponSettings.reloadLoopSound);
+            PlaySound(isFull ? animationData.reloadEndSound : animationData.reloadLoopSound);
         }
     }
 }

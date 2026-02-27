@@ -76,6 +76,10 @@ GameObject:
   - component: {fileID: 5893611696477362040}
   - component: {fileID: 5072637352279610244}
   - component: {fileID: 8758189448632286895}
+  - component: {fileID: 966522055337535403}
+  - component: {fileID: 8030081949786332447}
+  - component: {fileID: 3843075852101596190}
+  - component: {fileID: 3087533905660550491}
   m_Layer: 0
   m_Name: TacticalShooterCharacter
   m_TagString: Untagged
@@ -339,6 +343,97 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!143 &966522055337535403
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1455423802687713497}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2
+  m_Radius: 0.5
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &8030081949786332447
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1455423802687713497}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4adfa2b309a64bc88a49b541dc64fdd5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Player.MovementController
+  _walkSpeed: 5
+  _sprintSpeed: 8
+  _crouchSpeed: 2.5
+  _walkToggleSpeed: 2.5
+  _jumpForce: 5
+  _gravity: -9.81
+  _crouchHeightMultiplier: 0.5
+  _crouchTransitionDuration: 0.25
+  _groundCheck: {fileID: 0}
+  _groundDistance: 0.4
+  _groundMask:
+    serializedVersion: 2
+    m_Bits: 8
+  _enableMovementNoise: 1
+  _baseFootstepInterval: 0.5
+  _minSpeedForSteps: 0.1
+  _currentRoomNoise: {fileID: 0}
+--- !u!114 &3843075852101596190
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1455423802687713497}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 417b23102c134a83ba8571d8b294394a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Player.InteractionController
+  _interactionDistance: 3
+  _interactionLayerMask:
+    serializedVersion: 2
+    m_Bits: 64
+  _showDebugRays: 0
+  _dialogueUI: {fileID: 0}
+--- !u!114 &3087533905660550491
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1455423802687713497}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 23961a2f0e0444eaa4ae28838d049544, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Liquid.Player.Equipment.NeutronicBoots
+  _settings: {fileID: 11400000, guid: 0dc6cc5c8a562d049bc03b0f58f70e71, type: 2}
+  _playerBody: {fileID: 7853334896565686156}
+  _cameraTransform: {fileID: 5450635693962408346}
+  _characterController: {fileID: 966522055337535403}
+  _activationSlider: {fileID: 0}
+  _activationSliderCanvasGroup: {fileID: 0}
+  _ceilingAvailableIcon: {fileID: 0}
 --- !u!1 &2573736603993318102
 GameObject:
   m_ObjectHideFlags: 0
@@ -352,6 +447,7 @@ GameObject:
   - component: {fileID: 1205773325330651807}
   - component: {fileID: 8268370454609447377}
   - component: {fileID: -5129494586599605079}
+  - component: {fileID: 1251096872046910088}
   m_Layer: 0
   m_Name: FPCamera
   m_TagString: Untagged
@@ -589,6 +685,50 @@ MonoBehaviour:
       enableFptlForForwardOpaque: 0
       enableBigTilePrepass: 0
       isFptlEnabled: 0
+--- !u!114 &1251096872046910088
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2573736603993318102}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.UniversalAdditionalCameraData
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!1001 &7743410727276734567
 PrefabInstance:
   m_ObjectHideFlags: 0

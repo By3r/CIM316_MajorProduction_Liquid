@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c1bee506d801b7b4c9028dad1aa67c9b, type: 3}
+  m_Name: WpnItem_TR15
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Inventory.ItemTypes.WeaponItemData
+  itemId: WpnItem_TR15
+  displayName: TR15
+  itemType: 2
+  icon: {fileID: 0}
+  worldPrefab: {fileID: 6356262942742611153, guid: 5b39904471868224f85b7db2935e4286, type: 3}
+  description: 
+  isStackable: 0
+  maxStackSize: 1
+  weaponSlot: 0
+  weaponPrefab: {fileID: 6356262942742611153, guid: 5256d02b5d33f504fb997f0b2cf1dc2a, type: 3}
+  combatData: {fileID: 11400000, guid: 68cc21f2e105420ba12da480d0bca17b, type: 2}
+  animationData: {fileID: 11400000, guid: 9ee58ebfc3620234295466e8f8791b7c, type: 2}

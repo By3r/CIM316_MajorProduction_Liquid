@@ -83,7 +83,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
             _ikMotionPlayer.PlayIkMotion(newMotion);
         }
 
-        public void UpdateAnimationSettings(TacticalWeaponSettings newSettings)
+        public void UpdateAnimationSettings(WeaponAnimationData newSettings)
         {
             _job._weaponSettings = newSettings;
             _playable.SetJobData(_job);

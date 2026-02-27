@@ -7,9 +7,10 @@ namespace _Scripts.Systems.Player
 {
     /// <summary>
     /// Handles player movement including walking, sprinting, crouching, jumping, and gravity.
-    /// Manages the CharacterController and calculates movement based on input and player settings.
-    /// Exposes movement state properties for other systems (camera effects, animations, etc.).
+    /// Manages the CharacterController and calculates movement based on input from InputManager.
+    /// Exposes movement state properties for TacticalShooterPlayer (animation gait), noise, etc.
     /// Integrates with Neutronic Boots for ceiling walking physics override.
+    /// Self-initializes in Awake() — no external initialization needed.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public class MovementController : MonoBehaviour
@@ -17,7 +18,6 @@ namespace _Scripts.Systems.Player
         #region Private Fields
 
         private CharacterController _characterController;
-        private PlayerSettings _settings;
 
         private Vector2 _moveInput;
         private Vector3 _velocity;
@@ -89,22 +89,56 @@ namespace _Scripts.Systems.Player
 
         #region Initialization
 
-        public void Initialize(PlayerSettings settings)
+        private void Awake()
         {
-            _settings = settings;
             _characterController = GetComponent<CharacterController>();
             _neutronicBoots = GetComponent<Liquid.Player.Equipment.NeutronicBoots>();
             _originalHeight = _characterController.height;
             _originalCenter = _characterController.center;
+
+            // Auto-find or create GroundCheck if not assigned in Inspector.
+            if (_groundCheck == null)
+            {
+                Transform existing = transform.Find("GroundCheck");
+                if (existing != null)
+                {
+                    _groundCheck = existing;
+                }
+                else
+                {
+                    var go = new GameObject("GroundCheck");
+                    go.transform.SetParent(transform);
+                    go.transform.localPosition = new Vector3(0f, -_characterController.height / 2f + _characterController.center.y, 0f);
+                    _groundCheck = go.transform;
+                    Debug.Log($"[MovementController] Created GroundCheck at local Y={go.transform.localPosition.y:F2}");
+                }
+            }
+
+            // Auto-set ground mask if nothing assigned (default to everything except Ignore Raycast).
+            if (_groundMask == 0)
+            {
+                _groundMask = ~LayerMask.GetMask("Ignore Raycast");
+                Debug.Log("[MovementController] Ground mask was empty — set to ~IgnoreRaycast.");
+            }
         }
 
         #endregion
 
         #region Movement Handling
 
-        public void HandleMovement()
+        /// <summary>
+        /// Self-driven movement update. Reads input from InputManager, applies CharacterController physics.
+        /// TacticalShooterPlayer reads our state properties (IsSprinting, IsGrounded, etc.) for animation gait.
+        /// </summary>
+        private void Update()
         {
-            if (_settings == null || InputManager.Instance == null) return;
+            if (InputManager.Instance == null) return;
+            HandleMovement();
+        }
+
+        private void HandleMovement()
+        {
+            if (InputManager.Instance == null) return;
 
             if (_neutronicBoots != null && _neutronicBoots.ShouldOverrideMovement)
             {

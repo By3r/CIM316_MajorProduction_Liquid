@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Liquid.Damage;
 using UnityEngine;
 
 /// <summary>
@@ -7,7 +8,7 @@ using UnityEngine;
 /// Uses CharacterController for physics-based movement (wall collision, gravity).
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
-public abstract class EnemyBase : MonoBehaviour
+public abstract class EnemyBase : MonoBehaviour, IDamageable
 {
     #region Variables
     [Header("Stats")]
@@ -68,6 +69,7 @@ public abstract class EnemyBase : MonoBehaviour
     private const float PathRequestCooldown = 0.25f;
 
     public EnemyState CurrentState => currentState;
+    public bool IsDead => isDead;
     public bool DebugHasValidPath => HasValidPath;
     #endregion
 
@@ -153,6 +155,21 @@ public abstract class EnemyBase : MonoBehaviour
     }
 
     protected virtual void OnDamaged(float amount) { }
+
+    /// <summary>
+    /// IDamageable implementation. Delegates to the existing TakeDamage(float) flow
+    /// and provides the full DamageInfo to subclasses via OnDamagedDetailed.
+    /// </summary>
+    public void TakeDamage(DamageInfo damageInfo)
+    {
+        TakeDamage(damageInfo.Amount);
+        OnDamagedDetailed(damageInfo);
+    }
+
+    /// <summary>
+    /// Override in subclasses that need hit position, instigator, or damage type info.
+    /// </summary>
+    protected virtual void OnDamagedDetailed(DamageInfo damageInfo) { }
 
     protected virtual void Die()
     {

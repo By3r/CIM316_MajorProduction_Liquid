@@ -121,7 +121,6 @@ namespace _Scripts.Systems.ProceduralGeneration
         {
             if (_isRegistered)
             {
-                Debug.LogWarning($"[BoundsChecker] Room '{gameObject.name}' is already registered!");
                 return;
             }
 

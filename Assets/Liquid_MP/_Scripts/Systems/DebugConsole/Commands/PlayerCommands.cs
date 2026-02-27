@@ -71,8 +71,8 @@ namespace _Scripts.Systems.DebugConsole.Commands
             if (PlayerManager.Instance == null || PlayerManager.Instance.CurrentPlayer == null)
                 return "<color=red>Player not found.</color>";
 
-            var player = PlayerManager.Instance.CurrentPlayer;
-            var characterController = player.GetComponent<CharacterController>();
+            var playerObj = PlayerManager.Instance.CurrentPlayer;
+            var characterController = playerObj.GetComponent<CharacterController>();
 
             if (args[0].ToLower() == "elevator" || args[0].ToLower() == "saferoom")
             {
@@ -81,7 +81,7 @@ namespace _Scripts.Systems.DebugConsole.Commands
                 if (elevator != null)
                 {
                     Vector3 target = elevator.transform.position + Vector3.up * 1f;
-                    TeleportPlayer(player, characterController, target);
+                    TeleportPlayer(playerObj, characterController, target);
                     return $"<color=green>Teleported to elevator at ({target.x:F1}, {target.y:F1}, {target.z:F1})</color>";
                 }
 
@@ -90,7 +90,7 @@ namespace _Scripts.Systems.DebugConsole.Commands
                 if (entryRoom != null)
                 {
                     Vector3 target = entryRoom.transform.position + Vector3.up * 1f;
-                    TeleportPlayer(player, characterController, target);
+                    TeleportPlayer(playerObj, characterController, target);
                     return $"<color=green>Teleported to entry room at ({target.x:F1}, {target.y:F1}, {target.z:F1})</color>";
                 }
 
@@ -109,11 +109,11 @@ namespace _Scripts.Systems.DebugConsole.Commands
             }
 
             Vector3 pos = new Vector3(x, y, z);
-            TeleportPlayer(player, characterController, pos);
+            TeleportPlayer(playerObj, characterController, pos);
             return $"<color=green>Teleported to ({x:F1}, {y:F1}, {z:F1})</color>";
         }
 
-        private static void TeleportPlayer(Component player, CharacterController cc, Vector3 position)
+        private static void TeleportPlayer(GameObject player, CharacterController cc, Vector3 position)
         {
             // Disable CharacterController to allow position change
             bool wasEnabled = cc != null && cc.enabled;

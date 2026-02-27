@@ -24,10 +24,17 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
     {
         public FireMode FireMode => fireMode;
         public bool IsFiring => _isFiring;
-        public bool IsOneHanded => tacWeaponSettings.isOneHanded;
-        public float AimingSpeed => tacWeaponSettings.aimingSpeed;
+        public bool IsOneHanded => animationData.isOneHanded;
+        public float AimingSpeed => animationData.aimingSpeed;
+
+        /// <summary>Raised every time this weapon fires a round. Used by WeaponHitDetector for raycasting.</summary>
+        public event System.Action OnFired;
         
-        public TacticalWeaponSettings tacWeaponSettings;
+        public WeaponAnimationData animationData;
+
+        [Header("Liquid Gameplay")]
+        public _Scripts.Systems.Weapon.WeaponCombatData combatData;
+
         [HideInInspector] public KTransform gunRightHandPose = KTransform.Identity;
         
         [SerializeField] protected Transform aimPoint;
@@ -98,7 +105,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
 
         protected void ProcessAnimationClips()
         {
-            var clips = tacWeaponSettings.characterAnimatorController.animationClips;
+            var clips = animationData.characterAnimatorController.animationClips;
             foreach (var clip in clips)
             {
                 if (_idlePose == null && clip.name.Contains(TacShooterUtility.Animator_Idle.name))
@@ -133,13 +140,13 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
             _fpsCamera = owner.transform.root.GetComponentInChildren<FPSCameraAnimator>();
 
             _weaponAnimator = transform.GetComponentInChildren<Animator>();
-            _activeAmmo = tacWeaponSettings.ammoCapacity;
-            _burstsLeft = tacWeaponSettings.burstRounds - 1;
+            _activeAmmo = animationData.ammoCapacity;
+            _burstsLeft = animationData.burstRounds - 1;
 
             _audioSource = owner.GetComponentInChildren<AudioSource>();
             
             ProcessAnimationClips();
-            if (_idlePose == null || !tacWeaponSettings.isOneHanded) return;
+            if (_idlePose == null || !animationData.isOneHanded) return;
             
             _idlePose.SampleAnimation(_characterAnimator.gameObject, 0f);
             gunRightHandPose = new KTransform(rightHand).GetRelativeTransform(new KTransform(transform), false);
@@ -164,28 +171,28 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
         public virtual float Draw(bool playAnimation, bool updateController = true, float visibilityDelay = -1f)
         {
             if (visibilityDelay > 0f) Invoke(nameof(RestoreWeaponVisibility), visibilityDelay);
-            if (_recoilAnimation != null) _recoilAnimation.Init(tacWeaponSettings.recoilData, 
-                tacWeaponSettings.fireRate, fireMode);
+            if (_recoilAnimation != null) _recoilAnimation.Init(animationData.recoilData, 
+                animationData.fireRate, fireMode);
 
             if (updateController)
             {
-                _characterAnimator.runtimeAnimatorController = tacWeaponSettings.characterAnimatorController;
-                _weaponAnimator.runtimeAnimatorController = tacWeaponSettings.weaponAnimatorController;
+                _characterAnimator.runtimeAnimatorController = animationData.characterAnimatorController;
+                _weaponAnimator.runtimeAnimatorController = animationData.weaponAnimatorController;
             }
             
             if (!playAnimation) return 0f;
             
-            _characterAnimator.SetFloat(TacShooterUtility.Animator_DrawSpeed.hash, tacWeaponSettings.drawSpeed);
+            _characterAnimator.SetFloat(TacShooterUtility.Animator_DrawSpeed.hash, animationData.drawSpeed);
             
             if (_activeAmmo == 0)
             {
-                PlaySound(tacWeaponSettings.quickDrawSound);
+                PlaySound(animationData.quickDrawSound);
                 PlayCharacterWeaponAnimation(TacShooterUtility.Animator_QuickDraw.hash, 0.25f);
                 _weaponAnimator.Play(TacShooterUtility.Animator_FireOut.hash, -1, 0f);
             }
             else
             {
-                PlaySound(tacWeaponSettings.drawSound);
+                PlaySound(animationData.drawSound);
                 PlayCharacterWeaponAnimation(TacShooterUtility.Animator_Draw.hash, 0.25f);
             }
             
@@ -201,7 +208,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
                 PlayCharacterWeaponAnimation(_activeAmmo == 0
                     ? TacShooterUtility.Animator_QuickHolster.hash
                     : TacShooterUtility.Animator_Holster.hash);
-                PlaySound(_activeAmmo == 0 ? tacWeaponSettings.quickHolsterSound : tacWeaponSettings.holsterSound);
+                PlaySound(_activeAmmo == 0 ? animationData.quickHolsterSound : animationData.holsterSound);
                 
                 delay = _activeAmmo == 0 && _quickHolster != null ? _quickHolster.length : _holster.length;
             }
@@ -213,13 +220,13 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
         public virtual void Inspect()
         {
             PlayCharacterWeaponAnimation(TacShooterUtility.Animator_Inspect.hash);
-            PlaySound(tacWeaponSettings.inspectSound);
+            PlaySound(animationData.inspectSound);
         }
 
         public virtual void DoMagCheck()
         {
             PlayCharacterWeaponAnimation(TacShooterUtility.Animator_MagCheck.hash);
-            PlaySound(tacWeaponSettings.magCheckSound);
+            PlaySound(animationData.magCheckSound);
         }
 
         public virtual void ToggleAttachment()
@@ -230,8 +237,8 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
                 : TacShooterUtility.Animator_StowAttachment.hash);
             
             PlaySound(isAttachmentDeployed
-                ? tacWeaponSettings.deployAttachmentSound
-                : tacWeaponSettings.stowAttachmentSound);
+                ? animationData.deployAttachmentSound
+                : animationData.stowAttachmentSound);
         }
 
         protected virtual void Fire()
@@ -242,13 +249,15 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
             if (muzzleFlashSuppressed != null && isSuppressed) muzzleFlashSuppressed.Play();
             
             if(_recoilAnimation != null) _recoilAnimation.Play();
-            if(_fpsCamera != null) _fpsCamera.PlayCameraShake(tacWeaponSettings.recoilShake);
+            if(_fpsCamera != null) _fpsCamera.PlayCameraShake(animationData.recoilShake);
             PlayFireSound();
 
             _activeAmmo--;
             PlayCharacterWeaponAnimation(_activeAmmo > 0
                 ? TacShooterUtility.Animator_Fire.hash
                 : TacShooterUtility.Animator_FireOut.hash);
+
+            OnFired?.Invoke();
 
             if (_activeAmmo == 0 || fireMode == FireMode.Semi || fireMode == FireMode.Burst && _burstsLeft == 0)
             {
@@ -257,16 +266,16 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
             }
             
             if (fireMode == FireMode.Burst) _burstsLeft--;
-            Invoke(nameof(Fire), 60f / tacWeaponSettings.fireRate);
+            Invoke(nameof(Fire), 60f / animationData.fireRate);
         }
 
         public virtual void StartFiring()
         {
             if (_activeAmmo == 0) return;
-            if (Time.time - _lastShotTime < 60f / tacWeaponSettings.fireRate) return;
+            if (Time.time - _lastShotTime < 60f / animationData.fireRate) return;
             
             _isFiring = true;
-            if (fireMode == FireMode.Burst) _burstsLeft = tacWeaponSettings.burstRounds - 1;
+            if (fireMode == FireMode.Burst) _burstsLeft = animationData.burstRounds - 1;
             
             Fire();
         }
@@ -278,15 +287,22 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
             CancelInvoke(nameof(Fire));
         }
 
+        /// <summary>Returns the world-space position of the muzzle (barrel end).</summary>
+        public virtual Vector3 GetMuzzlePosition()
+        {
+            if (muzzleFlash != null) return muzzleFlash.transform.position;
+            return transform.position;
+        }
+
         public virtual void Reload()
         {
-            if (_activeAmmo == tacWeaponSettings.ammoCapacity) return;
+            if (_activeAmmo == animationData.ammoCapacity) return;
             
             PlayCharacterWeaponAnimation(_activeAmmo == 0
                 ? TacShooterUtility.Animator_ReloadEmpty.hash
                 : TacShooterUtility.Animator_ReloadTac.hash);
             
-            PlaySound(_activeAmmo == 0 ? tacWeaponSettings.reloadEmptySound : tacWeaponSettings.reloadTacSound);
+            PlaySound(_activeAmmo == 0 ? animationData.reloadEmptySound : animationData.reloadTacSound);
         }
 
         public virtual void ChangeFireMode()
@@ -295,35 +311,35 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
             
             if (fireMode == FireMode.Semi)
             {
-                fireMode = tacWeaponSettings.burstRounds > 0 ? FireMode.Burst :
-                    tacWeaponSettings.supportsFullAuto ? FireMode.Auto : FireMode.Semi;
+                fireMode = animationData.burstRounds > 0 ? FireMode.Burst :
+                    animationData.supportsFullAuto ? FireMode.Auto : FireMode.Semi;
             }
             else if (fireMode == FireMode.Burst)
             {
-                fireMode = tacWeaponSettings.supportsFullAuto ? FireMode.Auto : FireMode.Semi;
+                fireMode = animationData.supportsFullAuto ? FireMode.Auto : FireMode.Semi;
             }
             else
             {
                 fireMode = FireMode.Semi;
             }
 
-            if(prevFireMode != fireMode) PlaySound(tacWeaponSettings.fireModeSwitchSound);
+            if(prevFireMode != fireMode) PlaySound(animationData.fireModeSwitchSound);
         }
 
         public virtual void ReloadWeapon()
         {
-            _activeAmmo = tacWeaponSettings.ammoCapacity;
+            _activeAmmo = animationData.ammoCapacity;
         }
 
         public virtual void OnAiming(bool isAiming)
         {
             if (_recoilAnimation != null) _recoilAnimation.isAiming = isAiming;
-            PlaySound(isAiming ? tacWeaponSettings.aimInSound : tacWeaponSettings.aimOutSound);
+            PlaySound(isAiming ? animationData.aimInSound : animationData.aimOutSound);
         }
         
         public override string GetWeaponName()
         {
-            return tacWeaponSettings.weaponName;
+            return animationData.weaponName;
         }
 
         public override int GetActiveAmmo()
@@ -333,7 +349,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
 
         public override int GetMaxAmmo()
         {
-            return tacWeaponSettings.ammoCapacity;
+            return animationData.ammoCapacity;
         }
 
         public override FireMode GetFireMode()
@@ -371,15 +387,15 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
         protected void PlayFireSound()
         {
             var sounds = isSuppressed
-                ? tacWeaponSettings.suppressedFireSounds
-                : tacWeaponSettings.fireSounds;
+                ? animationData.suppressedFireSounds
+                : animationData.fireSounds;
             
-            if (tacWeaponSettings.fireSounds.Count == 0) return;
+            if (animationData.fireSounds.Count == 0) return;
             
             int index = Random.Range(0, sounds.Count - 1);
             AudioClip audioClip = sounds[index];
-            float pitch = Random.Range(tacWeaponSettings.firePitchRange.x, tacWeaponSettings.firePitchRange.y);
-            float volume = Random.Range(tacWeaponSettings.fireVolumeRange.x, tacWeaponSettings.fireVolumeRange.y);
+            float pitch = Random.Range(animationData.firePitchRange.x, animationData.firePitchRange.y);
+            float volume = Random.Range(animationData.fireVolumeRange.x, animationData.fireVolumeRange.y);
             PlaySound(audioClip, pitch, volume);
         }
         

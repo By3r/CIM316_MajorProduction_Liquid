@@ -4,16 +4,19 @@ using UnityEngine;
 namespace _Scripts.Systems.Inventory
 {
     /// <summary>
-    /// Base data for physical inventory items that occupy slots.
+    /// Base data for all physical inventory items.
+    /// Items with no extra fields (Miscellaneous, PowerCell, KeyItem) use this class directly.
+    /// Items that need specialised data (weapons, schematics, containers, etc.) derive from this.
     /// </summary>
-    [CreateAssetMenu(menuName = "Liquid/Inventory/Item Data", fileName = "NewInventoryItem")]
+    [CreateAssetMenu(menuName = "Liquid/Items/Basic Item", fileName = "NewItem")]
     public class InventoryItemData : ScriptableObject
     {
         [Header("Item Info")]
         [Tooltip("Unique identifier used for persistence. Auto-generates from displayName if left empty.")]
         public string itemId;
         public string displayName;
-        public PhysicalItemType itemType;
+
+        [HideInInspector] public PhysicalItemType itemType;
 
         [Header("Visuals")]
         public Sprite icon;
@@ -34,7 +37,7 @@ namespace _Scripts.Systems.Inventory
         /// Failsafe: auto-generates itemId from displayName if left empty.
         /// Called on asset load to ensure every item always has an ID for persistence.
         /// </summary>
-        private void OnEnable()
+        protected virtual void OnEnable()
         {
             if (string.IsNullOrEmpty(itemId) && !string.IsNullOrEmpty(displayName))
             {
@@ -47,7 +50,7 @@ namespace _Scripts.Systems.Inventory
         /// Converts a display name to a snake_case ID.
         /// "Power Cell" → "power_cell", "AGEU Supply Crate" → "ageu_supply_crate"
         /// </summary>
-        private static string GenerateIdFromName(string displayName)
+        protected static string GenerateIdFromName(string displayName)
         {
             string id = displayName.Trim().ToLowerInvariant();
             id = Regex.Replace(id, @"[^a-z0-9]+", "_");
@@ -59,7 +62,7 @@ namespace _Scripts.Systems.Inventory
         /// <summary>
         /// Editor validation: warns if itemId is empty when the asset is modified.
         /// </summary>
-        private void OnValidate()
+        protected virtual void OnValidate()
         {
             if (string.IsNullOrEmpty(itemId) && !string.IsNullOrEmpty(displayName))
             {

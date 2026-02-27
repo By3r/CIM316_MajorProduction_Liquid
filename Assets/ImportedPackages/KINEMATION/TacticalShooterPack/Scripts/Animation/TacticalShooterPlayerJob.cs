@@ -57,7 +57,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
     
     public struct TacticalShooterPlayerJob : IAnimationJob
     {
-        public TacticalWeaponSettings _weaponSettings;
+        public WeaponAnimationData _weaponSettings;
         // Cached pose of the ik_hand_gun relative to the right hand.
         public KTransform cachedIkHandGunRight;
         public KTransform aimPointTransform;

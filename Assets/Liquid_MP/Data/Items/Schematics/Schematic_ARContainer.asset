@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 935e5fa05734606469b8193ebfb920a3, type: 3}
+  m_Name: Schematic_ARContainer
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Inventory.SchematicSO
+  schematicId: Schematic_ARContainer
+  category: Container
+  ingredients:
+  - item: {fileID: 11400000, guid: 065008d6bda8a864e864c510240c4c55, type: 2}
+    quantity: 2
+  - item: {fileID: 11400000, guid: 52f09fedc2712bf4e88de0e947b2da75, type: 2}
+    quantity: 1
+  outputItem: {fileID: 11400000, guid: 000707c64e5e36c47a17e5f2cddb8635, type: 2}
+  outputQuantity: 1

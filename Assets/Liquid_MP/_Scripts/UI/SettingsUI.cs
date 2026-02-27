@@ -1,6 +1,7 @@
 using _Scripts.Core;
 using _Scripts.Core.Managers;
 using _Scripts.Systems.Player;
+using KINEMATION.TacticalShooterPack.Scripts.Player;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,7 +11,7 @@ namespace _Scripts.UI
     /// <summary>
     /// Manages the settings UI including camera sensitivity, FOV, and visual effect toggles.
     /// Uses temporary settings that can be applied or discarded without affecting the live game.
-    /// Communicates with PlayerController to apply changes in real-time.
+    /// Applies settings to TacticalShooterPlayer (sensitivity, FOV).
     /// </summary>
     public class SettingsUI : MonoBehaviour
     {
@@ -23,7 +24,7 @@ namespace _Scripts.UI
         [SerializeField] private TextMeshProUGUI _fovText;
         [SerializeField] private Toggle _invertYToggle;
         // **FIX**: Renamed the toggle for clarity. This should be linked to your UI toggle in the Inspector.
-        [SerializeField] private Toggle _antiMotionSicknessModeToggle; 
+        [SerializeField] private Toggle _antiMotionSicknessModeToggle;
 
         [Header("Buttons")]
         [SerializeField] private Button _applyButton;
@@ -35,7 +36,6 @@ namespace _Scripts.UI
         #region Private Fields
 
         private PlayerSettings _temporarySettings;
-        private PlayerController _playerController;
 
         #endregion
 
@@ -113,26 +113,29 @@ namespace _Scripts.UI
 
         private void OnApplyClicked()
         {
-            // Re-acquire player controller reference
-            if (PlayerManager.Instance != null && PlayerManager.Instance.CurrentPlayer != null)
-            {
-                _playerController = PlayerManager.Instance.CurrentPlayer;
-            }
-            else
-            {
-                _playerController = null;
-            }
-
             // Copy temporary settings to live settings
             PlayerSettingsManager.Instance.CurrentSettings.CopyFrom(_temporarySettings);
 
             // Save settings to disk
             PlayerSettingsManager.Instance.SaveSettings();
 
-            // Refresh active player components
-            if (_playerController != null)
+            // Apply settings to the active Kinemation player
+            if (PlayerManager.Instance != null && PlayerManager.Instance.CurrentPlayer != null)
             {
-                _playerController.OnSettingsUpdated();
+                var player = PlayerManager.Instance.CurrentPlayer;
+
+                // Apply sensitivity to TacticalShooterPlayer
+                var tsp = player.GetComponent<TacticalShooterPlayer>();
+                if (tsp != null)
+                {
+                    tsp.LookSensitivity = _temporarySettings.MouseSensitivity;
+
+                    // Apply FOV to FPSCameraAnimator
+                    if (tsp.FpsCamera != null)
+                    {
+                        tsp.FpsCamera.SetTargetFOV(_temporarySettings.FieldOfView, 6f);
+                    }
+                }
             }
         }
 

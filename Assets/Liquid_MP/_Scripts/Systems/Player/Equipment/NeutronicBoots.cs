@@ -43,7 +43,6 @@ namespace Liquid.Player.Equipment
         
         // Component references
         private _Scripts.Systems.Player.MovementController _movementController;
-        private _Scripts.Systems.Player.CameraController _cameraController;
 
         // Ceiling physics state
         private Vector3 _ceilingVelocity;
@@ -80,11 +79,6 @@ namespace Liquid.Player.Equipment
             _ceilingDetector = gameObject.AddComponent<CeilingDetector>();
             _characterController = GetComponent<CharacterController>();
             _movementController = GetComponent<_Scripts.Systems.Player.MovementController>();
-            
-            if (_cameraTransform != null)
-            {
-                _cameraController = _cameraTransform.GetComponent<_Scripts.Systems.Player.CameraController>();
-            }
         }
 
         private void Start()

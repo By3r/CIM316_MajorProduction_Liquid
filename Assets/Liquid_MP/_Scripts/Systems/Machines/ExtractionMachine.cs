@@ -152,7 +152,7 @@ namespace _Scripts.Systems.Machines
             for (int i = 0; i < inventory.SlotCount; i++)
             {
                 var slot = inventory.GetSlot(i);
-                if (slot != null && !slot.IsEmpty && slot.ItemData.itemType == PhysicalItemType.ARContainer)
+                if (slot != null && !slot.IsEmpty && slot.ItemData.itemType == PhysicalItemType.Container)
                 {
                     inventory.RemoveItemFromSlot(i);
                     _linkedPlayer = inventory;

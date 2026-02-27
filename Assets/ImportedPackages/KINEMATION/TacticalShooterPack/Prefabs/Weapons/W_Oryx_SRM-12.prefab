@@ -1174,7 +1174,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b3a6d3ddd08cc044d860d076800573ee, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  tacWeaponSettings: {fileID: 11400000, guid: 49607b4811098d943953264c149a9801, type: 2}
+  animationData: {fileID: 11400000, guid: 49607b4811098d943953264c149a9801, type: 2}
+  combatData: {fileID: 11400000, guid: a015fe82c24b4ad78b82b4a36e14be2e, type: 2}
   gunRightHandPose:
     position: {x: 0, y: 0, z: 0}
     rotation: {x: 0, y: 0, z: 0, w: 1}
@@ -1185,4 +1186,5 @@ MonoBehaviour:
   isAttachmentDeployed: 0
   bonesToHide: []
   muzzleFlash: {fileID: 8014944632641765027}
+  muzzleFlashSuppressed: {fileID: 0}
   emptyCasing: {fileID: 2555822344570898179}

@@ -45,6 +45,8 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-402940315-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-620862091-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-82160491-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1455423802687713497-495932147
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-8235694-0
         values:
         - colorIndex: 6
           iconNameOrGuid: Canvas Icon
@@ -138,6 +140,14 @@ MonoBehaviour:
           iconNameOrGuid: DebuggerAttached
           isIconRecursive: 0
           isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: AvatarMask On Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: P4_DeletedLocal
+          isIconRecursive: 0
+          isColorRecursive: 0
     - goDatas_byGlobalId:
         keys:
         - globalObjectIdString: GlobalObjectId_V1-1-4c6321b3a9c95334d90ffcab10a45d03-4903016399100092177-0
@@ -227,5 +237,4 @@ MonoBehaviour:
           isColorRecursive: 0
   bookmarks: []
   bookmarkedScenePaths:
-  - Assets/Scenes/Menu.unity
-  - Assets/Scenes/Dev_Scenes/Dev_Procedural_Generation.unity
+  - Assets/Liquid_MP/_Scenes/Dev_Scenes/Dev_Procedural_Generation.unity

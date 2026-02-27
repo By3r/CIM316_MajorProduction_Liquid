@@ -13,7 +13,7 @@ namespace _Scripts.Systems.Weapon
     /// Once it reaches the end point, it waits for the fade duration + trail time before
     /// destroying itself.
     ///
-    /// Added via code by RangedWeapon.SpawnBulletTrail() — not placed manually in scenes.
+    /// Spawned by WeaponHitDetector.SpawnTrail() — not placed manually in scenes.
     /// </summary>
     public class BulletTrailMover : MonoBehaviour
     {
