@@ -15,25 +15,38 @@ public class GridPathfinder : MonoBehaviour
         public int gridZ;
 
         public int surfaceLayer = -1;
+        public Vector3 surfaceNormal = Vector3.up;
+        public SurfaceType surfaceType = SurfaceType.Unknown;
 
         public int gCost;
         public int hCost;
         public Node parent;
+
+        public int lastSearchId;
 
         public int fCost => gCost + hCost;
 
         public Node(bool walkable, Vector3 worldPos, int x, int y, int z)
         {
             this.walkable = walkable;
-            this.worldPosition = worldPos;
-            this.gridX = x;
-            this.gridY = y;
-            this.gridZ = z;
+            worldPosition = worldPos;
+            gridX = x;
+            gridY = y;
+            gridZ = z;
 
             gCost = int.MaxValue;
             hCost = 0;
             parent = null;
+            lastSearchId = 0;
         }
+    }
+
+    public enum SurfaceType
+    {
+        Unknown,
+        Floor,
+        Wall,
+        Ceiling
     }
     #endregion
 
@@ -44,18 +57,41 @@ public class GridPathfinder : MonoBehaviour
     [Header("Grid Settings")]
     [SerializeField] private Vector3 gridWorldSize = new Vector3(50f, 10f, 50f);
     [SerializeField] private float nodeRadius = 0.5f;
+
+    [Tooltip("Layers that block nodes (solid obstacles).")]
     [SerializeField] private LayerMask obstacleMask;
 
-    [Header("Ground Validation")]
-    [Tooltip("Layers considered valid ground beneath walkable nodes. Nodes with no ground below are marked unwalkable. Leave empty to disable ground validation.")]
-    [SerializeField] private LayerMask groundCheckMask;
+    [Tooltip("Optional: also require the obstacle tag to mark blocked nodes.")]
+    [SerializeField] private bool requireObstacleTag = false;
 
-    [Tooltip("Max raycast distance to search for ground below a node.")]
-    [SerializeField] private float groundCheckDistance = 2f;
+    [Tooltip("If requireObstacleTag is enabled, this tag is treated as blocking.")]
+    [SerializeField] private string obstacleTag = "Obstacle";
+
+    [Header("Surface Probing (Floor / Wall / Ceiling)")]
+    [Tooltip("Layers considered valid surfaces. If empty, surface probing is disabled and nodes are walkable if not blocked.")]
+    [SerializeField] private LayerMask surfaceMask;
+
+    [Tooltip("Max distance to probe for a nearby surface from a node center.")]
+    [SerializeField] private float surfaceProbeDistance = 1.25f;
+
+    [Tooltip("If true, the node stores the closest surface normal and layer for filtering.")]
+    [SerializeField] private bool storeSurfaceInfo = true;
+
+    [Tooltip("Normal.y >= this means Floor.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float floorNormalYThreshold = 0.6f;
+
+    [Tooltip("Normal.y <= -this means Ceiling.")]
+    [Range(0f, 1f)]
+    [SerializeField] private float ceilingNormalYThreshold = 0.6f;
 
     [Header("Fallback Search")]
     [Tooltip("How many cells outward to search for the nearest walkable node if start/target is blocked.")]
     [SerializeField] private int maxWalkableSearchRadius = 4;
+
+    [Header("Path Rules")]
+    [Tooltip("If true, disallow diagonals that cut through corners (prevents squeezing through cracks).")]
+    [SerializeField] private bool preventCornerCutting = true;
 
     [Header("Debug")]
     [SerializeField] private bool drawGizmos = false;
@@ -63,7 +99,6 @@ public class GridPathfinder : MonoBehaviour
     [SerializeField] private float gizmoViewRadius = 15f;
     [SerializeField] private Color walkableColor = new Color(0f, 1f, 0f, 0.3f);
     [SerializeField] private Color unwalkableColor = new Color(1f, 0f, 0f, 0.3f);
-    [SerializeField] private Color airRejectedColor = new Color(1f, 1f, 0f, 0.15f);
 
     [Header("Vertical Alignment")]
     [Tooltip("Additional offset (world units) applied to the grid center on Y. Negative = down, positive = up.")]
@@ -75,16 +110,17 @@ public class GridPathfinder : MonoBehaviour
     private int _gridSizeY;
     private int _gridSizeZ;
 
-    // Cached stats from last grid build
     private int _lastWalkableCount;
     private int _lastUnwalkableCount;
-    private int _lastAirRejectedCount;
+
+    private int _searchId;
+
+    private const int OverlapBufferSize = 32;
+    private readonly Collider[] _overlapBuffer = new Collider[OverlapBufferSize];
 
     /// <summary>Grid dimensions info for diagnostics.</summary>
-    public string GridStatsString => _grid == null
-        ? "Grid not built"
-        : $"Grid: {_gridSizeX}x{_gridSizeY}x{_gridSizeZ} = {_gridSizeX * _gridSizeY * _gridSizeZ} nodes | Walkable: {_lastWalkableCount} | Unwalkable: {_lastUnwalkableCount} (air-rejected: {_lastAirRejectedCount})";
-
+    public string GridStatsString => _grid == null ? "Grid not built" : $"Grid: {_gridSizeX}x{_gridSizeY}x{_gridSizeZ} = {_gridSizeX * _gridSizeY * _gridSizeZ} nodes | Walkable: {_lastWalkableCount} | Unwalkable: {_lastUnwalkableCount}";
+       
     /// <summary>Whether the grid has been built.</summary>
     public bool IsGridBuilt => _grid != null;
 
@@ -110,14 +146,21 @@ public class GridPathfinder : MonoBehaviour
         }
 
         _instance = this;
-
-        _nodeDiameter = nodeRadius * 2f;
-        _gridSizeX = Mathf.RoundToInt(gridWorldSize.x / _nodeDiameter);
-        _gridSizeY = Mathf.RoundToInt(gridWorldSize.y / _nodeDiameter);
-        _gridSizeZ = Mathf.RoundToInt(gridWorldSize.z / _nodeDiameter);
-
-        CreateGrid();
+        RebuildWithCurrentSettings();
     }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        nodeRadius = Mathf.Max(0.05f, nodeRadius);
+        surfaceProbeDistance = Mathf.Max(0.05f, surfaceProbeDistance);
+
+        if (!Application.isPlaying)
+        {
+            RebuildWithCurrentSettings();
+        }
+    }
+#endif
 
     /// <summary>
     /// Rebuilds the grid so it fits the combined bounds of the generated floor.
@@ -160,7 +203,6 @@ public class GridPathfinder : MonoBehaviour
 
         int walkableCount = 0;
         int unwalkableCount = 0;
-        int airRejectedCount = 0;
 
         for (int x = 0; x < _gridSizeX; x++)
         {
@@ -174,39 +216,24 @@ public class GridPathfinder : MonoBehaviour
                         + Vector3.up * (y * _nodeDiameter + nodeRadius)
                         + Vector3.forward * (z * _nodeDiameter + nodeRadius);
 
-                    bool walkable = true;
+                    bool blocked = IsBlocked(worldPoint);
+
+                    bool walkable = !blocked;
                     int surfaceLayer = -1;
+                    Vector3 surfaceNormal = Vector3.up;
+                    SurfaceType surfaceType = SurfaceType.Unknown;
 
-                    Collider[] hits = Physics.OverlapSphere(worldPoint, nodeRadius);
-                    for (int i = 0; i < hits.Length; i++)
+                    if (walkable && surfaceMask.value != 0)
                     {
-                        Collider collider = hits[i];
-                        if (((1 << collider.gameObject.layer) & obstacleMask.value) != 0 &&
-                            collider.CompareTag("Obstacle"))
+                        if (TryProbeSurface(worldPoint, out var hit))
+                        {
+                            surfaceLayer = hit.collider.gameObject.layer;
+                            surfaceNormal = hit.normal;
+                            surfaceType = ClassifySurface(surfaceNormal);
+                        }
+                        else
                         {
                             walkable = false;
-                        }
-
-                        if (!collider.isTrigger && surfaceLayer == -1)
-                        {
-                            surfaceLayer = collider.gameObject.layer;
-                        }
-                    }
-
-                    // Ground validation: reject nodes floating in empty air
-                    if (walkable && groundCheckMask.value != 0)
-                    {
-                        bool hasGroundBelow = Physics.Raycast(
-                            worldPoint,
-                            Vector3.down,
-                            groundCheckDistance,
-                            groundCheckMask,
-                            QueryTriggerInteraction.Ignore);
-
-                        if (!hasGroundBelow)
-                        {
-                            walkable = false;
-                            airRejectedCount++;
                         }
                     }
 
@@ -214,7 +241,12 @@ public class GridPathfinder : MonoBehaviour
                     else unwalkableCount++;
 
                     Node node = new Node(walkable, worldPoint, x, y, z);
-                    node.surfaceLayer = surfaceLayer;
+                    if (storeSurfaceInfo)
+                    {
+                        node.surfaceLayer = surfaceLayer;
+                        node.surfaceNormal = surfaceNormal;
+                        node.surfaceType = surfaceType;
+                    }
 
                     _grid[x, y, z] = node;
                 }
@@ -223,9 +255,68 @@ public class GridPathfinder : MonoBehaviour
 
         _lastWalkableCount = walkableCount;
         _lastUnwalkableCount = unwalkableCount;
-        _lastAirRejectedCount = airRejectedCount;
+    }
 
-        Debug.Log($"[GridPathfinder] Grid created. Walkable: {walkableCount}, Unwalkable: {unwalkableCount} (air-rejected: {airRejectedCount})");
+    private bool IsBlocked(Vector3 worldPoint)
+    {
+        int hitCount = Physics.OverlapSphereNonAlloc(worldPoint, nodeRadius, _overlapBuffer, obstacleMask, QueryTriggerInteraction.Ignore);
+
+        if (hitCount <= 0)
+            return false;
+
+        if (!requireObstacleTag)
+            return true;
+
+        for (int i = 0; i < hitCount; i++)
+        {
+            var c = _overlapBuffer[i];
+            if (c == null) continue;
+            if (c.CompareTag(obstacleTag))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool TryProbeSurface(Vector3 worldPoint, out RaycastHit bestHit)
+    {
+        bestHit = default;
+
+        float bestDist = float.MaxValue;
+        bool found = false;
+
+        Vector3[] dirs =
+        {
+            Vector3.down, Vector3.up,
+            Vector3.left, Vector3.right,
+            Vector3.forward, Vector3.back
+        };
+
+        for (int i = 0; i < dirs.Length; i++)
+        {
+            if (Physics.Raycast(worldPoint, dirs[i], out RaycastHit hit, surfaceProbeDistance, surfaceMask, QueryTriggerInteraction.Ignore))
+            {
+                if (hit.distance < bestDist)
+                {
+                    bestDist = hit.distance;
+                    bestHit = hit;
+                    found = true;
+                }
+            }
+        }
+
+        return found;
+    }
+
+    private SurfaceType ClassifySurface(Vector3 normal)
+    {
+        if (normal.y >= floorNormalYThreshold)
+            return SurfaceType.Floor;
+
+        if (normal.y <= -ceilingNormalYThreshold)
+            return SurfaceType.Ceiling;
+
+        return SurfaceType.Wall;
     }
 
     private Node NodeFromWorldPoint(Vector3 worldPosition)
@@ -238,98 +329,62 @@ public class GridPathfinder : MonoBehaviour
         percentY = Mathf.Clamp01(percentY);
         percentZ = Mathf.Clamp01(percentZ);
 
-        int x = Mathf.Clamp(Mathf.RoundToInt((_gridSizeX - 1) * percentX), 0, _gridSizeX - 1);
-        int y = Mathf.Clamp(Mathf.RoundToInt((_gridSizeY - 1) * percentY), 0, _gridSizeY - 1);
-        int z = Mathf.Clamp(Mathf.RoundToInt((_gridSizeZ - 1) * percentZ), 0, _gridSizeZ - 1);
+        // FloorToInt reduces cell jitter compared to RoundToInt
+        int x = Mathf.Clamp(Mathf.FloorToInt(_gridSizeX * percentX), 0, _gridSizeX - 1);
+        int y = Mathf.Clamp(Mathf.FloorToInt(_gridSizeY * percentY), 0, _gridSizeY - 1);
+        int z = Mathf.Clamp(Mathf.FloorToInt(_gridSizeZ * percentZ), 0, _gridSizeZ - 1);
 
         return _grid[x, y, z];
     }
 
-    private List<Node> GetNeighbours(Node node)
-    {
-        List<Node> neighbours = new List<Node>();
-
-        for (int x = -1; x <= 1; x++)
-        {
-            for (int y = -1; y <= 1; y++)
-            {
-                for (int z = -1; z <= 1; z++)
-                {
-                    if (x == 0 && y == 0 && z == 0)
-                    {
-                        continue;
-                    }
-
-                    int checkX = node.gridX + x;
-                    int checkY = node.gridY + y;
-                    int checkZ = node.gridZ + z;
-
-                    if (checkX < 0 || checkX >= _gridSizeX ||
-                        checkY < 0 || checkY >= _gridSizeY ||
-                        checkZ < 0 || checkZ >= _gridSizeZ)
-                    {
-                        continue;
-                    }
-
-                    neighbours.Add(_grid[checkX, checkY, checkZ]);
-                }
-            }
-        }
-
-        return neighbours;
-    }
-
-    private static int GetDistance(Node a, Node b)
-    {
-        int distancetX = Mathf.Abs(a.gridX - b.gridX);
-        int distanceY = Mathf.Abs(a.gridY - b.gridY);
-        int distanceZ = Mathf.Abs(a.gridZ - b.gridZ);
-
-        return 10 * (distancetX + distanceY + distanceZ);
-    }
-
-    private bool IsNodeWalkableForLayers(Node node, LayerMask allowedLayers)
+    private bool IsNodeWalkableForFilter(Node node, LayerMask allowedLayers, SurfaceType allowedSurface)
     {
         if (!node.walkable)
-        {
             return false;
+
+        if (allowedLayers.value != 0)
+        {
+            if (node.surfaceLayer < 0)
+                return false;
+
+            int mask = 1 << node.surfaceLayer;
+            if ((allowedLayers.value & mask) == 0)
+                return false;
         }
 
-        if (allowedLayers.value == 0)
+        if (allowedSurface != SurfaceType.Unknown && allowedSurface != SurfaceType.Floor && allowedSurface != SurfaceType.Wall && allowedSurface != SurfaceType.Ceiling)
         {
             return true;
         }
 
-        if (node.surfaceLayer < 0)
+        if (allowedSurface != SurfaceType.Unknown)
         {
-            return false;
+            if (node.surfaceType != allowedSurface)
+                return false;
         }
 
-        int mask = 1 << node.surfaceLayer;
-        return (allowedLayers.value & mask) != 0;
+        return true;
     }
 
-    private Node FindClosestWalkable(Node startNode, LayerMask allowedLayers)
+    private Node FindClosestWalkable(Node startNode, LayerMask allowedLayers, SurfaceType allowedSurface)
     {
-        if (IsNodeWalkableForLayers(startNode, allowedLayers))
-        {
+        if (IsNodeWalkableForFilter(startNode, allowedLayers, allowedSurface))
             return startNode;
-        }
 
         Node best = null;
         float bestDist = float.MaxValue;
 
         for (int radius = 1; radius <= maxWalkableSearchRadius; radius++)
         {
-            for (int x = -radius; x <= radius; x++)
+            for (int dx = -radius; dx <= radius; dx++)
             {
-                for (int y = -radius; y <= radius; y++)
+                for (int dy = -radius; dy <= radius; dy++)
                 {
-                    for (int z = -radius; z <= radius; z++)
+                    for (int dz = -radius; dz <= radius; dz++)
                     {
-                        int checkX = startNode.gridX + x;
-                        int checkY = startNode.gridY + y;
-                        int checkZ = startNode.gridZ + z;
+                        int checkX = startNode.gridX + dx;
+                        int checkY = startNode.gridY + dy;
+                        int checkZ = startNode.gridZ + dz;
 
                         if (checkX < 0 || checkX >= _gridSizeX ||
                             checkY < 0 || checkY >= _gridSizeY ||
@@ -339,12 +394,10 @@ public class GridPathfinder : MonoBehaviour
                         }
 
                         Node candidate = _grid[checkX, checkY, checkZ];
-                        if (!IsNodeWalkableForLayers(candidate, allowedLayers))
-                        {
+                        if (!IsNodeWalkableForFilter(candidate, allowedLayers, allowedSurface))
                             continue;
-                        }
 
-                        float dist = Vector3.SqrMagnitude(candidate.worldPosition - startNode.worldPosition);
+                        float dist = (candidate.worldPosition - startNode.worldPosition).sqrMagnitude;
                         if (dist < bestDist)
                         {
                             bestDist = dist;
@@ -355,9 +408,7 @@ public class GridPathfinder : MonoBehaviour
             }
 
             if (best != null)
-            {
                 break;
-            }
         }
 
         return best;
@@ -365,101 +416,175 @@ public class GridPathfinder : MonoBehaviour
 
     public List<Vector3> FindPath(Vector3 startPos, Vector3 targetPos)
     {
-        return FindPath(startPos, targetPos, default);
+        return FindPath(startPos, targetPos, default, SurfaceType.Unknown);
     }
 
     public List<Vector3> FindPath(Vector3 startPos, Vector3 targetPos, LayerMask allowedLayers)
     {
+        return FindPath(startPos, targetPos, allowedLayers, SurfaceType.Unknown);
+    }
+
+    public List<Vector3> FindPath(Vector3 startPos, Vector3 targetPos, LayerMask allowedLayers, SurfaceType allowedSurface)
+    {
+        if (_grid == null)
+            return null;
+
         Node startNode = NodeFromWorldPoint(startPos);
         Node targetNode = NodeFromWorldPoint(targetPos);
 
-        Node snappedStart = FindClosestWalkable(startNode, allowedLayers);
-        Node snappedTarget = FindClosestWalkable(targetNode, allowedLayers);
+        Node snappedStart = FindClosestWalkable(startNode, allowedLayers, allowedSurface);
+        Node snappedTarget = FindClosestWalkable(targetNode, allowedLayers, allowedSurface);
 
-        if (snappedStart == null)
-        {
-            Debug.LogWarning($"Start area has no walkable nodes for layers {allowedLayers.value}. StartPos: {startPos}");
+        if (snappedStart == null || snappedTarget == null)
             return null;
-        }
 
-        if (snappedTarget == null)
-        {
-            Debug.LogWarning($"Target area has no walkable nodes for layers {allowedLayers.value}. TargetPos: {targetPos}");
-            return null;
-        }
+        _searchId++;
+        if (_searchId == int.MaxValue) _searchId = 1;
 
-        List<Node> openSet = new List<Node>();
-        HashSet<Node> closedSet = new HashSet<Node>();
+        var open = new MinHeap(128);
+        var closed = new HashSet<Node>();
 
-        foreach (Node node in _grid)
-        {
-            node.gCost = int.MaxValue;
-            node.hCost = 0;
-            node.parent = null;
-        }
-
+        PrepareNodeForSearch(snappedStart);
         snappedStart.gCost = 0;
         snappedStart.hCost = GetDistance(snappedStart, snappedTarget);
+        snappedStart.parent = null;
 
-        openSet.Add(snappedStart);
+        open.Push(snappedStart);
 
-        while (openSet.Count > 0)
+        while (open.Count > 0)
         {
-            Node currentNode = openSet[0];
-            for (int i = 1; i < openSet.Count; i++)
-            {
-                if (openSet[i].fCost < currentNode.fCost ||
-                    openSet[i].fCost == currentNode.fCost && openSet[i].hCost < currentNode.hCost)
-                {
-                    currentNode = openSet[i];
-                }
-            }
+            Node current = open.Pop();
+            closed.Add(current);
 
-            openSet.Remove(currentNode);
-            closedSet.Add(currentNode);
-
-            if (currentNode == snappedTarget)
+            if (current == snappedTarget)
             {
                 return RetracePath(snappedStart, snappedTarget);
             }
 
-            foreach (Node neighbour in GetNeighbours(currentNode))
+            for (int dx = -1; dx <= 1; dx++)
             {
-                if (closedSet.Contains(neighbour))
+                for (int dy = -1; dy <= 1; dy++)
                 {
-                    continue;
-                }
-
-                if (!IsNodeWalkableForLayers(neighbour, allowedLayers))
-                {
-                    continue;
-                }
-
-                int newCostToNeighbour = currentNode.gCost + GetDistance(currentNode, neighbour);
-                if (newCostToNeighbour < neighbour.gCost)
-                {
-                    neighbour.gCost = newCostToNeighbour;
-                    neighbour.hCost = GetDistance(neighbour, snappedTarget);
-                    neighbour.parent = currentNode;
-
-                    if (!openSet.Contains(neighbour))
+                    for (int dz = -1; dz <= 1; dz++)
                     {
-                        openSet.Add(neighbour);
+                        if (dx == 0 && dy == 0 && dz == 0)
+                            continue;
+
+                        int nx = current.gridX + dx;
+                        int ny = current.gridY + dy;
+                        int nz = current.gridZ + dz;
+
+                        if (nx < 0 || nx >= _gridSizeX ||
+                            ny < 0 || ny >= _gridSizeY ||
+                            nz < 0 || nz >= _gridSizeZ)
+                            continue;
+
+                        Node neighbour = _grid[nx, ny, nz];
+
+                        if (closed.Contains(neighbour))
+                            continue;
+
+                        if (!IsNodeWalkableForFilter(neighbour, allowedLayers, allowedSurface))
+                            continue;
+
+                        if (preventCornerCutting && IsCuttingCorner(current, dx, dy, dz, allowedLayers, allowedSurface))
+                            continue;
+
+                        PrepareNodeForSearch(neighbour);
+
+                        int stepCost = GetStepCost(dx, dy, dz);
+                        int newCost = current.gCost + stepCost;
+
+                        if (newCost < neighbour.gCost)
+                        {
+                            neighbour.gCost = newCost;
+                            neighbour.hCost = GetDistance(neighbour, snappedTarget);
+                            neighbour.parent = current;
+
+                            open.PushOrUpdate(neighbour);
+                        }
                     }
                 }
             }
         }
 
-        Debug.LogWarning($"No path found from {startPos} to {targetPos} for layers {allowedLayers.value}.");
         return null;
+    }
+
+    private void PrepareNodeForSearch(Node node)
+    {
+        if (node.lastSearchId == _searchId)
+            return;
+
+        node.lastSearchId = _searchId;
+        node.gCost = int.MaxValue;
+        node.hCost = 0;
+        node.parent = null;
+    }
+
+    private bool IsCuttingCorner(Node current, int dx, int dy, int dz, LayerMask allowedLayers, SurfaceType allowedSurface)
+    {
+        int axisCount = (dx != 0 ? 1 : 0) + (dy != 0 ? 1 : 0) + (dz != 0 ? 1 : 0);
+        if (axisCount <= 1)
+            return false;
+
+        if (dx != 0)
+        {
+            Node n = _grid[current.gridX + dx, current.gridY, current.gridZ];
+            if (!IsNodeWalkableForFilter(n, allowedLayers, allowedSurface)) return true;
+        }
+
+        if (dy != 0)
+        {
+            Node n = _grid[current.gridX, current.gridY + dy, current.gridZ];
+            if (!IsNodeWalkableForFilter(n, allowedLayers, allowedSurface)) return true;
+        }
+
+        if (dz != 0)
+        {
+            Node n = _grid[current.gridX, current.gridY, current.gridZ + dz];
+            if (!IsNodeWalkableForFilter(n, allowedLayers, allowedSurface)) return true;
+        }
+
+        return false;
+    }
+
+    private static int GetStepCost(int dx, int dy, int dz)
+    {
+        int axisCount = (dx != 0 ? 1 : 0) + (dy != 0 ? 1 : 0) + (dz != 0 ? 1 : 0);
+
+        return axisCount switch
+        {
+            1 => 10,
+            2 => 14,
+            3 => 17,
+            _ => 10
+        };
+    }
+
+    private static int GetDistance(Node a, Node b)
+    {
+        int dx = Mathf.Abs(a.gridX - b.gridX);
+        int dy = Mathf.Abs(a.gridY - b.gridY);
+        int dz = Mathf.Abs(a.gridZ - b.gridZ);
+
+        int min = Mathf.Min(dx, Mathf.Min(dy, dz));
+        dx -= min; dy -= min; dz -= min;
+
+        int mid = Mathf.Min(dx, Mathf.Min(dy, dz));
+        dx -= mid; dy -= mid; dz -= mid;
+
+        int max = dx + dy + dz; // one is nonzero
+
+        return min * 17 + mid * 14 + max * 10;
     }
 
     private static List<Vector3> RetracePath(Node startNode, Node endNode)
     {
-        List<Node> path = new List<Node>();
+        List<Node> path = new List<Node>(64);
         Node currentNode = endNode;
 
-        while (currentNode != startNode)
+        while (currentNode != null && currentNode != startNode)
         {
             path.Add(currentNode);
             currentNode = currentNode.parent;
@@ -469,27 +594,135 @@ public class GridPathfinder : MonoBehaviour
 
         List<Vector3> worldPath = new List<Vector3>(path.Count);
         for (int i = 0; i < path.Count; i++)
-        {
             worldPath.Add(path[i].worldPosition);
-        }
 
         return worldPath;
     }
 
+    #region MinHeap (priority queue)
+    private sealed class MinHeap
+    {
+        private readonly List<Node> _items;
+        private readonly Dictionary<Node, int> _indices;
+
+        public int Count => _items.Count;
+
+        public MinHeap(int capacity)
+        {
+            _items = new List<Node>(capacity);
+            _indices = new Dictionary<Node, int>(capacity);
+        }
+
+        public void Push(Node node)
+        {
+            if (_indices.ContainsKey(node))
+            {
+                Update(node);
+                return;
+            }
+
+            _items.Add(node);
+            int i = _items.Count - 1;
+            _indices[node] = i;
+            HeapifyUp(i);
+        }
+
+        public void PushOrUpdate(Node node)
+        {
+            if (_indices.ContainsKey(node)) Update(node);
+            else Push(node);
+        }
+
+        public Node Pop()
+        {
+            int last = _items.Count - 1;
+            Node root = _items[0];
+
+            Swap(0, last);
+            _items.RemoveAt(last);
+            _indices.Remove(root);
+
+            if (_items.Count > 0)
+                HeapifyDown(0);
+
+            return root;
+        }
+
+        public void Update(Node node)
+        {
+            if (!_indices.TryGetValue(node, out int i))
+                return;
+
+            HeapifyUp(i);
+            HeapifyDown(i);
+        }
+
+        private void HeapifyUp(int i)
+        {
+            while (i > 0)
+            {
+                int parent = (i - 1) / 2;
+                if (Compare(_items[i], _items[parent]) >= 0)
+                    break;
+
+                Swap(i, parent);
+                i = parent;
+            }
+        }
+
+        private void HeapifyDown(int i)
+        {
+            int count = _items.Count;
+            while (true)
+            {
+                int left = i * 2 + 1;
+                int right = i * 2 + 2;
+                int smallest = i;
+
+                if (left < count && Compare(_items[left], _items[smallest]) < 0)
+                    smallest = left;
+
+                if (right < count && Compare(_items[right], _items[smallest]) < 0)
+                    smallest = right;
+
+                if (smallest == i)
+                    break;
+
+                Swap(i, smallest);
+                i = smallest;
+            }
+        }
+
+        private int Compare(Node a, Node b)
+        {
+            int f = a.fCost.CompareTo(b.fCost);
+            if (f != 0) return f;
+            return a.hCost.CompareTo(b.hCost);
+        }
+
+        private void Swap(int i, int j)
+        {
+            Node a = _items[i];
+            Node b = _items[j];
+
+            _items[i] = b;
+            _items[j] = a;
+
+            _indices[a] = j;
+            _indices[b] = i;
+        }
+    }
+    #endregion
+
     #region Gizmos
     private void OnDrawGizmos()
     {
-        if (!drawGizmos)
-        {
-            // Always draw the grid boundary wireframe even when node gizmos are off
-            Gizmos.color = Color.gray;
-            Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, gridWorldSize.y, gridWorldSize.z));
+        Gizmos.color = Color.gray;
+        Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, gridWorldSize.y, gridWorldSize.z));
+
+        if (!drawGizmos || _grid == null)
             return;
-        }
 
-        if (_grid == null) return;
-
-        // Find the player (or Scene camera in edit mode) as the spotlight center
         Vector3 viewCenter = transform.position;
         float viewRadiusSqr = gizmoViewRadius * gizmoViewRadius;
 
@@ -502,25 +735,14 @@ public class GridPathfinder : MonoBehaviour
         }
         else
         {
-            // In edit mode, use the Scene view camera
             if (UnityEditor.SceneView.lastActiveSceneView != null)
                 viewCenter = UnityEditor.SceneView.lastActiveSceneView.camera.transform.position;
         }
 #endif
 
+        bool useSpotlight = gizmoViewRadius > 0f;
         float nodeDiameter = nodeRadius * 2f;
         Vector3 cubeSize = Vector3.one * (nodeDiameter - 0.1f);
-
-        // Draw grid boundary
-        Gizmos.color = new Color(0.5f, 0.5f, 0.5f, 0.3f);
-        Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, gridWorldSize.y, gridWorldSize.z));
-
-        // Draw spotlight radius
-        Gizmos.color = new Color(0f, 1f, 1f, 0.1f);
-        Gizmos.DrawWireSphere(viewCenter, gizmoViewRadius);
-
-        // Only draw nodes within spotlight radius
-        bool useSpotlight = gizmoViewRadius > 0f;
 
         foreach (Node node in _grid)
         {
@@ -537,7 +759,6 @@ public class GridPathfinder : MonoBehaviour
             }
             else
             {
-                // Only draw unwalkable nodes as small wireframes (less visual noise)
                 Gizmos.color = unwalkableColor;
                 Gizmos.DrawWireCube(node.worldPosition, cubeSize * 0.5f);
             }
