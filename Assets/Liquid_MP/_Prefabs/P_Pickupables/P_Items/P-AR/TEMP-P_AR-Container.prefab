@@ -41,16 +41,16 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4242059433809103868}
   m_Enabled: 1
-  serializedVersion: 11
+  serializedVersion: 12
   m_Type: 2
   m_Color: {r: 0, g: 0.9703219, b: 1, a: 1}
   m_Intensity: 0.01
   m_Range: 0.32
   m_SpotAngle: 45
   m_InnerSpotAngle: 21.80208
-  m_CookieSize: 10
+  m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
-    m_Type: 1
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -168,16 +168,16 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5817230286045613239}
   m_Enabled: 1
-  serializedVersion: 11
+  serializedVersion: 12
   m_Type: 2
   m_Color: {r: 0, g: 0.9703219, b: 1, a: 1}
   m_Intensity: 0.01
   m_Range: 0.32
   m_SpotAngle: 45
   m_InnerSpotAngle: 21.80208
-  m_CookieSize: 10
+  m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
-    m_Type: 1
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -295,16 +295,16 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6992593447382858372}
   m_Enabled: 1
-  serializedVersion: 11
+  serializedVersion: 12
   m_Type: 2
   m_Color: {r: 0, g: 0.9703219, b: 1, a: 1}
   m_Intensity: 0.01
   m_Range: 0.32
   m_SpotAngle: 45
   m_InnerSpotAngle: 21.80208
-  m_CookieSize: 10
+  m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
-    m_Type: 1
+    m_Type: 0
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -511,7 +511,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 2607ff8dae1885c40b5f9961e89910db, type: 2}
     - target: {fileID: 919132149155446097, guid: 03e7fd16805847841aadefbe1756c39a, type: 3}
       propertyPath: m_Name
-      value: AR
+      value: TEMP-P_AR-Container
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 03e7fd16805847841aadefbe1756c39a, type: 3}
       propertyPath: m_Layer
@@ -615,8 +615,5 @@ MonoBehaviour:
   _autoPickup: 0
   _interactionRange: 2
   _highlightEffect: {fileID: 0}
-  _bobSpeed: 2
-  _bobHeight: 0.1
-  _rotateSpeed: 45
   _itemData: {fileID: 11400000, guid: aef0896ffcf7cba49834aa16bce84b1d, type: 2}
   _quantity: 1

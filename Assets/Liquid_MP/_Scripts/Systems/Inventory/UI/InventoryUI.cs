@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using _Scripts.Core.Managers;
+using _Scripts.Systems.HUD;
 using _Scripts.Systems.Inventory.Pickups;
 
 namespace _Scripts.Systems.Inventory.UI
 {
     /// <summary>
     /// Main inventory UI controller.
-    /// Opens with TAB key, shows 3 physical item slots and AR grams counter.
+    /// Opens with TAB key — tells the VisorController to show/hide the visor panel.
+    /// Inventory slots and context menu live on the visor's World Space Canvas.
     /// </summary>
     public class InventoryUI : MonoBehaviour
     {
@@ -22,8 +24,12 @@ namespace _Scripts.Systems.Inventory.UI
 
         #region Serialized Fields
 
+        [Header("Visor")]
+        [Tooltip("The VisorController that owns the 3D visor HUD. " +
+                 "Inventory slots and context menu live on its World Space Canvas.")]
+        [SerializeField] private VisorController _visorController;
+
         [Header("UI References")]
-        [SerializeField] private GameObject _inventoryPanel;
         [SerializeField] private InventorySlotUI[] _slotUIs;
         // TODO: AR grams UI will be redesigned
         // [SerializeField] private ARGramsCounterUI _arGramsCounterUI;
@@ -79,19 +85,10 @@ namespace _Scripts.Systems.Inventory.UI
                 _playerInventory.OnARGramsChanged += HandleARGramsChanged;
             }
 
-            // If no panel assigned, assume this GO has a child panel or use self
-            if (_inventoryPanel == null)
+            // Find visor controller if not assigned
+            if (_visorController == null)
             {
-                // Try to find a child named "Panel" or use first child
-                Transform panelTransform = transform.Find("Panel");
-                if (panelTransform != null)
-                {
-                    _inventoryPanel = panelTransform.gameObject;
-                }
-                else if (transform.childCount > 0)
-                {
-                    _inventoryPanel = transform.GetChild(0).gameObject;
-                }
+                _visorController = VisorController.Instance;
             }
 
             // Set up slot indices and subscribe to right-click events
@@ -194,6 +191,10 @@ namespace _Scripts.Systems.Inventory.UI
             if (!_isOpen && GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Paused)
                 return;
 
+            // Don't open inventory if visor is raised
+            if (!_isOpen && _visorController != null && _visorController.IsVisorRaised)
+                return;
+
             ToggleInventory();
         }
 
@@ -226,9 +227,10 @@ namespace _Scripts.Systems.Inventory.UI
         {
             _isOpen = true;
 
-            if (_inventoryPanel != null)
+            // Show the visor panel (glass + inventory/terminal/vitals)
+            if (_visorController != null)
             {
-                _inventoryPanel.SetActive(true);
+                _visorController.ShowPanel();
             }
 
             RefreshUI();
@@ -263,9 +265,10 @@ namespace _Scripts.Systems.Inventory.UI
                 _itemExaminer.Hide();
             }
 
-            if (_inventoryPanel != null)
+            // Hide the visor panel
+            if (_visorController != null)
             {
-                _inventoryPanel.SetActive(false);
+                _visorController.HidePanel();
             }
 
             if (_pauseGameWhenOpen)
@@ -342,10 +345,10 @@ namespace _Scripts.Systems.Inventory.UI
             InventorySlot slot = _playerInventory.GetSlot(slotIndex);
             if (slot == null || slot.IsEmpty) return;
 
-            // Close inventory panel while examining
-            if (_inventoryPanel != null)
+            // Hide visor panel while examining (examiner uses its own screen-space render texture)
+            if (_visorController != null)
             {
-                _inventoryPanel.SetActive(false);
+                _visorController.HidePanel();
             }
 
             _itemExaminer.Show(slot.ItemData);
