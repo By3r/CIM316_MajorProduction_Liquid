@@ -94,13 +94,13 @@ MonoBehaviour:
     m_Value: 1
   threshold:
     m_OverrideState: 1
-    m_Value: 0.9
+    m_Value: 0.6
   intensity:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.94
   scatter:
     m_OverrideState: 1
-    m_Value: 0.7
+    m_Value: 1
   clamp:
     m_OverrideState: 1
     m_Value: 65472
@@ -108,6 +108,9 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: {r: 1, g: 1, b: 1, a: 1}
   highQualityFiltering:
+    m_OverrideState: 1
+    m_Value: 0
+  filter:
     m_OverrideState: 1
     m_Value: 0
   downscale:
@@ -123,6 +126,43 @@ MonoBehaviour:
   dirtIntensity:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &-6543723696484787689
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 72e935d2f44fe5e4d8189a02cd3b2bbf, type: 3}
+  m_Name: HazeOverridesVolumeComponent
+  m_EditorClassIdentifier: Haze.Runtime::Haze.Runtime.HazeOverridesVolumeComponent
+  active: 1
+  _noiseTiling:
+    m_OverrideState: 1
+    m_Value: 2.97
+  _noisePanningSpeed:
+    m_OverrideState: 1
+    m_Value: {x: 0.05, y: 0, z: 0}
+  _noiseWeights:
+    m_OverrideState: 1
+    m_Value: {x: 1, y: 1, z: 1, w: 1}
+  _multipleScatteringIntensity:
+    m_OverrideState: 1
+    m_Value: 1
+  _multipleScatteringRadius:
+    m_OverrideState: 1
+    m_Value: 7
+  _multipleScatteringScatter:
+    m_OverrideState: 1
+    m_Value: 1
+  _multipleScatteringThreshold:
+    m_OverrideState: 1
+    m_Value: 0
+  _maxMultipleScatteringIterations:
+    m_OverrideState: 1
+    m_Value: 5
 --- !u!114 &-6199682797931343486
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -138,7 +178,7 @@ MonoBehaviour:
   active: 1
   intensity:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: -0.102
   xMultiplier:
     m_OverrideState: 1
     m_Value: 1
@@ -579,6 +619,9 @@ MonoBehaviour:
   - {fileID: -2581850003447131417}
   - {fileID: -8325407175373200774}
   - {fileID: 3927974275361066918}
+  - {fileID: 848184532756340516}
+  - {fileID: 2876192246321534795}
+  - {fileID: -6543723696484787689}
 --- !u!114 &339932837792497602
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -619,6 +662,22 @@ MonoBehaviour:
   blueOutBlueIn:
     m_OverrideState: 1
     m_Value: 100
+--- !u!114 &848184532756340516
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f32835a19c1cdac4fa1b6f967e3144e5, type: 3}
+  m_Name: CASSharpeningVolume
+  m_EditorClassIdentifier: Assembly-CSharp::Liquid.Rendering.CASSharpeningVolume
+  active: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 1.35
 --- !u!114 &1900728275632995144
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -669,6 +728,58 @@ MonoBehaviour:
   balance:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &2876192246321534795
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d826a74763129a5418f79e0502eb07e5, type: 3}
+  m_Name: HazeGlobalFogVolumeComponent
+  m_EditorClassIdentifier: Haze.Runtime::Haze.Runtime.HazeGlobalFogVolumeComponent
+  active: 1
+  _globalDensityMultiplier:
+    m_OverrideState: 1
+    m_Value: 1
+  _globalDensityThreshold:
+    m_OverrideState: 1
+    m_Value: 0.96
+  _ambientColor:
+    m_OverrideState: 1
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
+  _mainLightContribution:
+    m_OverrideState: 1
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
+  _heightFogFactor:
+    m_OverrideState: 1
+    m_Value: 2.4
+  _maxFogHeight:
+    m_OverrideState: 1
+    m_Value: 15
+  _heightFogSmoothness:
+    m_OverrideState: 1
+    m_Value: 1
+  _cameraRelativeHeightFog:
+    m_OverrideState: 1
+    m_Value: 0
+  _additionalLightContribution:
+    m_OverrideState: 1
+    m_Value: 1
+  _probeVolumeContribution:
+    m_OverrideState: 1
+    m_Value: 0
+  _mainLightScattering:
+    m_OverrideState: 1
+    m_Value: 1
+  _globalMainLightDensityBoost:
+    m_OverrideState: 1
+    m_Value: 5
+  _globalSecondaryLightDensityBoost:
+    m_OverrideState: 1
+    m_Value: 11.13
 --- !u!114 &3927974275361066918
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -736,10 +847,10 @@ MonoBehaviour:
     m_Value: {x: 0.5, y: 0.5}
   intensity:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.074
   smoothness:
     m_OverrideState: 1
-    m_Value: 0.2
+    m_Value: 0.825
   rounded:
     m_OverrideState: 1
     m_Value: 0
@@ -761,10 +872,10 @@ MonoBehaviour:
     m_Value: 0
   intensity:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
   response:
     m_OverrideState: 1
-    m_Value: 0.8
+    m_Value: 1
   texture:
     m_OverrideState: 1
     m_Value: {fileID: 0}
