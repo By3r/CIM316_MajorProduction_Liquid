@@ -294,6 +294,13 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Weapon
             return transform.position;
         }
 
+        /// <summary>Returns the Transform of the muzzle (barrel end). Used for hip fire direction.</summary>
+        public virtual Transform GetMuzzleTransform()
+        {
+            if (muzzleFlash != null) return muzzleFlash.transform;
+            return transform;
+        }
+
         public virtual void Reload()
         {
             if (_activeAmmo == animationData.ammoCapacity) return;

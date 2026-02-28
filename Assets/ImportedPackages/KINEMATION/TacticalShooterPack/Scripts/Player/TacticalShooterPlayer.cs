@@ -326,8 +326,8 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                 _wantsToSprint = InputManager.Instance.IsSprinting;
             }
 
-            // --- Fire ---
-            if (_hasActiveAction)
+            // --- Fire (blocked during active actions and sprinting) ---
+            if (_hasActiveAction || _wantsToSprint)
             {
                 if (GetPrimaryWeapon().IsFiring) GetPrimaryWeapon().StopFiring();
             }
