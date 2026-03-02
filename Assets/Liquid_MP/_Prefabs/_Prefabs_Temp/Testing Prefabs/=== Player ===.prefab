@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 5127648215765392058}
   - component: {fileID: 6542608500270914910}
-  - component: {fileID: 4951983626546098616}
   - component: {fileID: 1962518740797889009}
   m_Layer: 0
   m_Name: Visor Overlay Camera
@@ -85,14 +84,6 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!81 &4951983626546098616
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7733996495438162}
-  m_Enabled: 1
 --- !u!114 &1962518740797889009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3659,7 +3650,6 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1784990647400173941}
   - {fileID: 8259211510538103735}
   - {fileID: 5085185490192104873}
   - {fileID: 485688862367699570}
@@ -3671,6 +3661,7 @@ RectTransform:
   - {fileID: 6479671587795987316}
   - {fileID: 7900461626778400700}
   - {fileID: 3958082264625659005}
+  - {fileID: 6349569564552569782}
   m_Father: {fileID: 8363806795212966640}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -6431,8 +6422,8 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: cebd552c5a2cb934991e3d7a4b44936f, type: 3}
---- !u!224 &1784990647400173941 stripped
+--- !u!224 &6349569564552569782 stripped
 RectTransform:
-  m_CorrespondingSourceObject: {fileID: 6974127699109374041, guid: cebd552c5a2cb934991e3d7a4b44936f, type: 3}
+  m_CorrespondingSourceObject: {fileID: 2311094658493012634, guid: cebd552c5a2cb934991e3d7a4b44936f, type: 3}
   m_PrefabInstance: {fileID: 8650460199956445484}
   m_PrefabAsset: {fileID: 0}

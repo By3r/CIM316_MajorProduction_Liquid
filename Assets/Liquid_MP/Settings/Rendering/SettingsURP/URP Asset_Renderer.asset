@@ -1,5 +1,19 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-2915964736068638634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 784870d669581ef4286e78ae61939132, type: 3}
+  m_Name: VisorPixelationFeature
+  m_EditorClassIdentifier: Assembly-CSharp::Liquid.Rendering.VisorPixelationFeature
+  m_Active: 1
+  _shader: {fileID: 4800000, guid: c96ed4932a0dd684cb859ac3cfb38a50, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -27,7 +41,8 @@ MonoBehaviour:
   m_RendererFeatures:
   - {fileID: 9033805497637153784}
   - {fileID: 936202262446029368}
-  m_RendererFeatureMap: f82ba2a83c865e7d383a035bff0efe0c
+  - {fileID: -2915964736068638634}
+  m_RendererFeatureMap: f82ba2a83c865e7d383a035bff0efe0c562810a1856988d7
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}

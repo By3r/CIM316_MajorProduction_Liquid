@@ -121,7 +121,7 @@ Material:
     - _DirtStrength: 0
     - _DstBlend: 10
     - _DstBlendAlpha: 10
-    - _EdgeAlpha: 0.4
+    - _EdgeAlpha: 0
     - _EnvironmentReflections: 1
     - _FresnelPower: 8
     - _GlossMapScale: 1
