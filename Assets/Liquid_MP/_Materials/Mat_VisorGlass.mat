@@ -121,9 +121,9 @@ Material:
     - _DirtStrength: 0
     - _DstBlend: 10
     - _DstBlendAlpha: 10
-    - _EdgeAlpha: 0
+    - _EdgeAlpha: 0.4
     - _EnvironmentReflections: 1
-    - _FresnelPower: 6.22
+    - _FresnelPower: 8
     - _GlossMapScale: 1
     - _Glossiness: 1
     - _GlossyReflections: 1
@@ -135,7 +135,7 @@ Material:
     - _ReceiveShadows: 1
     - _Smoothness: 0
     - _SmoothnessTextureChannel: 0
-    - _SpecPower: 468
+    - _SpecPower: 192
     - _SpecStrength: 1
     - _SpecularHighlights: 1
     - _SrcBlend: 1
@@ -147,10 +147,10 @@ Material:
     - _ZWrite: 0
     m_Colors:
     - _BaseColor: {r: 0, g: 0, b: 0, a: 0.07058824}
-    - _BumpTiling: {r: 0.6, g: 0.6, b: 0, a: 0}
+    - _BumpTiling: {r: 0.5, g: 0.5, b: 0, a: 0}
     - _Color: {r: 0, g: 0, b: 0, a: 0.07058824}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.9103774, g: 0.88078964, b: 0.82878697, a: 1}
-    - _TintColor: {r: 0.8113208, g: 1, b: 0.9389567, a: 1}
+    - _TintColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

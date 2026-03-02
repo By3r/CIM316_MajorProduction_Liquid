@@ -88,6 +88,7 @@ MonoBehaviour:
     - P4_DeletedLocal
     - ColorPicker.CycleColor
     - VFXRenderer Icon
+    - AudioLowPassFilter Icon
     enabled: 1
   - builtinIcons: []
     customIcons: []

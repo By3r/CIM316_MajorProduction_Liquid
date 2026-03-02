@@ -133,6 +133,11 @@ Shader "Liquid/VisorGlass"
                 float3 normalTS  = UnpackNormalScale(
                     SAMPLE_TEXTURE2D(_BumpMap, sampler_BumpMap, scratchUV), _BumpScale);
 
+                // Swap X/Y to correct tangent space orientation on cube mesh.
+                // Cube front face tangent is rotated 90° vs expected, causing
+                // perpendicular specular streaks. This realigns scratches.
+                normalTS.xy = normalTS.yx;
+
                 float3x3 TBN = float3x3(tangentWS, bitangentWS, normalWS);
                 float3 perturbedNormal = normalize(mul(normalTS, TBN));
 
