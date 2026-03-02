@@ -55,6 +55,10 @@ namespace _Scripts.Systems.HUD
                  "X = horizontal, Y = vertical. (0, 0) = no offset.")]
         [SerializeField] private Vector2 _chromaB = new Vector2(0.15f, 0f);
 
+        [Header("Visor Light")]
+        [Tooltip("GameObject to enable/disable with the visor (e.g. a point or spot light).")]
+        [SerializeField] private GameObject _visorLight;
+
         [Header("Sub-pixel Shape")]
         [Tooltip("Dark gap width between sub-pixels and pixel rows.\n" +
                  "0 = no gaps, 0.1 = visible grid, 0.2 = wide grid.")]
@@ -90,6 +94,7 @@ namespace _Scripts.Systems.HUD
         private void OnDisable()
         {
             VisorPixelationFeature.IsActive = false;
+            if (_visorLight != null) _visorLight.SetActive(false);
             _state = State.Idle;
         }
 
@@ -108,6 +113,7 @@ namespace _Scripts.Systems.HUD
                     {
                         _progress = 0f;                       // Start invisible.
                         VisorPixelationFeature.IsActive = true;
+                        if (_visorLight != null) _visorLight.SetActive(true);
                         _state = State.Boot;
                     }
                     break;
@@ -138,6 +144,7 @@ namespace _Scripts.Systems.HUD
                     if (_progress <= 0f)
                     {
                         VisorPixelationFeature.IsActive = false;
+                        if (_visorLight != null) _visorLight.SetActive(false);
                         _state = State.Idle;
                     }
                     break;

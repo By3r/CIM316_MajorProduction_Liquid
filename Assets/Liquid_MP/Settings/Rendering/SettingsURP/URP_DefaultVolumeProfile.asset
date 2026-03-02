@@ -141,10 +141,10 @@ MonoBehaviour:
   active: 1
   _noiseTiling:
     m_OverrideState: 1
-    m_Value: 2.97
+    m_Value: 5
   _noisePanningSpeed:
     m_OverrideState: 1
-    m_Value: {x: 0.05, y: 0, z: 0}
+    m_Value: {x: 0.01, y: 0, z: 0}
   _noiseWeights:
     m_OverrideState: 1
     m_Value: {x: 1, y: 1, z: 1, w: 1}
@@ -175,7 +175,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c5e1dc532bcb41949b58bc4f2abfbb7e, type: 3}
   m_Name: LensDistortion
   m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.LensDistortion
-  active: 1
+  active: 0
   intensity:
     m_OverrideState: 1
     m_Value: -0.102
@@ -743,7 +743,7 @@ MonoBehaviour:
   active: 1
   _globalDensityMultiplier:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.18
   _globalDensityThreshold:
     m_OverrideState: 1
     m_Value: 0.96
@@ -763,7 +763,7 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 1
   _cameraRelativeHeightFog:
-    m_OverrideState: 1
+    m_OverrideState: 0
     m_Value: 0
   _additionalLightContribution:
     m_OverrideState: 1
@@ -776,10 +776,10 @@ MonoBehaviour:
     m_Value: 1
   _globalMainLightDensityBoost:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 0
   _globalSecondaryLightDensityBoost:
     m_OverrideState: 1
-    m_Value: 11.13
+    m_Value: 4
 --- !u!114 &3927974275361066918
 MonoBehaviour:
   m_ObjectHideFlags: 3

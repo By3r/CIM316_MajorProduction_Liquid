@@ -1,22 +1,23 @@
 Shader "Liquid/PostProcess/Pixelation"
 {
-    // LCD sub-pixel pixelation with per-channel chromatic aberration.
+    // CRT-style pixelation with per-channel chromatic aberration.
     //
-    // Two rendering layers that blend automatically based on virtual pixel size:
-    //   1. Sub-pixel LCD  (screenPixelSize >= 8px) — RGB columns, SDF shapes, full detail
-    //   2. Plain pixelated (screenPixelSize < 8px)  — blocky with chroma + grid overlay
+    // Each virtual pixel is a bright rounded dot on a dark background,
+    // matching the look of real CRT / LED displays. The dark area between
+    // dots is the natural gap — not a grid drawn on top of blocks.
     //
-    // Chromatic aberration and grid lines work at ALL pixel sizes, not just in
-    // the LCD layer, so the effect stays visible at higher pixel percentages.
+    // Two detail tiers blend based on virtual pixel size:
+    //   1. Dot grid       (all sizes)         — rounded pixel dots + chroma
+    //   2. Sub-pixel LCD  (screenPixelSize >= 8px) — RGB column split inside each dot
     //
     // Resolution-independent: _PixelCount = virtual pixels across screen height.
     //
     // Driven by:
     //   _PixelCount    — virtual pixels across screen height (lower = blockier)
     //   _ChromaR/G/B   — per-channel UV offset in virtual-pixel units
-    //   _GapSize       — dark gap / grid line width between pixels
-    //   _CornerRadius  — sub-pixel corner rounding (LCD layer only)
-    //   _Brightness    — compensates for sub-pixel brightness loss (LCD layer only)
+    //   _GapSize       — dark space between pixel dots (0 = no gap, 0.2 = wide)
+    //   _CornerRadius  — dot corner rounding (0 = sharp rect, 1 = circular)
+    //   _Brightness    — compensates for brightness loss from dot masking
 
     SubShader
     {
@@ -49,9 +50,13 @@ Shader "Liquid/PostProcess/Pixelation"
             float _CornerRadius;
             float _Brightness;
 
-            float2 SnapUV(float2 uv, float2 cellCount)
+            // Snap a screen-pixel coordinate to the center of its virtual pixel,
+            // then convert back to UV. Guarantees every virtual pixel is exactly
+            // `virtualSize` screen pixels — no size variation.
+            float2 SnapToVirtualPixel(float2 pixelCoord, float virtualSize, float2 resolution)
             {
-                return (floor(uv * cellCount) + 0.5) / cellCount;
+                float2 snapped = floor(pixelCoord / virtualSize) * virtualSize + virtualSize * 0.5;
+                return snapped / resolution;
             }
 
             float RoundedRectSDF(float2 p, float2 halfSize, float r)
@@ -67,18 +72,14 @@ Shader "Liquid/PostProcess/Pixelation"
 
                 float pixelCount = max(_PixelCount, 4.0);
 
-                float aspect = resolution.x / resolution.y;
-                float2 cellCount = floor(float2(pixelCount * aspect, pixelCount));
+                // Integer virtual-pixel size ensures every pixel is uniform and square.
+                float virtualSize = max(round(resolution.y / pixelCount), 1.0);
 
-                // How many screen pixels each virtual pixel covers.
-                float screenPixelSize = resolution.y / pixelCount;
+                // How many screen pixels each virtual pixel covers (integer).
+                float screenPixelSize = virtualSize;
 
                 // ---- Blend thresholds ----
-                // Below ~1.5 screen pixels per virtual pixel the effect is invisible.
                 float pixelBlend = smoothstep(1.5, 3.0, screenPixelSize);
-
-                // LCD sub-pixel columns only when virtual pixels are large enough
-                // to avoid rainbow aliasing (3 sub-columns need ~3px each = ~9px total).
                 float subPixelBlend = smoothstep(6.0, 12.0, screenPixelSize);
 
                 // Early out: effect is invisible at this pixel count.
@@ -87,70 +88,82 @@ Shader "Liquid/PostProcess/Pixelation"
                     return SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv);
                 }
 
-                // ---- Per-channel snapped UVs (chromatic aberration at ALL sizes) ----
-                float2 uvStepR = _ChromaR / cellCount;
-                float2 uvStepG = _ChromaG / cellCount;
-                float2 uvStepB = _ChromaB / cellCount;
+                // ---- Screen-pixel-space snapping with per-channel chroma offsets ----
+                float2 pixelCoord = input.positionCS.xy;
 
-                float2 snappedR = SnapUV(uv + uvStepR, cellCount);
-                float2 snappedG = SnapUV(uv + uvStepG, cellCount);
-                float2 snappedB = SnapUV(uv + uvStepB, cellCount);
+                float2 chromaOffsetR = _ChromaR * virtualSize;
+                float2 chromaOffsetG = _ChromaG * virtualSize;
+                float2 chromaOffsetB = _ChromaB * virtualSize;
 
-                half3 plainColor = half3(
+                float2 snappedR = SnapToVirtualPixel(pixelCoord + chromaOffsetR, virtualSize, resolution);
+                float2 snappedG = SnapToVirtualPixel(pixelCoord + chromaOffsetG, virtualSize, resolution);
+                float2 snappedB = SnapToVirtualPixel(pixelCoord + chromaOffsetB, virtualSize, resolution);
+
+                half3 color = half3(
                     SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, snappedR).r,
                     SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, snappedG).g,
                     SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, snappedB).b
                 );
 
-                // ---- Grid overlay (works at ALL sizes) ----
-                float2 cellUV = frac(uv * cellCount);
+                // ---- Pixel dot shape (CRT-style) ----
+                // Position within virtual pixel cell: center = (0,0), edges = ±0.5
+                float2 cellUV = frac(pixelCoord / virtualSize);
+                float2 cellCenter = cellUV - 0.5;
 
-                // Distance from cell edge (0 at edge, 0.5 at center).
-                float2 edgeDist = 0.5 - abs(cellUV - 0.5);
-
-                // Normalised gap: fraction of cell consumed by grid lines.
                 float gap = _GapSize;
-                float gridMask = smoothstep(gap * 0.5, gap * 0.5 + 0.04, edgeDist.x)
-                               * smoothstep(gap * 0.35, gap * 0.35 + 0.04, edgeDist.y);
 
-                plainColor *= lerp(1.0, gridMask, step(0.001, gap));
+                if (gap > 0.001)
+                {
+                    // Dot fills the cell minus the gap on each side.
+                    float2 dotHalf = float2(0.5 - gap, 0.5 - gap * 0.7);
+                    float cornerR = min(dotHalf.x, dotHalf.y) * _CornerRadius;
+                    float sdf = RoundedRectSDF(cellCenter, max(dotHalf, 0.01), cornerR);
+
+                    // Soft falloff over ~1.5 screen pixels suppresses moiré by
+                    // avoiding sharp periodic brightness transitions.
+                    float softness = 1.5 / virtualSize;
+                    float dotMask = smoothstep(softness, -softness, sdf);
+
+                    // Per-dot noise breaks perfect periodicity that causes
+                    // display-level moiré (dot grid vs physical pixel grid).
+                    // ±3% brightness variation — imperceptible but kills interference.
+                    float2 cellId = floor(pixelCoord / virtualSize);
+                    float noise = frac(sin(dot(cellId, float2(12.9898, 78.233))) * 43758.5453);
+                    dotMask *= lerp(0.97, 1.0, noise);
+
+                    color *= dotMask;
+                }
 
                 // ---- Sub-pixel LCD effect (large virtual pixels only) ----
-                half3 subPixelColor = plainColor;
-
                 if (subPixelBlend > 0.001)
                 {
-                    // Sub-pixel column: R=0, G=1, B=2
                     float columnPos = cellUV.x * 3.0;
                     int col = clamp((int)floor(columnPos), 0, 2);
                     float subCellX = frac(columnPos);
 
-                    // Sample per-channel with chroma offsets (already computed above).
                     half r = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, snappedR).r;
                     half g = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, snappedG).g;
                     half b = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, snappedB).b;
 
-                    // Each column shows only its channel.
                     half3 channelMask = half3(col == 0, col == 1, col == 2);
                     half3 lcdColor = half3(r, g, b) * channelMask;
 
-                    // Sub-pixel rounded rectangle shape + gaps.
                     float2 p = float2(subCellX - 0.5, cellUV.y - 0.5);
-                    float2 halfSize = float2(0.5 - _GapSize, 0.5 - _GapSize * 0.7);
+                    float2 halfSize = float2(0.5 - gap, 0.5 - gap * 0.7);
                     float cornerR = min(halfSize.x, halfSize.y) * _CornerRadius;
 
-                    float dist = RoundedRectSDF(p, halfSize, cornerR);
-                    float mask = smoothstep(0.02, -0.02, dist);
+                    float dist = RoundedRectSDF(p, max(halfSize, 0.01), cornerR);
+                    float softness = 1.5 / virtualSize;
+                    float mask = smoothstep(softness, -softness, dist);
 
                     lcdColor *= mask * _Brightness;
 
-                    subPixelColor = lcdColor;
+                    color = lerp(color, lcdColor, subPixelBlend);
                 }
 
-                // ---- Composite: sub-pixel LCD ↔ plain (with chroma + grid) ↔ original ----
-                half3 pixelated = lerp(plainColor, subPixelColor, subPixelBlend);
+                // ---- Composite ----
                 half4 original = SAMPLE_TEXTURE2D(_BlitTexture, sampler_LinearClamp, uv);
-                half3 finalColor = lerp(original.rgb, pixelated, pixelBlend);
+                half3 finalColor = lerp(original.rgb, color, pixelBlend);
 
                 return half4(finalColor, 1.0);
             }
