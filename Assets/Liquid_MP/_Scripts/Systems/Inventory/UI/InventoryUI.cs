@@ -200,11 +200,16 @@ namespace _Scripts.Systems.Inventory.UI
 
         private void OnCloseInventory(InputAction.CallbackContext context)
         {
-            // Only close if inventory is open
-            if (_isOpen)
+            if (!_isOpen) return;
+
+            // If examiner is open, close it first — inventory stays open
+            if (_itemExaminer != null && _itemExaminer.IsOpen)
             {
-                CloseInventory();
+                _itemExaminer.Hide();
+                return;
             }
+
+            CloseInventory();
         }
 
         #endregion
@@ -345,12 +350,7 @@ namespace _Scripts.Systems.Inventory.UI
             InventorySlot slot = _playerInventory.GetSlot(slotIndex);
             if (slot == null || slot.IsEmpty) return;
 
-            // Hide visor panel while examining (examiner uses its own screen-space render texture)
-            if (_visorController != null)
-            {
-                _visorController.HidePanel();
-            }
-
+            // Inventory stays open — examiner overlays on top
             _itemExaminer.Show(slot.ItemData);
         }
 

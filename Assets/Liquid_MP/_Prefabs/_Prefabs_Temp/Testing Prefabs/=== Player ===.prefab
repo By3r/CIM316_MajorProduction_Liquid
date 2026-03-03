@@ -1042,6 +1042,7 @@ GameObject:
   m_Component:
   - component: {fileID: 8651481899955533852}
   - component: {fileID: 1917868828549243761}
+  - component: {fileID: 1662659254044461208}
   m_Layer: 12
   m_Name: Visor Root
   m_TagString: Untagged
@@ -1088,6 +1089,29 @@ MonoBehaviour:
   _raisedOffset: {x: 0, y: 0.15, z: 0.3}
   _raiseSpeed: 10
   _fadeSpeed: 8
+--- !u!114 &1662659254044461208
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1692183236552066892}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 388a7ae32138ad3468c40f60dfd6220a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.HUD.VisorPixelationAnimator
+  _resolvedPixelPercent: 0.275
+  _referenceHeight: 2160
+  _resolveTime: 0
+  _shutdownTime: 0.1
+  _chromaR: {x: 0.25, y: 0}
+  _chromaG: {x: 0, y: 0}
+  _chromaB: {x: -0.25, y: 0}
+  _visorLight: {fileID: 0}
+  _gapSize: 0.147
+  _cornerRadius: 0.426
+  _brightness: 3
 --- !u!1 &1779846591085115743
 GameObject:
   m_ObjectHideFlags: 0

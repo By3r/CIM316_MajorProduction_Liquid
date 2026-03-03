@@ -8,7 +8,7 @@ namespace _Scripts.Systems.Inventory.UI
 {
     /// <summary>
     /// UI component for a single physical item slot.
-    /// Displays icon, quantity, and empty state.
+    /// Displays icon and quantity. Empty slots show nothing.
     /// Handles right-click for context menu.
     /// </summary>
     public class InventorySlotUI : MonoBehaviour, IPointerClickHandler
@@ -27,12 +27,6 @@ namespace _Scripts.Systems.Inventory.UI
         [Header("UI References")]
         [SerializeField] private Image _iconImage;
         [SerializeField] private TextMeshProUGUI _quantityText;
-        [SerializeField] private GameObject _emptyStateOverlay;
-
-        [Header("Settings")]
-        [SerializeField] private Sprite _emptySlotSprite;
-        [SerializeField] private Color _emptySlotColor = new Color(1, 1, 1, 0.3f);
-        [SerializeField] private Color _filledSlotColor = Color.white;
 
         #endregion
 
@@ -40,6 +34,7 @@ namespace _Scripts.Systems.Inventory.UI
 
         private InventorySlot _currentSlot;
         private int _slotIndex = -1;
+        private static readonly Color Transparent = new Color(1, 1, 1, 0f);
 
         #endregion
 
@@ -74,22 +69,21 @@ namespace _Scripts.Systems.Inventory.UI
             }
         }
 
+        #endregion
+
+        #region Private Methods
+
         private void ShowEmpty()
         {
             if (_iconImage != null)
             {
-                _iconImage.sprite = _emptySlotSprite;
-                _iconImage.color = _emptySlotColor;
+                _iconImage.sprite = null;
+                _iconImage.color = Transparent;
             }
 
             if (_quantityText != null)
             {
                 _quantityText.gameObject.SetActive(false);
-            }
-
-            if (_emptyStateOverlay != null)
-            {
-                _emptyStateOverlay.SetActive(true);
             }
         }
 
@@ -97,8 +91,8 @@ namespace _Scripts.Systems.Inventory.UI
         {
             if (_iconImage != null)
             {
-                _iconImage.sprite = itemData.icon != null ? itemData.icon : _emptySlotSprite;
-                _iconImage.color = _filledSlotColor;
+                _iconImage.sprite = itemData.icon;
+                _iconImage.color = Color.white;
             }
 
             if (_quantityText != null)
@@ -112,11 +106,6 @@ namespace _Scripts.Systems.Inventory.UI
                 {
                     _quantityText.gameObject.SetActive(false);
                 }
-            }
-
-            if (_emptyStateOverlay != null)
-            {
-                _emptyStateOverlay.SetActive(false);
             }
         }
 
