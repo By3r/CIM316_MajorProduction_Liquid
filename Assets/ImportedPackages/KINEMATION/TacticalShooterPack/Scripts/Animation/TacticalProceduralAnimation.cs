@@ -68,6 +68,11 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
         protected Animator _animator;
         protected IkMotionPlayer _ikMotionPlayer = new IkMotionPlayer();
 
+        // Liquid: Unarmed/armed state for equipment system.
+        private bool _isArmed = true;
+        private float _armedWeight = 1f;
+        private const float ArmedTransitionSpeed = 6f;
+
         public void UpdateRightHandPose(KTransform rightHandPose)
         {
             _job.cachedIkHandGunRight = rightHandPose;
@@ -81,6 +86,25 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
         public void PlayIkMotion(IKMotion newMotion)
         {
             _ikMotionPlayer.PlayIkMotion(newMotion);
+        }
+
+        /// <summary>
+        /// Toggles between armed (weapon IK active) and unarmed (relaxed arms) states.
+        /// Set instant to true for initial setup (no smooth transition).
+        /// </summary>
+        public void SetArmed(bool armed, bool instant = false)
+        {
+            _isArmed = armed;
+            if (instant)
+            {
+                _armedWeight = armed ? 1f : 0f;
+                // Immediately push to playable if it exists (handles post-Start calls)
+                if (_playable.IsValid())
+                {
+                    _job.armedWeight = _armedWeight;
+                    _playable.SetJobData(_job);
+                }
+            }
         }
 
         public void UpdateAnimationSettings(WeaponAnimationData newSettings)
@@ -124,6 +148,11 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
                 "TacticalShooterOutput", _animator);
             _tacOutput.SetSourcePlayable(_playable);
             _tacOutput.SetAnimationStreamSource(AnimationStreamSource.PreviousInputs);
+
+            // Apply current armed weight to the playable immediately.
+            // Handles case where SetArmed(false, instant) was called before Start().
+            _job.armedWeight = _armedWeight;
+            _playable.SetJobData(_job);
         }
 
         protected void Update()
@@ -138,6 +167,11 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
             
             _job._ikMotion = _ikMotionPlayer.IkMotion;
             _job.moveInput = moveInput;
+
+            // Smoothly interpolate armed weight for natural IK blend
+            float targetArmedWeight = _isArmed ? 1f : 0f;
+            _armedWeight = Mathf.MoveTowards(_armedWeight, targetArmedWeight, Time.deltaTime * ArmedTransitionSpeed);
+            _job.armedWeight = _armedWeight;
 
             _job.UpdateJob(_playable);
             _playable.SetJobData(_job);

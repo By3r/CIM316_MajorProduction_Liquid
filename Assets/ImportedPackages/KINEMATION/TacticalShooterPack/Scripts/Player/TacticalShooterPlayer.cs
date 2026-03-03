@@ -84,6 +84,10 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         // Liquid: Accumulated body yaw for world-space rotation.
         protected float _bodyYaw;
 
+        // Liquid: Cached character renderers (arms/hands) for toggling visibility when unarmed.
+        // Cached at Start before weapons are added, so weapon renderers are NOT included.
+        private Renderer[] _characterRenderers;
+
         // Liquid: Reference to MovementController for reading gait state.
         protected MovementController _movementController;
 
@@ -163,6 +167,10 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
 
             _animator = GetComponentInChildren<Animator>();
 
+            // Cache character renderers (arms/hands) BEFORE weapons are added,
+            // so this list only contains the character model, not weapon meshes.
+            _characterRenderers = GetComponentsInChildren<Renderer>();
+
             // When UseEquipmentSystem is true, PlayerEquipment manages weapon lifecycle.
             // weaponPrefabs[] is ignored and the player starts unarmed.
             if (!UseEquipmentSystem)
@@ -188,6 +196,15 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                     foreach (var weapon in _weapons)
                         hitDetector.SubscribeToWeapon(weapon);
                 }
+            }
+            else
+            {
+                // Equipment system — player starts unarmed (no weapons spawned).
+                if (_tacProceduralAnimation != null)
+                    _tacProceduralAnimation.SetArmed(false, instant: true);
+
+                // Hide first-person arm renderers — no weapon means nothing to show.
+                SetCharacterRenderersVisible(false);
             }
 
             // Liquid: Sync initial body yaw with current rotation.
@@ -348,9 +365,9 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                 _wantsToSprint = InputManager.Instance.IsSprinting;
             }
 
-            // --- Weapon input (requires a weapon to be equipped) ---
+            // --- Weapon input (requires a weapon to be equipped and drawn) ---
             var currentWeapon = GetPrimaryWeapon();
-            if (currentWeapon != null)
+            if (currentWeapon != null && _weaponSettings != null)
             {
                 // --- Fire (blocked during active actions and sprinting) ---
                 if (_hasActiveAction || _wantsToSprint)
@@ -689,6 +706,63 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                 Debug.LogError("[TacticalShooterPlayer] PlayerManager.Instance is STILL null after deferral. Player will not be registered.");
             }
         }
+
+        #region Liquid: Unarmed State
+
+        /// <summary>
+        /// Transitions to unarmed state — hides the active weapon and relaxes arm IK.
+        /// Called by PlayerEquipment when all weapons are unequipped or manually holstered.
+        /// </summary>
+        public void EnterUnarmedState()
+        {
+            var active = GetActiveWeapon();
+            if (active != null)
+            {
+                active.HideWeapon();
+            }
+
+            _weaponSettings = null;
+            _tacProceduralAnimation.SetArmed(false);
+
+            // Hide first-person arm renderers
+            SetCharacterRenderersVisible(false);
+
+            // Cancel aiming
+            if (_isAiming)
+            {
+                _isAiming = false;
+                fpsCamera.SetTargetFOV(fpsCamera.BaseFOV, 6f);
+            }
+        }
+
+        /// <summary>
+        /// Transitions back to armed state with a specific weapon.
+        /// Called by PlayerEquipment when drawing a weapon from holstered/unarmed state.
+        /// </summary>
+        public void EnterArmedState(TacticalShooterWeapon weapon)
+        {
+            if (weapon == null) return;
+
+            // Show first-person arm renderers before draw animation
+            SetCharacterRenderersVisible(true);
+
+            _tacProceduralAnimation.SetArmed(true);
+            ActivateWeaponByReference(weapon);
+        }
+
+        /// <summary>Whether the player is currently in unarmed state (no weapon drawn).</summary>
+        public bool IsUnarmed => _weaponSettings == null;
+
+        private void SetCharacterRenderersVisible(bool visible)
+        {
+            if (_characterRenderers == null) return;
+            foreach (var r in _characterRenderers)
+            {
+                if (r != null) r.enabled = visible;
+            }
+        }
+
+        #endregion
 
         #region Liquid: Dynamic Weapon Management (called by PlayerEquipment)
 

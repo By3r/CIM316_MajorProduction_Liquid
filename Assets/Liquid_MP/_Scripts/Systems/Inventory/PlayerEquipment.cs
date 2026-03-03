@@ -70,6 +70,9 @@ namespace _Scripts.Systems.Inventory
         // Switching state
         private bool _isSwitching;
 
+        // Holster state — weapon is equipped but not drawn
+        private bool _isHolstered;
+
         #endregion
 
         #region Properties
@@ -86,6 +89,9 @@ namespace _Scripts.Systems.Inventory
         public bool HasWeaponEquipped =>
             !_slots[(int)EquipmentSlotType.PrimaryWeapon].IsEmpty ||
             !_slots[(int)EquipmentSlotType.SecondaryWeapon].IsEmpty;
+
+        /// <summary>Whether the active weapon is holstered (equipped but not drawn).</summary>
+        public bool IsHolstered => _isHolstered;
 
         #endregion
 
@@ -273,6 +279,13 @@ namespace _Scripts.Systems.Inventory
                 {
                     ActivateWeaponSlot(otherSlot);
                 }
+                else
+                {
+                    // No weapons left — enter unarmed state
+                    _isHolstered = true;
+                    if (_tacticalPlayer != null && !_tacticalPlayer.IsUnarmed)
+                        _tacticalPlayer.EnterUnarmedState();
+                }
             }
 
             return removedItem;
@@ -299,7 +312,7 @@ namespace _Scripts.Systems.Inventory
                                          _tacticalPlayer != null &&
                                          _tacticalPlayer.IsQuickDrawActive;
 
-            if ((isActiveWeapon || isQuickDrawnSecondary) && _tacticalPlayer != null)
+            if ((isActiveWeapon || isQuickDrawnSecondary) && _tacticalPlayer != null && !_isHolstered)
             {
                 StartCoroutine(AnimatedUnequipCoroutine(slotType, isQuickDrawnSecondary));
             }
@@ -358,28 +371,59 @@ namespace _Scripts.Systems.Inventory
 
         /// <summary>
         /// Switches to the weapon in the given slot (0 = primary, 1 = secondary).
+        /// Pressing the same slot key toggles holster/draw.
         /// </summary>
         public void SwitchActiveWeapon(int slotIndex)
         {
             if (slotIndex < 0 || slotIndex > 1) return;
-            if (slotIndex == _activeWeaponSlot) return;
             if (_slots[slotIndex].IsEmpty) return;
             if (_isSwitching) return;
 
             // Block switching while quick draw is active — player must holster pistol first (X)
             if (_tacticalPlayer != null && _tacticalPlayer.IsQuickDrawActive) return;
 
+            // Pressing the active slot's key while drawn → holster
+            if (slotIndex == _activeWeaponSlot && !_isHolstered)
+            {
+                HolsterWeapon();
+                return;
+            }
+
+            // Any key press while holstered → draw that weapon
+            if (_isHolstered)
+            {
+                DrawWeapon(slotIndex);
+                return;
+            }
+
+            // Normal switch between different slots
             StartCoroutine(SwitchWeaponCoroutine(slotIndex));
         }
 
         public void SwitchToNextWeapon()
         {
+            // Scroll while holstered → draw the current weapon
+            if (_isHolstered)
+            {
+                if (!_slots[_activeWeaponSlot].IsEmpty)
+                    DrawWeapon(_activeWeaponSlot);
+                return;
+            }
+
             int next = _activeWeaponSlot == 0 ? 1 : 0;
             SwitchActiveWeapon(next);
         }
 
         public void SwitchToPreviousWeapon()
         {
+            // Scroll while holstered → draw the current weapon
+            if (_isHolstered)
+            {
+                if (!_slots[_activeWeaponSlot].IsEmpty)
+                    DrawWeapon(_activeWeaponSlot);
+                return;
+            }
+
             int prev = _activeWeaponSlot == 0 ? 1 : 0;
             SwitchActiveWeapon(prev);
         }
@@ -392,6 +436,7 @@ namespace _Scripts.Systems.Inventory
         {
             if (_tacticalPlayer == null) return;
             if (_isSwitching) return;
+            if (_isHolstered) return; // Can't quick draw while holstered
 
             // If already in quick draw, always allow toggling off
             if (_tacticalPlayer.IsQuickDrawActive)
@@ -412,6 +457,61 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
                 Debug.Log("[PlayerEquipment] Quick draw secondary weapon toggled.");
+        }
+
+        /// <summary>
+        /// Holsters the active weapon — plays holster animation, then enters unarmed state.
+        /// The weapon stays equipped in its slot but is not drawn.
+        /// </summary>
+        public void HolsterWeapon()
+        {
+            if (_isHolstered) return;
+            if (_isSwitching) return;
+            if (_tacticalPlayer == null) return;
+            if (!HasWeaponEquipped) return;
+
+            StartCoroutine(HolsterCoroutine());
+        }
+
+        /// <summary>
+        /// Draws the weapon in the given slot from holstered/unarmed state.
+        /// </summary>
+        public void DrawWeapon(int slotIndex)
+        {
+            if (!_isHolstered) return;
+            if (_isSwitching) return;
+            if (slotIndex < 0 || slotIndex > 1) return;
+            if (_slots[slotIndex].IsEmpty) return;
+            if (_tacticalPlayer == null) return;
+
+            var weapon = GetWeaponFromSlot(slotIndex);
+            if (weapon == null) return;
+
+            _activeWeaponSlot = slotIndex;
+            _isHolstered = false;
+
+            _tacticalPlayer.EnterArmedState(weapon);
+
+            OnActiveWeaponSlotChanged?.Invoke(_activeWeaponSlot);
+
+            if (_showDebugLogs)
+                Debug.Log($"[PlayerEquipment] Drew weapon from slot {slotIndex}.");
+        }
+
+        private IEnumerator HolsterCoroutine()
+        {
+            _isSwitching = true;
+
+            float delay = _tacticalPlayer.HolsterActiveWeapon();
+            if (delay > 0f)
+                yield return new WaitForSeconds(delay);
+
+            _tacticalPlayer.EnterUnarmedState();
+            _isHolstered = true;
+            _isSwitching = false;
+
+            if (_showDebugLogs)
+                Debug.Log("[PlayerEquipment] Weapon holstered — entered unarmed state.");
         }
 
         #endregion
@@ -465,7 +565,8 @@ namespace _Scripts.Systems.Inventory
                 var weapon = activeSlot.RuntimeInstance.GetComponentInChildren<TacticalShooterWeapon>();
                 if (weapon != null && _tacticalPlayer != null)
                 {
-                    _tacticalPlayer.ActivateWeaponByReference(weapon);
+                    _isHolstered = false;
+                    _tacticalPlayer.EnterArmedState(weapon);
                 }
             }
 
@@ -626,9 +727,10 @@ namespace _Scripts.Systems.Inventory
             if (weapon == null) return;
 
             _activeWeaponSlot = slotIndex;
+            _isHolstered = false;
 
             if (_tacticalPlayer != null)
-                _tacticalPlayer.ActivateWeaponByReference(weapon);
+                _tacticalPlayer.EnterArmedState(weapon);
 
             OnActiveWeaponSlotChanged?.Invoke(_activeWeaponSlot);
         }
