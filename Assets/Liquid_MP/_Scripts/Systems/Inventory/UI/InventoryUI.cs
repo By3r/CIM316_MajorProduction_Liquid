@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using _Scripts.Core.Managers;
 using _Scripts.Systems.HUD;
+using _Scripts.Systems.Inventory.ItemTypes;
 using _Scripts.Systems.Inventory.Pickups;
 
 namespace _Scripts.Systems.Inventory.UI
@@ -124,6 +125,7 @@ namespace _Scripts.Systems.Inventory.UI
             {
                 _contextMenu.OnDropRequested += HandleDropRequested;
                 _contextMenu.OnExamineRequested += HandleExamineRequested;
+                _contextMenu.OnEquipRequested += HandleEquipRequested;
             }
         }
 
@@ -178,6 +180,7 @@ namespace _Scripts.Systems.Inventory.UI
             {
                 _contextMenu.OnDropRequested -= HandleDropRequested;
                 _contextMenu.OnExamineRequested -= HandleExamineRequested;
+                _contextMenu.OnEquipRequested -= HandleEquipRequested;
             }
         }
 
@@ -336,10 +339,21 @@ namespace _Scripts.Systems.Inventory.UI
                 _itemExaminer.Hide();
             }
 
+            // Determine if this item is equippable (weapon or suit addon)
+            bool showEquip = false;
+            if (_playerInventory != null)
+            {
+                InventorySlot slot = _playerInventory.GetSlot(slotIndex);
+                if (slot != null && !slot.IsEmpty)
+                {
+                    showEquip = slot.ItemData is WeaponItemData || slot.ItemData is SuitAddonItemData;
+                }
+            }
+
             // Show context menu at click position
             if (_contextMenu != null)
             {
-                _contextMenu.Show(slotIndex, screenPosition);
+                _contextMenu.Show(slotIndex, screenPosition, showEquip);
             }
         }
 
@@ -352,6 +366,71 @@ namespace _Scripts.Systems.Inventory.UI
 
             // Inventory stays open — examiner overlays on top
             _itemExaminer.Show(slot.ItemData);
+        }
+
+        private void HandleEquipRequested(int slotIndex)
+        {
+            if (_playerInventory == null) return;
+
+            InventorySlot slot = _playerInventory.GetSlot(slotIndex);
+            if (slot == null || slot.IsEmpty) return;
+
+            PlayerEquipment equipment = PlayerEquipment.Instance;
+            if (equipment == null)
+            {
+                Debug.LogWarning("[InventoryUI] PlayerEquipment not found.");
+                return;
+            }
+
+            InventoryItemData itemData = slot.ItemData;
+            EquipmentSlotType targetSlot = DetermineEquipSlot(itemData, equipment);
+
+            if (!equipment.CanEquip(itemData, targetSlot))
+            {
+                Debug.LogWarning($"[InventoryUI] Cannot equip '{itemData.displayName}' to {targetSlot}.");
+                return;
+            }
+
+            if (equipment.TryEquip(itemData, targetSlot))
+            {
+                // Remove from inventory — TryEquip handles returning any swapped item
+                _playerInventory.RemoveItemFromSlot(slotIndex, 1);
+            }
+        }
+
+        /// <summary>
+        /// Determines the best equipment slot for an item.
+        /// Weapons: prefers empty slot matching their type, falls back to the other if compatible.
+        /// Suit addons: always go to SuitAddon slot.
+        /// </summary>
+        private EquipmentSlotType DetermineEquipSlot(InventoryItemData itemData, PlayerEquipment equipment)
+        {
+            if (itemData is SuitAddonItemData)
+                return EquipmentSlotType.SuitAddon;
+
+            if (itemData is WeaponItemData weaponData)
+            {
+                switch (weaponData.weaponSlot)
+                {
+                    case WeaponSlotType.PrimaryOnly:
+                        return EquipmentSlotType.PrimaryWeapon;
+
+                    case WeaponSlotType.SecondaryOnly:
+                        return EquipmentSlotType.SecondaryWeapon;
+
+                    case WeaponSlotType.PrimaryOrSecondary:
+                        // Prefer the empty slot; if both empty prefer primary; if both full prefer primary (swap)
+                        EquipmentSlot primary = equipment.GetSlot(EquipmentSlotType.PrimaryWeapon);
+                        EquipmentSlot secondary = equipment.GetSlot(EquipmentSlotType.SecondaryWeapon);
+
+                        if (primary.IsEmpty && !secondary.IsEmpty) return EquipmentSlotType.PrimaryWeapon;
+                        if (!primary.IsEmpty && secondary.IsEmpty) return EquipmentSlotType.SecondaryWeapon;
+                        return EquipmentSlotType.PrimaryWeapon; // both empty or both full → primary
+                }
+            }
+
+            // Fallback (should never happen for equippable items)
+            return EquipmentSlotType.PrimaryWeapon;
         }
 
         private void HandleDropRequested(int slotIndex)

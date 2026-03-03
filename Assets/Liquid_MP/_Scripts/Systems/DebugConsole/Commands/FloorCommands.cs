@@ -42,6 +42,11 @@ namespace _Scripts.Systems.DebugConsole.Commands
                     floorManager.SavePlayerInventory(PlayerInventory.Instance.ToSaveData());
                 }
 
+                if (PlayerEquipment.Instance != null)
+                {
+                    floorManager.SavePlayerEquipment(PlayerEquipment.Instance.ToSaveData());
+                }
+
                 floorManager.MarkCurrentFloorAsVisited();
                 floorManager.CurrentFloorNumber = targetFloor;
             }
@@ -54,6 +59,14 @@ namespace _Scripts.Systems.DebugConsole.Commands
             {
                 var savedInventory = floorManager.GetSavedInventory();
                 PlayerInventory.Instance.RestoreFromSaveData(savedInventory);
+            }
+
+            // Restore equipment after floor generation
+            if (floorManager != null && PlayerEquipment.Instance != null)
+            {
+                var savedEquipment = floorManager.GetSavedEquipment();
+                if (savedEquipment != null)
+                    PlayerEquipment.Instance.RestoreFromSaveData(savedEquipment);
             }
 
             return $"<color=green>Transitioning to floor {targetFloor}...</color>";

@@ -133,6 +133,9 @@ namespace _Scripts.Core.Managers
         // Item persistence: player inventory snapshot between floor transitions
         private InventorySaveData _savedInventory;
 
+        // Equipment persistence: player equipment snapshot between floor transitions
+        private EquipmentSaveData _savedEquipment;
+
         // PowerCellSlot state: persists across floor transitions so the power cell
         // isn't lost when revisiting already-visited floors
         private bool _powerCellSlotPowered;
@@ -200,6 +203,7 @@ namespace _Scripts.Core.Managers
             _floorStates.Clear();
             _safeRoomDroppedItems.Clear();
             _savedInventory = null;
+            _savedEquipment = null;
             _currentFloorNumber = 1;
             _isInitialized = true;
 
@@ -401,6 +405,27 @@ namespace _Scripts.Core.Managers
         }
 
         /// <summary>
+        /// Saves a snapshot of the player's equipment for restoration after floor transition.
+        /// </summary>
+        public void SavePlayerEquipment(EquipmentSaveData equipmentData)
+        {
+            _savedEquipment = equipmentData;
+
+            if (_showDebugLogs)
+            {
+                Debug.Log("[FloorStateManager] Saved player equipment snapshot.");
+            }
+        }
+
+        /// <summary>
+        /// Gets the saved player equipment snapshot. Returns null if nothing was saved.
+        /// </summary>
+        public EquipmentSaveData GetSavedEquipment()
+        {
+            return _savedEquipment;
+        }
+
+        /// <summary>
         /// Saves the PowerCellSlot state so it persists across floor transitions.
         /// </summary>
         public void SavePowerCellSlotState(bool isPowered, string itemId)
@@ -470,6 +495,7 @@ namespace _Scripts.Core.Managers
                     currentFloorNumber = _currentFloorNumber,
                     floorStates = new List<FloorState>(_floorStates.Values),
                     playerInventory = _savedInventory,
+                    playerEquipment = _savedEquipment,
                     safeRoomItems = new List<DroppedItemData>(_safeRoomDroppedItems)
                 };
 
@@ -521,6 +547,7 @@ namespace _Scripts.Core.Managers
 
                 // Restore item persistence data
                 _savedInventory = saveData.playerInventory;
+                _savedEquipment = saveData.playerEquipment;
                 _safeRoomDroppedItems = saveData.safeRoomItems ?? new List<DroppedItemData>();
 
                 _isInitialized = true;
@@ -688,6 +715,7 @@ namespace _Scripts.Core.Managers
         public int currentFloorNumber;
         public List<FloorState> floorStates;
         public InventorySaveData playerInventory;
+        public EquipmentSaveData playerEquipment;
         public List<DroppedItemData> safeRoomItems;
     }
 

@@ -15,6 +15,7 @@ namespace _Scripts.Systems.Inventory.UI
 
         public event Action<int> OnDropRequested;
         public event Action<int> OnExamineRequested;
+        public event Action<int> OnEquipRequested;
 
         #endregion
 
@@ -24,6 +25,7 @@ namespace _Scripts.Systems.Inventory.UI
         [SerializeField] private RectTransform _menuPanel;
         [SerializeField] private Button _dropButton;
         [SerializeField] private Button _examineButton;
+        [SerializeField] private Button _equipButton;
         [SerializeField] private CanvasGroup _canvasGroup;
 
         [Header("Settings")]
@@ -103,6 +105,11 @@ namespace _Scripts.Systems.Inventory.UI
             {
                 _examineButton.onClick.AddListener(OnExamineClicked);
             }
+
+            if (_equipButton != null)
+            {
+                _equipButton.onClick.AddListener(OnEquipClicked);
+            }
         }
 
         #endregion
@@ -112,9 +119,18 @@ namespace _Scripts.Systems.Inventory.UI
         /// <summary>
         /// Shows the context menu at the specified screen position for the given slot.
         /// </summary>
-        public void Show(int slotIndex, Vector2 screenPosition)
+        /// <param name="slotIndex">The inventory slot index this menu acts on.</param>
+        /// <param name="screenPosition">Screen-space position to place the menu.</param>
+        /// <param name="showEquip">If true, the Equip button is visible (for weapons/suit addons).</param>
+        public void Show(int slotIndex, Vector2 screenPosition, bool showEquip = false)
         {
             _currentSlotIndex = slotIndex;
+
+            // Show/hide the equip button based on item type
+            if (_equipButton != null)
+            {
+                _equipButton.gameObject.SetActive(showEquip);
+            }
 
             // Position the menu at click location
             PositionMenu(screenPosition);
@@ -201,6 +217,15 @@ namespace _Scripts.Systems.Inventory.UI
             if (_currentSlotIndex >= 0)
             {
                 OnExamineRequested?.Invoke(_currentSlotIndex);
+            }
+            Hide();
+        }
+
+        private void OnEquipClicked()
+        {
+            if (_currentSlotIndex >= 0)
+            {
+                OnEquipRequested?.Invoke(_currentSlotIndex);
             }
             Hide();
         }

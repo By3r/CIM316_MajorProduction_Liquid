@@ -76,6 +76,8 @@ namespace _Scripts.Systems.Weapon
             if (_camera == null) return;
 
             TacticalShooterWeapon weapon = _player.GetPrimaryWeapon();
+            if (weapon == null) return;
+
             WeaponCombatData data = weapon.combatData;
 
             if (data == null)

@@ -19,6 +19,7 @@ MonoBehaviour:
     - 8cc30a3974b42ed4e90fd99f03f611d6
     - 25a48a5d8784e494d91d56e2c4e82bb4
     - c1649502282cdd349b1c79b701ae281d
+    - db5eb9ab39fd8b144a7d6a4f51f572c1
     values:
     - goDatas_byGlobalId:
         keys:
@@ -246,6 +247,7 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-1-8cc30a3974b42ed4e90fd99f03f611d6-7912803439716468786-0
         - globalObjectIdString: GlobalObjectId_V1-1-8cc30a3974b42ed4e90fd99f03f611d6-3821786593894199118-0
         - globalObjectIdString: GlobalObjectId_V1-1-8cc30a3974b42ed4e90fd99f03f611d6-5905477482315762008-0
+        - globalObjectIdString: GlobalObjectId_V1-1-8cc30a3974b42ed4e90fd99f03f611d6-2097869421701109070-0
         values:
         - colorIndex: 8
           iconNameOrGuid: SceneLoadOut
@@ -257,6 +259,10 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 1
           iconNameOrGuid: PreMatQuad
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 5
+          iconNameOrGuid: editconstraints_32
           isIconRecursive: 0
           isColorRecursive: 0
     - goDatas_byGlobalId:
@@ -295,6 +301,15 @@ MonoBehaviour:
           iconNameOrGuid: editconstraints_32
           isIconRecursive: 0
           isColorRecursive: 0
+    - goDatas_byGlobalId:
+        keys:
+        - globalObjectIdString: GlobalObjectId_V1-1-db5eb9ab39fd8b144a7d6a4f51f572c1-3821786593894199118-0
+        values:
+        - colorIndex: 5
+          iconNameOrGuid: editconstraints_32
+          isIconRecursive: 0
+          isColorRecursive: 0
   bookmarks: []
   bookmarkedScenePaths:
   - Assets/Liquid_MP/_Scenes/Dev_Scenes/Dev_Procedural_Generation.unity
+  - Assets/ImportedPackages/SciFiFacilitySector43/Scenes/SampleScene.unity

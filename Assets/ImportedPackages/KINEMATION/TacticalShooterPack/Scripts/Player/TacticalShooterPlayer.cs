@@ -34,6 +34,11 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         [SerializeField] protected GameObject[] weaponPrefabs;
         [SerializeField] protected FPSCameraAnimator fpsCamera;
 
+        [Header("Liquid: Equipment System")]
+        [Tooltip("When true, PlayerEquipment manages weapons dynamically. " +
+                 "weaponPrefabs[] is ignored and weapon switching input is handled externally.")]
+        public bool UseEquipmentSystem = false;
+
         [Tab("Animation")]
         [SerializeField] protected IKMotion aimIkMotion;
         [SerializeField] protected IKMotion fireModeIkMotion;
@@ -128,6 +133,9 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             _movementController = GetComponent<MovementController>();
         }
 
+        /// <summary>Whether any weapons are currently loaded.</summary>
+        public bool HasWeapons => _weapons != null && _weapons.Count > 0;
+
         public override KShooterWeapon GetActiveShooterWeapon()
         {
             return GetActiveWeapon();
@@ -135,11 +143,13 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
 
         public TacticalShooterWeapon GetActiveWeapon()
         {
+            if (_weapons == null || _weapons.Count == 0) return null;
             return _weapons[_activeWeaponIndex];
         }
 
         public TacticalShooterWeapon GetPrimaryWeapon()
         {
+            if (_weapons == null || _weapons.Count == 0) return null;
             return _quickDrawPistol ? _weapons[_quickDrawWeaponIndex] : GetActiveWeapon();
         }
 
@@ -151,26 +161,33 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             _audioSource = GetComponent<AudioSource>();
             _weapons = new List<TacticalShooterWeapon>();
 
-            var bones = _tacProceduralAnimation.bones;
-
-            foreach (var prefab in weaponPrefabs)
-            {
-                var weapon = Instantiate(prefab, bones.ikHandGun).GetComponentInChildren<TacticalShooterWeapon>();
-                weapon.Initialize(gameObject, bones.rightHand);
-                weapon.HideWeapon();
-
-                _weapons.Add(weapon);
-            }
-
             _animator = GetComponentInChildren<Animator>();
-            EquipWeapon();
 
-            // Liquid: Subscribe WeaponHitDetector to each weapon's fire event.
-            var hitDetector = GetComponent<_Scripts.Systems.Weapon.WeaponHitDetector>();
-            if (hitDetector != null)
+            // When UseEquipmentSystem is true, PlayerEquipment manages weapon lifecycle.
+            // weaponPrefabs[] is ignored and the player starts unarmed.
+            if (!UseEquipmentSystem)
             {
-                foreach (var weapon in _weapons)
-                    hitDetector.SubscribeToWeapon(weapon);
+                var bones = _tacProceduralAnimation.bones;
+
+                foreach (var prefab in weaponPrefabs)
+                {
+                    var weapon = Instantiate(prefab, bones.ikHandGun)
+                        .GetComponentInChildren<TacticalShooterWeapon>();
+                    weapon.Initialize(gameObject, bones.rightHand);
+                    weapon.HideWeapon();
+
+                    _weapons.Add(weapon);
+                }
+
+                if (HasWeapons) EquipWeapon();
+
+                // Liquid: Subscribe WeaponHitDetector to each weapon's fire event.
+                var hitDetector = GetComponent<_Scripts.Systems.Weapon.WeaponHitDetector>();
+                if (hitDetector != null)
+                {
+                    foreach (var weapon in _weapons)
+                        hitDetector.SubscribeToWeapon(weapon);
+                }
             }
 
             // Liquid: Sync initial body yaw with current rotation.
@@ -265,24 +282,29 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             // Liquid: Read all input from InputManager singleton.
             ReadInputFromInputManager();
 
-            float aimingSpeed = GetPrimaryWeapon().AimingSpeed * (_isAiming ? 1f : -1f);
-            _tacProceduralAnimation.aimingWeight += Time.deltaTime * aimingSpeed;
-            _tacProceduralAnimation.aimingWeight = Mathf.Clamp01(_tacProceduralAnimation.aimingWeight);
-
-            Transform aimPoint = GetPrimaryWeapon().GetAimPoint();
-            KTransform aimTransform = KTransform.Identity;
-            if (aimPoint != null)
+            // Weapon-dependent updates — skip if unarmed.
+            var primaryWeapon = GetPrimaryWeapon();
+            if (primaryWeapon != null && _weaponSettings != null)
             {
-                aimTransform = new KTransform(GetPrimaryWeapon().transform);
-                aimTransform =
-                    aimTransform.GetRelativeTransform(new KTransform(GetPrimaryWeapon().GetAimPoint()), false);
-                aimTransform.position *= -1f;
+                float aimingSpeed = primaryWeapon.AimingSpeed * (_isAiming ? 1f : -1f);
+                _tacProceduralAnimation.aimingWeight += Time.deltaTime * aimingSpeed;
+                _tacProceduralAnimation.aimingWeight = Mathf.Clamp01(_tacProceduralAnimation.aimingWeight);
+
+                Transform aimPoint = primaryWeapon.GetAimPoint();
+                KTransform aimTransform = KTransform.Identity;
+                if (aimPoint != null)
+                {
+                    aimTransform = new KTransform(primaryWeapon.transform);
+                    aimTransform =
+                        aimTransform.GetRelativeTransform(new KTransform(primaryWeapon.GetAimPoint()), false);
+                    aimTransform.position *= -1f;
+                }
+
+                _tacProceduralAnimation.UpdateAimPoint(aimTransform);
+
+                UpdateCurveAnimIntensity(_weaponSettings.idleIntensity, TacShooterUtility.Animator_IdleIntensity);
+                UpdateCurveAnimIntensity(_weaponSettings.walkIntensity, TacShooterUtility.Animator_WalkIntensity);
             }
-
-            _tacProceduralAnimation.UpdateAimPoint(aimTransform);
-
-            UpdateCurveAnimIntensity(_weaponSettings.idleIntensity, TacShooterUtility.Animator_IdleIntensity);
-            UpdateCurveAnimIntensity(_weaponSettings.walkIntensity, TacShooterUtility.Animator_WalkIntensity);
 
             // Liquid: Camera gets pitch from procedural animation, yaw is always 0 (body handles yaw).
             fpsCamera.lookInput.y = _tacProceduralAnimation.pitchInput;
@@ -326,88 +348,94 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                 _wantsToSprint = InputManager.Instance.IsSprinting;
             }
 
-            // --- Fire (blocked during active actions and sprinting) ---
-            if (_hasActiveAction || _wantsToSprint)
+            // --- Weapon input (requires a weapon to be equipped) ---
+            var currentWeapon = GetPrimaryWeapon();
+            if (currentWeapon != null)
             {
-                if (GetPrimaryWeapon().IsFiring) GetPrimaryWeapon().StopFiring();
-            }
-            else
-            {
-                if (InputManager.Instance.FireJustPressed)
+                // --- Fire (blocked during active actions and sprinting) ---
+                if (_hasActiveAction || _wantsToSprint)
                 {
-                    GetPrimaryWeapon().StartFiring();
-                }
-                else if (!InputManager.Instance.FirePressed && GetPrimaryWeapon().IsFiring)
-                {
-                    GetPrimaryWeapon().StopFiring();
-                }
-            }
-
-            // --- Aim (hold to aim) ---
-            if (InputManager.Instance.AimJustPressed && !_isAiming)
-            {
-                OnAim();
-            }
-            else if (InputManager.Instance.AimJustReleased && _isAiming)
-            {
-                OnAim();
-            }
-
-            // --- Reload ---
-            if (InputManager.Instance.ReloadPressed)
-            {
-                OnReload();
-            }
-
-            // --- Weapon switch (scroll wheel) ---
-            float scrollInput = InputManager.Instance.SwitchWeaponInput;
-            if (!_hasActiveAction && !_quickDrawPistol && !Mathf.Approximately(scrollInput, 0f))
-            {
-                if (scrollInput > 0f)
-                {
-                    EquipNextWeapon();
+                    if (currentWeapon.IsFiring) currentWeapon.StopFiring();
                 }
                 else
                 {
-                    EquipPreviousWeapon();
+                    if (InputManager.Instance.FireJustPressed)
+                    {
+                        currentWeapon.StartFiring();
+                    }
+                    else if (!InputManager.Instance.FirePressed && currentWeapon.IsFiring)
+                    {
+                        currentWeapon.StopFiring();
+                    }
                 }
-                GetActiveWeapon().RestoreWeaponVisibility();
-            }
 
-            // --- Equip next weapon (F key) ---
-            if (InputManager.Instance.EquipNextWeaponPressed)
-            {
-                OnChangeWeapon();
-            }
+                // --- Aim (hold to aim) ---
+                if (InputManager.Instance.AimJustPressed && !_isAiming)
+                {
+                    OnAim();
+                }
+                else if (InputManager.Instance.AimJustReleased && _isAiming)
+                {
+                    OnAim();
+                }
 
-            // --- Inspect (I key) ---
-            if (InputManager.Instance.InspectPressed)
-            {
-                OnInspect();
-            }
+                // --- Reload ---
+                if (InputManager.Instance.ReloadPressed)
+                {
+                    OnReload();
+                }
 
-            // --- Mag check (M key) ---
-            if (InputManager.Instance.MagCheckPressed)
-            {
-                OnMagCheck();
-            }
+                // --- Inspect (I key) ---
+                if (InputManager.Instance.InspectPressed)
+                {
+                    OnInspect();
+                }
 
-            // --- Toggle attachment (N key) ---
-            if (InputManager.Instance.ToggleAttachmentPressed)
-            {
-                OnToggleAttachment();
-            }
+                // --- Mag check (M key) ---
+                if (InputManager.Instance.MagCheckPressed)
+                {
+                    OnMagCheck();
+                }
 
-            // --- Quick draw pistol (X key) ---
-            if (InputManager.Instance.QuickDrawPistolPressed)
-            {
-                OnQuickPistolDraw();
-            }
+                // --- Toggle attachment (N key) — DISABLED, no attachments configured ---
+                // if (InputManager.Instance.ToggleAttachmentPressed)
+                // {
+                //     OnToggleAttachment();
+                // }
 
-            // --- Change fire mode (B key) ---
-            if (InputManager.Instance.ChangeFireModePressed)
-            {
-                OnChangeFireMode();
+                // --- Change fire mode (B key) ---
+                if (InputManager.Instance.ChangeFireModePressed)
+                {
+                    OnChangeFireMode();
+                }
+
+                // --- Weapon switching (only when NOT using equipment system) ---
+                if (!UseEquipmentSystem)
+                {
+                    // Scroll wheel
+                    float scrollInput = InputManager.Instance.SwitchWeaponInput;
+                    if (!_hasActiveAction && !_quickDrawPistol && !Mathf.Approximately(scrollInput, 0f))
+                    {
+                        if (scrollInput > 0f)
+                            EquipNextWeapon();
+                        else
+                            EquipPreviousWeapon();
+
+                        GetActiveWeapon()?.RestoreWeaponVisibility();
+                    }
+
+                    // F key
+                    if (InputManager.Instance.EquipNextWeaponPressed)
+                    {
+                        OnChangeWeapon();
+                    }
+
+                    // X key — quick draw pistol
+                    if (InputManager.Instance.QuickDrawPistolPressed)
+                    {
+                        OnQuickPistolDraw();
+                    }
+                }
             }
 
             // --- Free look (Left Alt, hold) ---
@@ -521,31 +549,65 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
 
             if (!_quickDrawPistol)
             {
-                _quickDrawWeaponIndex = -1;
-                for (int i = _activeWeaponIndex + 1; i < _weapons.Count; i++)
+                // Search for a one-handed weapon in the list
+                int foundIndex = FindOneHandedWeaponIndex();
+                if (foundIndex < 0)
                 {
-                    if (!_weapons[i].IsOneHanded) continue;
-                    _quickDrawWeaponIndex = i;
-                    break;
-                }
-
-                if (_quickDrawWeaponIndex < 0)
-                {
-                    for (int i = 0; i < _activeWeaponIndex; i++)
-                    {
-                        if (!_weapons[i].IsOneHanded) continue;
-                        _quickDrawWeaponIndex = i;
-                        break;
-                    }
-                }
-
-                if (_quickDrawWeaponIndex < 0)
-                {
-                    // No one-handed weapon in the inventory.
                     Debug.LogWarning("Couldn't find a one-handed weapon.");
                     return;
                 }
 
+                _quickDrawWeaponIndex = foundIndex;
+            }
+
+            ExecuteQuickDrawToggle();
+        }
+
+        /// <summary>
+        /// Quick-draws a specific weapon by reference (used by PlayerEquipment).
+        /// Press X to pull the secondary weapon into the off-hand; press X again to holster it.
+        /// </summary>
+        public void QuickDrawByReference(TacticalShooterWeapon weapon)
+        {
+            if (_hasActiveAction && !_quickDrawPistol) return;
+
+            if (!_quickDrawPistol)
+            {
+                // Entering quick draw — need a valid weapon reference
+                if (weapon == null) return;
+
+                int index = _weapons.IndexOf(weapon);
+                if (index < 0 || index == _activeWeaponIndex) return;
+
+                _quickDrawWeaponIndex = index;
+            }
+            // else: exiting quick draw — weapon arg not needed, toggle handles it
+
+            ExecuteQuickDrawToggle();
+        }
+
+        /// <summary>Whether the player is currently in quick-draw (off-hand pistol) mode.</summary>
+        public bool IsQuickDrawActive => _quickDrawPistol;
+
+        private int FindOneHandedWeaponIndex()
+        {
+            for (int i = _activeWeaponIndex + 1; i < _weapons.Count; i++)
+            {
+                if (_weapons[i].IsOneHanded) return i;
+            }
+
+            for (int i = 0; i < _activeWeaponIndex; i++)
+            {
+                if (_weapons[i].IsOneHanded) return i;
+            }
+
+            return -1;
+        }
+
+        private void ExecuteQuickDrawToggle()
+        {
+            if (!_quickDrawPistol)
+            {
                 _quickDrawPistol = true;
 
                 // Equip the gun without playing the animation.
@@ -627,5 +689,84 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                 Debug.LogError("[TacticalShooterPlayer] PlayerManager.Instance is STILL null after deferral. Player will not be registered.");
             }
         }
+
+        #region Liquid: Dynamic Weapon Management (called by PlayerEquipment)
+
+        /// <summary>
+        /// Dynamically instantiates a weapon prefab, initializes it, and adds it
+        /// to the internal weapons list. Called by PlayerEquipment when equipping.
+        /// </summary>
+        public TacticalShooterWeapon AddWeapon(GameObject weaponPrefab)
+        {
+            var bones = _tacProceduralAnimation.bones;
+            var weapon = Instantiate(weaponPrefab, bones.ikHandGun)
+                .GetComponentInChildren<TacticalShooterWeapon>();
+
+            weapon.Initialize(gameObject, bones.rightHand);
+            weapon.HideWeapon();
+            _weapons.Add(weapon);
+
+            return weapon;
+        }
+
+        /// <summary>
+        /// Removes a weapon from the internal list and destroys its GameObject.
+        /// Called by PlayerEquipment when unequipping.
+        /// </summary>
+        public void RemoveWeapon(TacticalShooterWeapon weapon)
+        {
+            if (weapon == null) return;
+
+            // If this is the active weapon, hide it first
+            if (HasWeapons && _activeWeaponIndex < _weapons.Count && _weapons[_activeWeaponIndex] == weapon)
+            {
+                weapon.HideWeapon();
+            }
+
+            _weapons.Remove(weapon);
+            Destroy(weapon.GetWeaponRoot().gameObject);
+
+            // Clamp active index
+            if (_weapons.Count == 0)
+                _activeWeaponIndex = 0;
+            else
+                _activeWeaponIndex = Mathf.Clamp(_activeWeaponIndex, 0, _weapons.Count - 1);
+        }
+
+        /// <summary>
+        /// Activates a specific weapon by reference. Used by PlayerEquipment
+        /// for slot-based switching (keys 1/2, scroll wheel).
+        /// Mirrors the original ChangeWeapon() flow: hide old → set index → EquipWeapon with draw.
+        /// </summary>
+        public void ActivateWeaponByReference(TacticalShooterWeapon weapon)
+        {
+            if (weapon == null) return;
+
+            int index = _weapons.IndexOf(weapon);
+            if (index < 0) return;
+
+            // Hide current weapon if one is active
+            var current = GetActiveWeapon();
+            if (current != null && current != weapon)
+            {
+                current.HideWeapon();
+            }
+
+            _activeWeaponIndex = index;
+            EquipWeapon(); // playDraw = true → plays the draw animation
+        }
+
+        /// <summary>
+        /// Holsters the current weapon with animation. Returns the holster delay.
+        /// Called by PlayerEquipment before switching weapons.
+        /// </summary>
+        public float HolsterActiveWeapon()
+        {
+            var active = GetActiveWeapon();
+            if (active == null) return 0f;
+            return active.Holster(true);
+        }
+
+        #endregion
     }
 }

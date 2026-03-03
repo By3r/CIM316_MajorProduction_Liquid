@@ -36,6 +36,8 @@ namespace _Scripts.Systems.Player
         private Liquid.Player.Equipment.NeutronicBoots _neutronicBoots;
         private float _gravityMultiplier = 1f;
 
+        private float _equipmentSpeedMultiplier = 1f;
+
         private float _footstepTimer;
 
         #endregion
@@ -84,6 +86,20 @@ namespace _Scripts.Systems.Player
         public bool IsWalkingToggled { get; private set; }
         public float WalkSpeed => _walkSpeed;
         public float Gravity => _gravity;
+
+        /// <summary>
+        /// Sets a speed multiplier from equipment (e.g. suit addon).
+        /// 1.0 = no change, 0.5 = half speed, 2.0 = double speed.
+        /// </summary>
+        public void SetEquipmentSpeedMultiplier(float multiplier)
+        {
+            _equipmentSpeedMultiplier = Mathf.Max(0.1f, multiplier);
+        }
+
+        public void ClearEquipmentSpeedMultiplier()
+        {
+            _equipmentSpeedMultiplier = 1f;
+        }
 
         #endregion
 
@@ -165,6 +181,8 @@ namespace _Scripts.Systems.Player
             else if (_isSprinting) _currentTargetSpeed = _sprintSpeed;
             else if (IsWalkingToggled) _currentTargetSpeed = _walkToggleSpeed;
             else _currentTargetSpeed = _walkSpeed;
+
+            _currentTargetSpeed *= _equipmentSpeedMultiplier;
 
             _characterController.Move(move * _currentTargetSpeed * Time.deltaTime);
 
