@@ -225,7 +225,6 @@ public class GridPathfinder : MonoBehaviour
         _lastUnwalkableCount = unwalkableCount;
         _lastAirRejectedCount = airRejectedCount;
 
-        Debug.Log($"[GridPathfinder] Grid created. Walkable: {walkableCount}, Unwalkable: {unwalkableCount} (air-rejected: {airRejectedCount})");
     }
 
     private Node NodeFromWorldPoint(Vector3 worldPosition)

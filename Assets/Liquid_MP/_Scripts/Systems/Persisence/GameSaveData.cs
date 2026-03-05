@@ -36,7 +36,6 @@ namespace _Scripts.Core.Persistence
             {
                 string json = JsonUtility.ToJson(data, true);
                 File.WriteAllText(SaveFilePath, json);
-                Debug.Log($"Saved game to: {SaveFilePath}");
             }
             catch (Exception ex)
             {
@@ -76,7 +75,6 @@ namespace _Scripts.Core.Persistence
                 if (File.Exists(SaveFilePath))
                 {
                     File.Delete(SaveFilePath);
-                    Debug.Log("Deleted save file.");
                 }
             }
             catch (Exception ex)

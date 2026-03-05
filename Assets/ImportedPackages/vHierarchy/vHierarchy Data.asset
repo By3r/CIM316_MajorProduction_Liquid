@@ -87,6 +87,8 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-801192885-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-862918048246601887-7083002585389322191
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-957499652979615255-7083002585389322191
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1898024859-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1861208315-0
         values:
         - colorIndex: 6
           iconNameOrGuid: Canvas Icon
@@ -342,6 +344,14 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 0
           iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Camera Icon
           isIconRecursive: 0
           isColorRecursive: 0
     - goDatas_byGlobalId:

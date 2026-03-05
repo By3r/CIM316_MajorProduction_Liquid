@@ -114,7 +114,6 @@ namespace Liquid.Audio
             if (showDebugLogs)
             {
                 string roomName = roomContext != null ? roomContext.name : "None";
-                Debug.Log($"Emitting {level} {category} at {position} " + $"baseRadius={baseRadius:0.0}, finalRadius={finalRadius:0.0}, room={roomName}");
             }
 
             NotifyListeners(noiseEvent);

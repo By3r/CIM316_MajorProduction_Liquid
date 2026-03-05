@@ -49,9 +49,6 @@ namespace _Scripts.UI.Interaction
         [Tooltip("Animate brackets from screen center (crosshair position) to corners")]
         [SerializeField] private bool _animateBracketsFromCenter = true;
         
-        [Header("Debug")]
-        [SerializeField] private bool _showDebugLogs = false;
-
         #endregion
 
         #region Private Fields
@@ -119,8 +116,6 @@ namespace _Scripts.UI.Interaction
             
             SetHighlightVisibility(false);
             
-            if (_showDebugLogs)
-                Debug.Log("[ObjectHighlightingSystem] Initialized with " + _layerConfigs.Count + " layer configs");
         }
         
         private void Update()
@@ -259,8 +254,6 @@ namespace _Scripts.UI.Interaction
                 _targetCrosshairAlpha = 0f;
             }
             
-            if (_showDebugLogs)
-                Debug.Log($"[ObjectHighlightingSystem] Highlighting '{targetObject.name}' on layer '{LayerMask.LayerToName(config.layer)}'");
         }
         
         private void HideHighlight()

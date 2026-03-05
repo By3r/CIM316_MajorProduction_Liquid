@@ -72,8 +72,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
         {
             _spawnPoints = new List<ItemSpawnPoint>(GetComponentsInChildren<ItemSpawnPoint>());
 
-            if (_showDebugLogs)
-                Debug.Log($"[RoomItemSpawner] Found {_spawnPoints.Count} spawn points in room '{gameObject.name}'");
         }
 
         #endregion
@@ -107,8 +105,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
                 }
             }
 
-            if (_showDebugLogs)
-                Debug.Log($"[RoomItemSpawner] Spawned {_totalItemsSpawned} items in room '{gameObject.name}'");
         }
 
         /// <summary>
@@ -129,8 +125,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
 
             _totalItemsSpawned = 0;
 
-            if (_showDebugLogs)
-                Debug.Log($"[RoomItemSpawner] Cleared all spawned items in room '{gameObject.name}'");
         }
 
         /// <summary>

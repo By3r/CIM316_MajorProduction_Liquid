@@ -264,7 +264,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
                 }
                 
                 EditorUtility.SetDirty(_registry);
-                Debug.Log($"[OccupiedSpaceRegistry] Refreshed {updatedCount} room bounds.");
             }
             GUI.backgroundColor = Color.white;
             

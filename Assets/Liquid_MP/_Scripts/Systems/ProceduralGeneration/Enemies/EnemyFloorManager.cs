@@ -90,7 +90,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
                 enemy.enabled = false;
             }
 
-            Debug.Log($"[EnemyFloorManager] Froze {enemies.Length} enemies.");
         }
 
         public void UnfreezeAllEnemies()
@@ -103,7 +102,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
                 enemy.enabled = true;
             }
 
-            Debug.Log($"[EnemyFloorManager] Unfroze {enemies.Length} enemies.");
         }
 
         #endregion

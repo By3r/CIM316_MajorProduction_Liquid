@@ -268,7 +268,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
             if (!_allowManualClose)
             {
-                Debug.Log($"[Door] Cannot close door '{gameObject.name}' - manual closing is disabled.");
                 return;
             }
 

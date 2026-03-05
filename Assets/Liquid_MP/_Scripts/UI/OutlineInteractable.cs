@@ -371,8 +371,6 @@ namespace Liquid.UI
 
             if (!anyIssue)
             {
-                Debug.Log($"{tag} — Setup looks correct. " +
-                          "If hover still doesn't work, make sure the cursor is unlocked (open inventory with TAB).");
             }
         }
         #endif

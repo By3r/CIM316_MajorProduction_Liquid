@@ -297,7 +297,6 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         if (logPathBlocked && Time.time >= _nextAllowedPathBlockedLogTime)
         {
             _nextAllowedPathBlockedLogTime = Time.time + Mathf.Max(0.1f, logCooldownSeconds);
-            Debug.Log($"{name} path blocked, invalidating current path.", this);
         }
 
         currentPath = null;
@@ -412,7 +411,6 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable
         if (logStateChanges && Time.time >= _nextAllowedStateLogTime)
         {
             _nextAllowedStateLogTime = Time.time + Mathf.Max(0.1f, logCooldownSeconds);
-            Debug.Log($"{name} state changed: {oldState} -> {newState}", this);
         }
     }
     #endregion

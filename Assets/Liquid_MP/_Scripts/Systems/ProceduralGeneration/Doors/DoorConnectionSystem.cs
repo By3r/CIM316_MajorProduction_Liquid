@@ -58,13 +58,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
             GameObject door = sourceSocket.ConnectTo(targetSocket, doorPrefab);
 
-            if (_showDebugLogs)
-            {
-                Debug.Log($"[DoorConnectionSystem] Connected '{sourceSocket.gameObject.name}' to '{targetSocket.gameObject.name}'");
-                if (door != null)
-                    Debug.Log($"[DoorConnectionSystem] Instantiated door: '{door.name}'");
-            }
-
             return true;
         }
 
@@ -134,8 +127,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             if (socket2 != null)
                 socket2.Disconnect();
 
-            if (_showDebugLogs)
-                Debug.Log($"[DoorConnectionSystem] Disconnected sockets");
         }
     }
 }

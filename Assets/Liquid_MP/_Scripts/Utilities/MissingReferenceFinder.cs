@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
@@ -184,7 +184,6 @@ namespace _Scripts.Editor.Tools
 
                 _lastScanCount = _missingReferences.Count;
 
-                Debug.Log($"[MissingReferenceFinder] Scan complete. Found {_missingReferences.Count} missing references.");
             }
             finally
             {

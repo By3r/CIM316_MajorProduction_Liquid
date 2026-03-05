@@ -158,12 +158,10 @@ namespace _Scripts.Systems.Machines
                     _linkedPlayer = inventory;
                     SetState(ExtractionState.ContainerInserted);
                     PlaySound(_insertContainerSound);
-                    Debug.Log($"[ExtractionMachine] Container inserted");
                     return true;
                 }
             }
 
-            Debug.Log($"[ExtractionMachine] No AR Container in inventory");
             return false;
         }
 
@@ -191,7 +189,6 @@ namespace _Scripts.Systems.Machines
             }
 
             _onExtractionStarted?.Invoke();
-            Debug.Log($"[ExtractionMachine] Extraction started. {_arRemaining}g AR available.");
             return true;
         }
 
@@ -209,7 +206,6 @@ namespace _Scripts.Systems.Machines
             if (_arExtracted > 0)
             {
                 int added = inventory.AddARGrams(_arExtracted);
-                Debug.Log($"[ExtractionMachine] Transferred {added}g AR to player");
             }
 
             // Return container to inventory (simplified - just assume they have room)
@@ -263,7 +259,6 @@ namespace _Scripts.Systems.Machines
                 _arRemaining -= toExtract;
 
                 OnExtractionProgress?.Invoke(_arExtracted);
-                Debug.Log($"[ExtractionMachine] Extracted {_arExtracted}g total. {_arRemaining}g remaining.");
 
                 if (_arRemaining <= 0)
                 {
@@ -277,12 +272,10 @@ namespace _Scripts.Systems.Machines
             SetState(ExtractionState.Complete);
             StopExtractionAudio();
             _onExtractionComplete?.Invoke();
-            Debug.Log($"[ExtractionMachine] Extraction complete! {_arExtracted}g extracted.");
         }
 
         private void SeverLink()
         {
-            Debug.Log($"[ExtractionMachine] Link severed! Player left room. {_arExtracted}g lost.");
 
             // AR extracted is lost when link is severed
             _arExtracted = 0;

@@ -24,7 +24,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                     {
                         GameObject registryObj = new GameObject("OccupiedSpaceRegistry");
                         _instance = registryObj.AddComponent<OccupiedSpaceRegistry>();
-                        Debug.Log("[OccupiedSpaceRegistry] Created singleton instance.");
                     }
                 }
                 return _instance;
@@ -162,12 +161,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             OccupiedSpace newSpace = new OccupiedSpace(boundsChecker, roomTransform);
             _occupiedSpaces.Add(newSpace);
 
-            if (_showDebugLogs)
-            {
-                Debug.Log($"[OccupiedSpaceRegistry] ✓ Registered room '{roomTransform.name}' " +
-                         $"at position {roomTransform.position} " +
-                         $"with PADDED bounds (Total rooms: {_occupiedSpaces.Count})");
-            }
         }
 
         /// <summary>
@@ -183,12 +176,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             if (spaceToRemove != null)
             {
                 _occupiedSpaces.Remove(spaceToRemove);
-
-                if (_showDebugLogs)
-                {
-                    Debug.Log($"[OccupiedSpaceRegistry] ✓ Unregistered room '{spaceToRemove.roomName}' " +
-                             $"(Remaining rooms: {_occupiedSpaces.Count})");
-                }
             }
         }
 
@@ -483,8 +470,6 @@ namespace _Scripts.Systems.ProceduralGeneration
         {
             _occupiedSpaces.Clear();
 
-            if (_showDebugLogs)
-                Debug.Log("[OccupiedSpaceRegistry] ✓ Cleared all occupied spaces.");
         }
 
         /// <summary>
@@ -508,10 +493,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                 }
             }
 
-            if (movedCount > 0 && _showDebugLogs)
-            {
-                Debug.Log($"[OccupiedSpaceRegistry] Updated {movedCount} moved room bounds.");
-            }
         }
 
         /// <summary>
@@ -522,10 +503,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             int removedCount = _occupiedSpaces.RemoveAll(space =>
                 space.boundsChecker == null || space.roomTransform == null);
 
-            if (removedCount > 0 && _showDebugLogs)
-            {
-                Debug.Log($"[OccupiedSpaceRegistry] Cleaned up {removedCount} null entries.");
-            }
         }
 
         /// <summary>

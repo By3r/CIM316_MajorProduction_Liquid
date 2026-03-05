@@ -8,11 +8,9 @@ public class GameSaveDebugPrinter : MonoBehaviour
         GameSaveData data = SaveSystem.LoadGame();
         if (data != null)
         {
-            Debug.Log($"Loaded save. Player name: {data.playerName}");
         }
         else
         {
-            Debug.Log("No save file found in game scene.");
         }
     }
 }

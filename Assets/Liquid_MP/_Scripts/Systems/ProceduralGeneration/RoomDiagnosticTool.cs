@@ -958,7 +958,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             sb.AppendLine("--- End Report ---");
 
             EditorGUIUtility.systemCopyBuffer = sb.ToString();
-            Debug.Log("[RoomDiagnostic] Report copied to clipboard.");
         }
 
         #endregion
@@ -1099,8 +1098,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             EditorUtility.SetDirty(boundsChecker);
             EditorUtility.SetDirty(_roomPrefab);
 
-            Debug.Log($"[RoomDiagnostic] Auto-fixed bounds for '{_roomPrefab.name}': " +
-                      $"Center={FormatV3(boundsChecker.GetBounds().center)}, Size={FormatV3(boundsChecker.GetBounds().size)}");
 
             // Re-run diagnostic with updated bounds
             RunFullDiagnostic();

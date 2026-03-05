@@ -42,13 +42,6 @@ namespace _Scripts.Systems.Inventory
 
         #endregion
 
-        #region Serialized Fields
-
-        [Header("Debug")]
-        [SerializeField] private bool _showDebugLogs;
-
-        #endregion
-
         #region Private Fields
 
         private const int SlotCount = 3;
@@ -218,8 +211,6 @@ namespace _Scripts.Systems.Inventory
                 // Check if inventory has room before we swap
                 if (!PlayerInventory.Instance.HasRoomFor(oldItem))
                 {
-                    if (_showDebugLogs)
-                        Debug.Log("[PlayerEquipment] Cannot equip — inventory full, no room for existing item.");
                     return false;
                 }
 
@@ -235,9 +226,6 @@ namespace _Scripts.Systems.Inventory
 
             // Instantiate the runtime equipment
             InstantiateEquipment(targetSlot);
-
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Equipped '{itemData.displayName}' to {targetSlot}");
 
             OnEquipmentChanged?.Invoke(targetSlot, slot);
 
@@ -263,9 +251,6 @@ namespace _Scripts.Systems.Inventory
 
             DestroyEquipment(slotType);
             slot.Clear();
-
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Unequipped '{removedItem.displayName}' from {slotType}");
 
             OnEquipmentChanged?.Invoke(slotType, slot);
 
@@ -453,8 +438,6 @@ namespace _Scripts.Systems.Inventory
 
             _tacticalPlayer.QuickDrawByReference(secondaryWeapon);
 
-            if (_showDebugLogs)
-                Debug.Log("[PlayerEquipment] Quick draw secondary weapon toggled.");
         }
 
         /// <summary>
@@ -492,8 +475,6 @@ namespace _Scripts.Systems.Inventory
 
             OnActiveWeaponSlotChanged?.Invoke(_activeWeaponSlot);
 
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Drew weapon from slot {slotIndex}.");
         }
 
         private IEnumerator HolsterCoroutine()
@@ -508,8 +489,6 @@ namespace _Scripts.Systems.Inventory
             _isHolstered = true;
             _isSwitching = false;
 
-            if (_showDebugLogs)
-                Debug.Log("[PlayerEquipment] Weapon holstered — entered unarmed state.");
         }
 
         #endregion
@@ -568,8 +547,6 @@ namespace _Scripts.Systems.Inventory
                 }
             }
 
-            if (_showDebugLogs)
-                Debug.Log("[PlayerEquipment] Restored equipment from save data.");
         }
 
         #endregion
@@ -608,8 +585,6 @@ namespace _Scripts.Systems.Inventory
 
             slot.RuntimeInstance = weapon.GetWeaponRoot().gameObject;
 
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Instantiated weapon '{weaponData.displayName}'");
         }
 
         private void InstantiateSuitAddon(EquipmentSlot slot)
@@ -630,8 +605,6 @@ namespace _Scripts.Systems.Inventory
 
             // TODO: Apply noise multiplier when NoiseManager supports it
 
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Activated suit addon '{addonData.displayName}'");
         }
 
         private void DestroyEquipment(EquipmentSlotType slotType)
@@ -715,8 +688,6 @@ namespace _Scripts.Systems.Inventory
 
             OnActiveWeaponSlotChanged?.Invoke(_activeWeaponSlot);
 
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Switched to weapon slot {targetSlot}");
         }
 
         private void ActivateWeaponSlot(int slotIndex)

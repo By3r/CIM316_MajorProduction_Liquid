@@ -146,8 +146,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             _boundsCenter = localBounds.center;
             _boundsSize = localBounds.size;
 
-            Debug.Log($"[ConnectionSocket] Calculated bounds for '{gameObject.name}': " +
-                      $"Center={_boundsCenter}, Size={_boundsSize}");
         }
 
         public GameObject ConnectTo(ConnectionSocket otherSocket, GameObject doorPrefabOverride = null)

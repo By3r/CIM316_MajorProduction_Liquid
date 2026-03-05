@@ -128,7 +128,6 @@ namespace _Scripts.Systems.Inventory
 
                         if (_showDebugLogs)
                         {
-                            Debug.Log($"[PlayerInventory] Stacked {toAdd} {itemData.displayName} in slot {i}");
                         }
 
                         if (quantity <= 0) return true;
@@ -150,7 +149,6 @@ namespace _Scripts.Systems.Inventory
 
                     if (_showDebugLogs)
                     {
-                        Debug.Log($"[PlayerInventory] Added {toAdd} {itemData.displayName} to slot {i}");
                     }
 
                     if (quantity <= 0 || !itemData.isStackable) return true;
@@ -159,7 +157,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs && quantity > 0)
             {
-                Debug.Log($"[PlayerInventory] Inventory full. Could not add {quantity} {itemData.displayName}");
             }
 
             return quantity <= 0;
@@ -188,7 +185,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[PlayerInventory] Removed {quantity} {removedItem.displayName} from slot {slotIndex}");
             }
 
             return removedItem;
@@ -266,7 +262,6 @@ namespace _Scripts.Systems.Inventory
 
                 if (_showDebugLogs)
                 {
-                    Debug.Log($"[PlayerInventory] Deposited {added}g AR. Total: {_arGrams}/{_arGramsCap}g");
                 }
             }
 
@@ -287,7 +282,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[PlayerInventory] Removed {amount}g AR. Total: {_arGrams}/{_arGramsCap}g");
             }
 
             return true;
@@ -302,7 +296,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[PlayerInventory] Upgraded AR cap to {_arGramsCap}g");
             }
         }
 
@@ -333,7 +326,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
             {
-                Debug.Log("[PlayerInventory] Created inventory save data snapshot.");
             }
 
             return data;
@@ -349,7 +341,6 @@ namespace _Scripts.Systems.Inventory
             {
                 if (_showDebugLogs)
                 {
-                    Debug.Log("[PlayerInventory] No save data to restore.");
                 }
                 return;
             }
@@ -382,7 +373,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
             {
-                Debug.Log("[PlayerInventory] Restored inventory from save data.");
             }
         }
 

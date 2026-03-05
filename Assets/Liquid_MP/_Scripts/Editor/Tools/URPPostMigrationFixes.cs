@@ -111,7 +111,6 @@ namespace _Scripts.Editor.Tools
                 if (mat != null && (mat.shader == null || mat.shader.name == "Hidden/InternalErrorShader"))
                 {
                     pinkMaterials.Add(mat);
-                    Debug.Log($"[URP Fix] Missing shader material: {path}");
                 }
             }
             
@@ -149,7 +148,6 @@ namespace _Scripts.Editor.Tools
                     mat.shader = urpLit;
                     EditorUtility.SetDirty(mat);
                     fixedCount++;
-                    Debug.Log($"[URP Fix] Fixed material: {path}");
                 }
             }
             
@@ -232,7 +230,6 @@ namespace _Scripts.Editor.Tools
                 
                 if (originalIntensity != light.intensity)
                 {
-                    Debug.Log($"[URP Fix] Light '{light.name}': {originalIntensity} → {light.intensity}");
                     EditorUtility.SetDirty(light);
                 }
             }
@@ -281,7 +278,6 @@ namespace _Scripts.Editor.Tools
                 if (removed > 0)
                 {
                     cleanedCount += removed;
-                    Debug.Log($"[URP Fix] Removed {removed} missing scripts from: {go.name}");
                 }
             }
             
@@ -324,7 +320,6 @@ namespace _Scripts.Editor.Tools
                 {
                     PrefabUtility.SaveAsPrefabAsset(instance, path);
                     totalCleaned += cleanedInPrefab;
-                    Debug.Log($"[URP Fix] Cleaned {cleanedInPrefab} missing scripts from: {path}");
                 }
                 
                 PrefabUtility.UnloadPrefabContents(instance);
@@ -378,12 +373,9 @@ namespace _Scripts.Editor.Tools
                 }
             }
             
-            Debug.Log("=== Shader Usage in Project ===");
             foreach (var kvp in shaderCounts.OrderByDescending(x => x.Value))
             {
-                Debug.Log($"  {kvp.Key}: {kvp.Value} materials");
             }
-            Debug.Log("================================");
             
             EditorUtility.DisplayDialog("Shader Types", 
                 $"Found {shaderCounts.Count} unique shaders.\nCheck console for full list.",
@@ -418,12 +410,9 @@ namespace _Scripts.Editor.Tools
             
             if (nonURPMaterials.Count > 0)
             {
-                Debug.Log("=== Non-URP Materials ===");
                 foreach (string mat in nonURPMaterials)
                 {
-                    Debug.Log($"  {mat}");
                 }
-                Debug.Log("=========================");
             }
             
             EditorUtility.DisplayDialog("Non-URP Materials", 

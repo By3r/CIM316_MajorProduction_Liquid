@@ -760,7 +760,6 @@ public static class LiquidGoapActions
 
             if (enemy.CanSwallowPlayer)
             {
-                Debug.Log("Swallowing the player.", enemy); //TODO: Actual player death.
             }
 
             return true;

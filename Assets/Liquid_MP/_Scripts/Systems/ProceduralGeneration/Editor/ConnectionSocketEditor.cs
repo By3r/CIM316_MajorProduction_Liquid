@@ -320,7 +320,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
 
             Selection.activeGameObject = spawnPoint;
 
-            Debug.Log($"[ConnectionSocket] Created DoorSpawnPoint child on '{socket.gameObject.name}'. Move it to the desired door position.");
         }
 
         // Scene view handles

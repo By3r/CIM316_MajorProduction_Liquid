@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
@@ -167,7 +167,6 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
                 EditorUtility.ClearProgressBar();
             }
 
-            Debug.Log($"[ItemSpawnUtilities] {(enabled ? "Enabled" : "Disabled")} gizmos on {updatedCount}/{spawnPoints.Length} spawn points.");
         }
 
         private void SnapAllSpawnPointsChildren(ItemSpawnPoint[] spawnPoints)
@@ -205,7 +204,6 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
                 EditorUtility.ClearProgressBar();
             }
 
-            Debug.Log($"[ItemSpawnUtilities] Snapped {totalSnapped}/{totalProcessed} items to ground across {spawnPoints.Length} spawn points.");
         }
 
         private bool SnapItemToGround(GameObject item, ItemSpawnPoint spawnPoint)

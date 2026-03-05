@@ -213,7 +213,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             _safeElevatorRoom?.RefreshSocketInfo();
 
             UpdateStatistics();
-            Debug.Log($"[RoomPrefabDatabase] Refreshed {_rooms.Count} rooms. Enabled: {_enabledRooms}/{_totalRooms}");
         }
 
         public void UpdateStatistics()

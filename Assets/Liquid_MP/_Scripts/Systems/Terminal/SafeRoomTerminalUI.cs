@@ -12,6 +12,12 @@ namespace _Scripts.Systems.Terminal
     /// </summary>
     public class SafeRoomTerminalUI : MonoBehaviour
     {
+        #region Singleton
+
+        public static SafeRoomTerminalUI Instance { get; private set; }
+
+        #endregion
+
         #region Enums
 
         public enum TerminalTab
@@ -30,6 +36,14 @@ namespace _Scripts.Systems.Terminal
         #endregion
 
         #region Serialized Fields
+
+        [Header("Screen Interaction")]
+        [Tooltip("The camera that renders this canvas to the Render Texture.")]
+        [SerializeField] private Camera _terminalUICamera;
+        [Tooltip("The GraphicRaycaster on this canvas (auto-grabbed if not assigned).")]
+        [SerializeField] private GraphicRaycaster _graphicRaycaster;
+        [Tooltip("The cursor Image RectTransform on this canvas.")]
+        [SerializeField] private RectTransform _cursorRect;
 
         [Header("Tab Buttons")]
         [SerializeField] private Button _fabricationTabButton;
@@ -70,12 +84,28 @@ namespace _Scripts.Systems.Terminal
         public FabricationPanelUI FabricationPanel => _fabricationPanel;
         public ElevatorControlPanelUI ElevatorPanel => _elevatorPanel;
 
+        public Camera TerminalUICamera => _terminalUICamera;
+        public GraphicRaycaster GraphicRaycaster => _graphicRaycaster;
+        public RectTransform CursorRect => _cursorRect;
+
         #endregion
 
         #region Unity Lifecycle
 
         private void Awake()
         {
+            // Singleton
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
+            Instance = this;
+
+            // Auto-grab GraphicRaycaster if not assigned
+            if (_graphicRaycaster == null)
+                _graphicRaycaster = GetComponentInParent<Canvas>()?.GetComponent<GraphicRaycaster>();
+
             // Wire tab buttons
             if (_fabricationTabButton != null)
                 _fabricationTabButton.onClick.AddListener(() => SwitchTab(TerminalTab.Fabrication));
@@ -93,6 +123,8 @@ namespace _Scripts.Systems.Terminal
 
         private void OnDestroy()
         {
+            if (Instance == this) Instance = null;
+
             if (_fabricationTabButton != null)
                 _fabricationTabButton.onClick.RemoveAllListeners();
 

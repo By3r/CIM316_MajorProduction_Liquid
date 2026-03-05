@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using _Scripts.Core.Managers;
 using _Scripts.Systems.Player;
 using UnityEngine;
@@ -246,7 +246,6 @@ namespace Liquid.Player.Equipment
             _ceilingVelocity = Vector3.zero;
             _isTransitioning = false;
             
-            Debug.Log("[NeutronicBoots] Ceiling walk activated!");
         }
 
         #endregion
@@ -367,7 +366,6 @@ namespace Liquid.Player.Equipment
             _isTransitioning = false;
             _isDismounting = false;
             
-            Debug.Log("[NeutronicBoots] Dismounted from ceiling.");
         }
 
         #endregion
