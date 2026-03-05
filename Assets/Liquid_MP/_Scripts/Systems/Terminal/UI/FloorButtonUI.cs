@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
@@ -8,7 +9,7 @@ namespace _Scripts.Systems.Terminal.UI
     /// Holds references to visual components of a floor button in the elevator control grid.
     /// Supports states: Current, Unsealed, Breachable, Sealed, and Destination overlay.
     /// </summary>
-    public class FloorButtonUI : MonoBehaviour
+    public class FloorButtonUI : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
     {
         #region Enums
 
@@ -29,6 +30,7 @@ namespace _Scripts.Systems.Terminal.UI
         [SerializeField] private Image _background;
         [SerializeField] private TextMeshProUGUI _floorNumber;
         [SerializeField] private TextMeshProUGUI _floorLabel;
+        [SerializeField] private Outline _outline;
 
         [Header("State Colors — Background")]
         [SerializeField] private Color _currentBg    = new Color(0.20f, 1.00f, 0.53f, 0.06f);
@@ -48,6 +50,19 @@ namespace _Scripts.Systems.Terminal.UI
         [SerializeField] private Color _breachableLabelColor  = new Color(0.27f, 0.87f, 0.87f, 0.60f);
         [SerializeField] private Color _sealedLabelColor     = new Color(0.25f, 0.19f, 0.00f, 0.15f);
 
+        [Header("State Colors — Outline")]
+        [SerializeField] private Color _currentOutlineColor    = new Color(0.20f, 1.00f, 0.53f, 0.60f);
+        [SerializeField] private Color _unsealedOutlineColor   = new Color(1.00f, 0.69f, 0.00f, 0.40f);
+        [SerializeField] private Color _breachableOutlineColor = new Color(0.27f, 0.87f, 0.87f, 0.60f);
+        [SerializeField] private Color _sealedOutlineColor     = new Color(0.25f, 0.19f, 0.00f, 0.10f);
+
+        [Header("Destination Override")]
+        [SerializeField] private Color _destOutlineColor = new Color(1.00f, 0.69f, 0.00f, 1.00f);
+
+        [Header("Hover (interactable buttons only)")]
+        [SerializeField] private Color _hoverBg      = new Color(0.15f, 0.12f, 0.05f, 1.00f);
+        [SerializeField] private Color _hoverOutline  = new Color(1.00f, 0.85f, 0.40f, 1.00f);
+
         #endregion
 
         #region Private Fields
@@ -55,6 +70,7 @@ namespace _Scripts.Systems.Terminal.UI
         private int _floor;
         private FloorState _state;
         private bool _isDestination;
+        private bool _isHovered;
 
         #endregion
 
@@ -78,6 +94,11 @@ namespace _Scripts.Systems.Terminal.UI
 
             if (_floorNumber != null)
                 _floorNumber.text = floor.ToString("D2");
+
+            // Disable Button's built-in color transitions —
+            // FloorButtonUI manages all visuals manually via ApplyVisuals().
+            if (_button != null)
+                _button.transition = Selectable.Transition.None;
         }
 
         /// <summary>
@@ -102,12 +123,28 @@ namespace _Scripts.Systems.Terminal.UI
 
         #endregion
 
+        #region Hover Handlers
+
+        public void OnPointerEnter(PointerEventData eventData)
+        {
+            _isHovered = true;
+            ApplyVisuals();
+        }
+
+        public void OnPointerExit(PointerEventData eventData)
+        {
+            _isHovered = false;
+            ApplyVisuals();
+        }
+
+        #endregion
+
         #region Private Methods
 
         private void ApplyVisuals()
         {
             bool interactable = true;
-            Color bg, numColor, labelColor;
+            Color bg, numColor, labelColor, outlineColor;
             string label;
 
             switch (_state)
@@ -116,6 +153,7 @@ namespace _Scripts.Systems.Terminal.UI
                     bg = _currentBg;
                     numColor = _currentNumColor;
                     labelColor = _currentLabelColor;
+                    outlineColor = _currentOutlineColor;
                     label = "YOU";
                     interactable = false;
                     break;
@@ -124,6 +162,7 @@ namespace _Scripts.Systems.Terminal.UI
                     bg = _unsealedBg;
                     numColor = _unsealedNumColor;
                     labelColor = _unsealedLabelColor;
+                    outlineColor = _unsealedOutlineColor;
                     label = "OPEN";
                     break;
 
@@ -131,6 +170,7 @@ namespace _Scripts.Systems.Terminal.UI
                     bg = _breachableBg;
                     numColor = _breachableNumColor;
                     labelColor = _breachableLabelColor;
+                    outlineColor = _breachableOutlineColor;
                     label = "BREACH";
                     break;
 
@@ -139,15 +179,24 @@ namespace _Scripts.Systems.Terminal.UI
                     bg = _sealedBg;
                     numColor = _sealedNumColor;
                     labelColor = _sealedLabelColor;
+                    outlineColor = _sealedOutlineColor;
                     label = "SEALED";
                     interactable = false;
                     break;
             }
 
-            // Destination override — brightens the button
+            // Destination override — label + outline
             if (_isDestination)
             {
                 label = "DEST";
+                outlineColor = _destOutlineColor;
+            }
+
+            // Hover override — background + outline (interactable buttons only)
+            if (_isHovered && interactable)
+            {
+                bg = _hoverBg;
+                outlineColor = _hoverOutline;
             }
 
             if (_background != null) _background.color = bg;
@@ -157,6 +206,7 @@ namespace _Scripts.Systems.Terminal.UI
                 _floorLabel.text = label;
                 _floorLabel.color = labelColor;
             }
+            if (_outline != null) _outline.effectColor = outlineColor;
 
             if (_button != null) _button.interactable = interactable;
         }
@@ -169,6 +219,8 @@ namespace _Scripts.Systems.Terminal.UI
         {
             if (_button == null)
                 _button = GetComponent<Button>();
+            if (_outline == null)
+                _outline = GetComponent<Outline>();
         }
 
         #endregion

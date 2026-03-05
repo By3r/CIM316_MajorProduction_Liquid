@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using _Scripts.Systems.Inventory;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -10,12 +11,15 @@ namespace _Scripts.Systems.Terminal
     /// Routine-style terminal interaction. The player's crosshair (screen center)
     /// raycasts into the world. When it hits the terminal's ScreenQuad, the hit UV
     /// is converted to canvas coordinates, a cursor is shown on the screen, and
-    /// mouse clicks are forwarded to the UI via GraphicRaycaster.
+    /// mouse clicks are forwarded to the UI via ExecuteEvents.
     ///
     /// No "interaction mode" — just walk up, look, and click.
     ///
     /// Attach this to the ScreenQuad. References are pulled from
     /// SafeRoomTerminalUI.Instance at runtime — no cross-scene serialized fields.
+    ///
+    /// Hit detection uses manual canvas-space containment checks instead of
+    /// GraphicRaycaster, which doesn't work reliably with Render Texture cameras.
     /// </summary>
     public class TerminalScreenInteraction : MonoBehaviour
     {
@@ -42,14 +46,10 @@ namespace _Scripts.Systems.Terminal
 
         private Camera _mainCamera;
         private MeshCollider _screenCollider;
-        private Camera _terminalUICamera;
-        private GraphicRaycaster _graphicRaycaster;
         private RectTransform _cursorRect;
         private RectTransform _canvasRect;
-        private RenderTexture _renderTexture;
 
         private PointerEventData _pointerData;
-        private readonly List<RaycastResult> _raycastResults = new();
 
         private GameObject _currentHovered;
         private GameObject _pressedObject;
@@ -119,6 +119,18 @@ namespace _Scripts.Systems.Terminal
 
         private void OnDestroy()
         {
+            // If the player was looking at the terminal when it was destroyed
+            // (e.g. during floor transition), exit terminal mode so weapons
+            // aren't permanently blocked.
+            if (_isPointerOnScreen)
+            {
+                _isPointerOnScreen = false;
+
+                var equipment = PlayerEquipment.Instance;
+                if (equipment != null)
+                    equipment.ExitTerminalMode();
+            }
+
             if (Instance == this) Instance = null;
         }
 
@@ -135,15 +147,13 @@ namespace _Scripts.Systems.Terminal
             var terminal = SafeRoomTerminalUI.Instance;
             if (terminal == null) return;
 
-            _terminalUICamera = terminal.TerminalUICamera;
-            _graphicRaycaster = terminal.GraphicRaycaster;
             _cursorRect = terminal.CursorRect;
-            _canvasRect = _graphicRaycaster != null
-                ? _graphicRaycaster.GetComponent<RectTransform>()
-                : null;
 
-            if (_terminalUICamera != null)
-                _renderTexture = _terminalUICamera.targetTexture;
+            // Get the canvas RectTransform from the terminal's GraphicRaycaster or canvas
+            var raycaster = terminal.GraphicRaycaster;
+            _canvasRect = raycaster != null
+                ? raycaster.GetComponent<RectTransform>()
+                : null;
 
             // Hide cursor on init
             if (_cursorRect != null)
@@ -154,10 +164,7 @@ namespace _Scripts.Systems.Terminal
                 button = PointerEventData.InputButton.Left
             };
 
-            _isInitialized = _screenCollider != null
-                          && _terminalUICamera != null
-                          && _renderTexture != null
-                          && _graphicRaycaster != null;
+            _isInitialized = _screenCollider != null && _canvasRect != null;
 
             if (!_isInitialized)
                 Debug.LogWarning("[TerminalScreenInteraction] Missing references from SafeRoomTerminalUI.");
@@ -170,49 +177,52 @@ namespace _Scripts.Systems.Terminal
             float v = _flipV ? 1f - uv.y : uv.y;
 
             // Convert UV to canvas-space coordinates for cursor positioning.
-            // Canvas rect size may differ from RT pixel size if Canvas Scaler
-            // uses a different reference resolution.
-            Vector2 canvasSize = _canvasRect != null
-                ? _canvasRect.rect.size
-                : new Vector2(_renderTexture.width, _renderTexture.height);
-
+            Vector2 canvasSize = _canvasRect.rect.size;
             Vector2 canvasPos = new Vector2(u * canvasSize.x, v * canvasSize.y);
 
-            // Show cursor and move it
-            // Cursor anchors should be at bottom-left (0,0) so anchoredPosition
-            // maps directly to position from bottom-left of the canvas.
+            // Show cursor and move it.
+            // Pivot is (0,0) = bottom-left. Shift down by cursor height so the
+            // top-left of the image (the pointer tip) aligns with canvasPos.
             if (_cursorRect != null)
             {
                 if (!_cursorRect.gameObject.activeSelf)
                     _cursorRect.gameObject.SetActive(true);
 
-                _cursorRect.anchoredPosition = canvasPos;
+                _cursorRect.anchoredPosition = new Vector2(
+                    canvasPos.x,
+                    canvasPos.y - _cursorRect.rect.height);
             }
 
-            _isPointerOnScreen = true;
+            // Detect entering the screen — holster weapon, block weapon input
+            if (!_isPointerOnScreen)
+            {
+                _isPointerOnScreen = true;
 
-            // GraphicRaycaster expects coordinates in RT pixel space
-            Vector2 pixelPos = new Vector2(
-                u * _renderTexture.width,
-                v * _renderTexture.height
-            );
-            _pointerData.position = pixelPos;
-            _raycastResults.Clear();
-            _graphicRaycaster.Raycast(_pointerData, _raycastResults);
+                var equipment = PlayerEquipment.Instance;
+                if (equipment != null)
+                    equipment.EnterTerminalMode();
+            }
 
-            // Find the topmost hit (skip the cursor itself)
-            GameObject newHovered = FindTopHit();
+            // Find the topmost UI element at this canvas position
+            // Uses manual canvas-space containment (bypasses GraphicRaycaster
+            // which doesn't work reliably with RT cameras).
+            GameObject rawHit = FindHitAtCanvasPosition(canvasPos);
+
+            // Bubble up to find the actual event handler (e.g. Button parent of Text child)
+            GameObject newHandler = rawHit != null
+                ? ExecuteEvents.GetEventHandler<IPointerClickHandler>(rawHit)
+                : null;
 
             // Handle hover state changes (PointerEnter / PointerExit)
-            if (newHovered != _currentHovered)
+            if (newHandler != _currentHovered)
             {
                 if (_currentHovered != null)
-                    ExecuteEvents.Execute(_currentHovered, _pointerData, ExecuteEvents.pointerExitHandler);
+                    ExecuteEvents.ExecuteHierarchy(_currentHovered, _pointerData, ExecuteEvents.pointerExitHandler);
 
-                if (newHovered != null)
-                    ExecuteEvents.Execute(newHovered, _pointerData, ExecuteEvents.pointerEnterHandler);
+                if (newHandler != null)
+                    ExecuteEvents.ExecuteHierarchy(newHandler, _pointerData, ExecuteEvents.pointerEnterHandler);
 
-                _currentHovered = newHovered;
+                _currentHovered = newHandler;
             }
 
             // Handle mouse clicks
@@ -225,6 +235,11 @@ namespace _Scripts.Systems.Terminal
 
             _isPointerOnScreen = false;
 
+            // Exit terminal mode — unblock weapon input, draw weapon if appropriate
+            var equipment = PlayerEquipment.Instance;
+            if (equipment != null)
+                equipment.ExitTerminalMode();
+
             // Hide cursor
             if (_cursorRect != null)
                 _cursorRect.gameObject.SetActive(false);
@@ -232,14 +247,15 @@ namespace _Scripts.Systems.Terminal
             // Send exit to hovered element
             if (_currentHovered != null)
             {
-                ExecuteEvents.Execute(_currentHovered, _pointerData, ExecuteEvents.pointerExitHandler);
+                ExecuteEvents.ExecuteHierarchy(_currentHovered, _pointerData, ExecuteEvents.pointerExitHandler);
                 _currentHovered = null;
             }
 
             // If player was holding a press and looked away, release it
             if (_pressedObject != null)
             {
-                ExecuteEvents.Execute(_pressedObject, _pointerData, ExecuteEvents.pointerUpHandler);
+                ExecuteEvents.ExecuteHierarchy(_pressedObject, _pointerData, ExecuteEvents.pointerUpHandler);
+                _pointerData.pointerPress = null;
                 _pressedObject = null;
             }
         }
@@ -253,42 +269,85 @@ namespace _Scripts.Systems.Terminal
             if (mouse.leftButton.wasPressedThisFrame && _currentHovered != null)
             {
                 _pressedObject = _currentHovered;
+                _pointerData.pointerPress = _pressedObject;
 
-                _pointerData.pointerPressRaycast = _raycastResults.Count > 0
-                    ? _raycastResults[0]
-                    : new RaycastResult();
-
-                ExecuteEvents.Execute(_pressedObject, _pointerData, ExecuteEvents.pointerDownHandler);
+                ExecuteEvents.ExecuteHierarchy(_pressedObject, _pointerData, ExecuteEvents.pointerDownHandler);
             }
 
             // Pointer Up — release press
             if (mouse.leftButton.wasReleasedThisFrame && _pressedObject != null)
             {
-                ExecuteEvents.Execute(_pressedObject, _pointerData, ExecuteEvents.pointerUpHandler);
+                ExecuteEvents.ExecuteHierarchy(_pressedObject, _pointerData, ExecuteEvents.pointerUpHandler);
 
                 // Fire click only if released on the same object that was pressed
                 if (_pressedObject == _currentHovered)
                 {
-                    ExecuteEvents.Execute(_pressedObject, _pointerData, ExecuteEvents.pointerClickHandler);
+                    ExecuteEvents.ExecuteHierarchy(_pressedObject, _pointerData, ExecuteEvents.pointerClickHandler);
                 }
 
+                _pointerData.pointerPress = null;
                 _pressedObject = null;
+            }
+
+            // Scroll — forward to any ScrollRect under the cursor
+            Vector2 scrollDelta = mouse.scroll.ReadValue();
+            if (scrollDelta.y != 0f && _currentHovered != null)
+            {
+                _pointerData.scrollDelta = scrollDelta;
+                ExecuteEvents.ExecuteHierarchy(_currentHovered, _pointerData, ExecuteEvents.scrollHandler);
             }
         }
 
-        private GameObject FindTopHit()
+        /// <summary>
+        /// Finds the topmost UI Graphic at the given canvas position.
+        /// Converts everything to canvas local space using GetWorldCorners,
+        /// bypassing GraphicRaycaster which doesn't work with RT cameras.
+        /// </summary>
+        /// <param name="canvasPos">Position in canvas coordinates (bottom-left origin).</param>
+        private GameObject FindHitAtCanvasPosition(Vector2 canvasPos)
         {
+            // Convert canvasPos (bottom-left origin) to canvas local space (centered at pivot).
+            Rect canvasRect = _canvasRect.rect;
+            Vector2 testPoint = new Vector2(
+                canvasRect.x + canvasPos.x,
+                canvasRect.y + canvasPos.y);
+
             GameObject cursorGO = _cursorRect != null ? _cursorRect.gameObject : null;
+            Graphic bestHit = null;
+            int bestDepth = int.MinValue;
 
-            foreach (var result in _raycastResults)
+            var graphics = _canvasRect.GetComponentsInChildren<Graphic>();
+            Vector3[] corners = new Vector3[4];
+
+            foreach (var graphic in graphics)
             {
-                // Skip the cursor image itself
-                if (result.gameObject == cursorGO) continue;
+                if (!graphic.raycastTarget) continue;
+                if (!graphic.gameObject.activeInHierarchy) continue;
+                if (graphic.canvasRenderer.cull) continue;
+                if (graphic.depth <= bestDepth) continue;
+                if (graphic.gameObject == cursorGO) continue;
 
-                return result.gameObject;
+                // Get world corners and convert to canvas local space.
+                // This avoids any camera projection — pure transform math.
+                graphic.rectTransform.GetWorldCorners(corners);
+                for (int i = 0; i < 4; i++)
+                    corners[i] = _canvasRect.InverseTransformPoint(corners[i]);
+
+                // corners[0]=bottom-left, [2]=top-right
+                float minX = corners[0].x;
+                float minY = corners[0].y;
+                float maxX = corners[2].x;
+                float maxY = corners[2].y;
+
+                if (testPoint.x >= minX && testPoint.x <= maxX &&
+                    testPoint.y >= minY && testPoint.y <= maxY)
+                {
+                    bestDepth = graphic.depth;
+                    bestHit = graphic;
+                }
             }
 
-            return null;
+            return bestHit != null ? bestHit.gameObject : null;
         }
 
         #endregion

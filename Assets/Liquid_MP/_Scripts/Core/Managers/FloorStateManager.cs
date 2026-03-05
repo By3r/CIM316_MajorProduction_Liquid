@@ -141,6 +141,12 @@ namespace _Scripts.Core.Managers
         private bool _powerCellSlotPowered;
         private string _powerCellSlotItemId;
 
+        // Player position snapshot: saves the player's world position + rotation
+        // during floor transition so they don't get teleported to room center.
+        private Vector3 _transitionPlayerPosition;
+        private Vector3 _transitionPlayerRotation;
+        private bool _hasTransitionPlayerPosition;
+
         #endregion
 
         #region Public Properties
@@ -436,6 +442,43 @@ namespace _Scripts.Core.Managers
         /// The itemId of the power cell that was in the slot, or null/empty if none.
         /// </summary>
         public string PowerCellSlotItemId => _powerCellSlotItemId;
+
+        /// <summary>
+        /// Saves the player's world position and rotation before a floor transition.
+        /// PlayerManager restores this after generation instead of centering the player.
+        /// </summary>
+        public void SavePlayerPosition(Vector3 position, Vector3 rotationEuler)
+        {
+            _transitionPlayerPosition = position;
+            _transitionPlayerRotation = rotationEuler;
+            _hasTransitionPlayerPosition = true;
+        }
+
+        /// <summary>
+        /// Tries to get the saved player position from the last floor transition.
+        /// Returns false if no position was saved (first spawn).
+        /// </summary>
+        public bool TryGetSavedPlayerPosition(out Vector3 position, out Vector3 rotationEuler)
+        {
+            if (_hasTransitionPlayerPosition)
+            {
+                position = _transitionPlayerPosition;
+                rotationEuler = _transitionPlayerRotation;
+                return true;
+            }
+
+            position = Vector3.zero;
+            rotationEuler = Vector3.zero;
+            return false;
+        }
+
+        /// <summary>
+        /// Clears the saved transition position after it has been consumed.
+        /// </summary>
+        public void ClearSavedPlayerPosition()
+        {
+            _hasTransitionPlayerPosition = false;
+        }
 
         /// <summary>
         /// Checks if a world position is inside the safe room (EntryRoom).

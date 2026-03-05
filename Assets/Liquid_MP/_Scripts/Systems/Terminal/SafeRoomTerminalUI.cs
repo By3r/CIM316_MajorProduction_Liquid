@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
 using UnityEngine.UI;
+using _Scripts.Core.Managers;
+using _Scripts.Systems.Machines;
 using _Scripts.Systems.Terminal.UI;
 
 namespace _Scripts.Systems.Terminal
@@ -45,6 +47,10 @@ namespace _Scripts.Systems.Terminal
         [Tooltip("The cursor Image RectTransform on this canvas.")]
         [SerializeField] private RectTransform _cursorRect;
 
+        [Header("Floor Configuration")]
+        [Tooltip("Total number of floors in the building.")]
+        [SerializeField] private int _totalFloors = 30;
+
         [Header("Tab Buttons")]
         [SerializeField] private Button _fabricationTabButton;
         [SerializeField] private Button _elevatorTabButton;
@@ -74,6 +80,8 @@ namespace _Scripts.Systems.Terminal
 
         private TerminalTab _activeTab = TerminalTab.Fabrication;
         private bool _hasPowerCell;
+        private PowerCellSlot _powerCellSlot;
+        private bool _powerCellSlotResolved;
 
         #endregion
 
@@ -121,9 +129,35 @@ namespace _Scripts.Systems.Terminal
                 _fabricationPanel.OnCraftConfirmed += HandleCraftConfirmed;
         }
 
+        private void Start()
+        {
+            // Try to find the PowerCellSlot immediately
+            TryResolvePowerCellSlot();
+
+            // Default to Elevator tab when no power cell
+            if (!_hasPowerCell && _activeTab == TerminalTab.Fabrication)
+                _activeTab = TerminalTab.ElevatorControl;
+
+            RefreshTabs();
+            RefreshPages();
+
+            // Initialize elevator panel with floor data
+            InitializeElevatorPanel();
+        }
+
+        private void Update()
+        {
+            // Lazy discovery — PowerCellSlot may spawn after the terminal
+            if (!_powerCellSlotResolved)
+                TryResolvePowerCellSlot();
+        }
+
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+
+            if (_powerCellSlot != null)
+                _powerCellSlot.OnPowerStateChanged -= OnPowerCellChanged;
 
             if (_fabricationTabButton != null)
                 _fabricationTabButton.onClick.RemoveAllListeners();
@@ -144,11 +178,15 @@ namespace _Scripts.Systems.Terminal
 
         /// <summary>
         /// Sets the power cell state. Disables fabrication tab when no cell.
+        /// Also refreshes the elevator panel to reflect power cell availability.
         /// </summary>
         public void SetPowerCellState(bool hasPowerCell)
         {
             _hasPowerCell = hasPowerCell;
             RefreshTabs();
+
+            // Refresh elevator panel with new power cell state
+            RefreshElevatorPanel();
 
             // If on fabrication tab with no power cell, switch to elevator
             if (!_hasPowerCell && _activeTab == TerminalTab.Fabrication)
@@ -212,6 +250,87 @@ namespace _Scripts.Systems.Terminal
 
             if (_elevatorPage != null)
                 _elevatorPage.SetActive(_activeTab == TerminalTab.ElevatorControl);
+        }
+
+        private void TryResolvePowerCellSlot()
+        {
+            _powerCellSlot = FindObjectOfType<PowerCellSlot>();
+            if (_powerCellSlot == null) return;
+
+            _powerCellSlotResolved = true;
+            _powerCellSlot.OnPowerStateChanged += OnPowerCellChanged;
+
+            // Read current state — the cell may already be inserted
+            bool wasPowered = _hasPowerCell;
+            _hasPowerCell = _powerCellSlot.IsPowered;
+
+            if (_hasPowerCell != wasPowered)
+            {
+                RefreshTabs();
+                RefreshPages();
+                RefreshElevatorPanel();
+            }
+        }
+
+        private void OnPowerCellChanged(bool isPowered)
+        {
+            SetPowerCellState(isPowered);
+        }
+
+        private void InitializeElevatorPanel()
+        {
+            if (_elevatorPanel == null) return;
+
+            int currentFloor = 1;
+            int highestUnsealed = 1;
+
+            var fsm = FloorStateManager.Instance;
+            if (fsm != null && fsm.IsInitialized)
+            {
+                currentFloor = fsm.CurrentFloorNumber;
+                // All visited floors are unsealed; at minimum the current floor
+                highestUnsealed = currentFloor;
+                foreach (var kvp in fsm.FloorStates)
+                {
+                    if (kvp.Value.isVisited && kvp.Key > highestUnsealed)
+                        highestUnsealed = kvp.Key;
+                }
+            }
+
+            _elevatorPanel.Initialize(
+                _totalFloors,
+                currentFloor,
+                highestUnsealed,
+                _hasPowerCell,
+                _hasPowerCell ? 1 : 0
+            );
+        }
+
+        private void RefreshElevatorPanel()
+        {
+            if (_elevatorPanel == null) return;
+
+            int currentFloor = 1;
+            int highestUnsealed = 1;
+
+            var fsm = FloorStateManager.Instance;
+            if (fsm != null && fsm.IsInitialized)
+            {
+                currentFloor = fsm.CurrentFloorNumber;
+                highestUnsealed = currentFloor;
+                foreach (var kvp in fsm.FloorStates)
+                {
+                    if (kvp.Value.isVisited && kvp.Key > highestUnsealed)
+                        highestUnsealed = kvp.Key;
+                }
+            }
+
+            _elevatorPanel.Refresh(
+                currentFloor,
+                highestUnsealed,
+                _hasPowerCell,
+                _hasPowerCell ? 1 : 0
+            );
         }
 
         private void HandleTravelConfirmed(int floor)

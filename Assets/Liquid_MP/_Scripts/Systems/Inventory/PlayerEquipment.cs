@@ -64,6 +64,9 @@ namespace _Scripts.Systems.Inventory
         // Holster state — weapon is equipped but not drawn
         private bool _isHolstered;
 
+        // Terminal interaction mode — blocks all weapon actions
+        private bool _isInTerminalMode;
+
         #endregion
 
         #region Properties
@@ -83,6 +86,9 @@ namespace _Scripts.Systems.Inventory
 
         /// <summary>Whether the active weapon is holstered (equipped but not drawn).</summary>
         public bool IsHolstered => _isHolstered;
+
+        /// <summary>Whether the player is in terminal interaction mode (weapons blocked).</summary>
+        public bool IsInTerminalMode => _isInTerminalMode;
 
         #endregion
 
@@ -358,6 +364,7 @@ namespace _Scripts.Systems.Inventory
         /// </summary>
         public void SwitchActiveWeapon(int slotIndex)
         {
+            if (_isInTerminalMode) return;
             if (slotIndex < 0 || slotIndex > 1) return;
             if (_slots[slotIndex].IsEmpty) return;
             if (_isSwitching) return;
@@ -417,6 +424,7 @@ namespace _Scripts.Systems.Inventory
         /// </summary>
         public void OnQuickDrawSecondary()
         {
+            if (_isInTerminalMode) return;
             if (_tacticalPlayer == null) return;
             if (_isSwitching) return;
             if (_isHolstered) return; // Can't quick draw while holstered
@@ -489,6 +497,46 @@ namespace _Scripts.Systems.Inventory
             _isHolstered = true;
             _isSwitching = false;
 
+        }
+
+        #endregion
+
+        #region Terminal Mode
+
+        /// <summary>
+        /// Enters terminal interaction mode — holsters the active weapon (if drawn),
+        /// blocks all weapon input (fire, aim, reload, switch, etc.).
+        /// Called by TerminalScreenInteraction when the player looks at the screen.
+        /// </summary>
+        public void EnterTerminalMode()
+        {
+            if (_isInTerminalMode) return;
+
+            _isInTerminalMode = true;
+
+            // Block weapon input on TacticalShooterPlayer
+            if (_tacticalPlayer != null)
+                _tacticalPlayer.BlockWeaponInput = true;
+
+            // Holster weapon if currently drawn
+            if (!_isHolstered && HasWeaponEquipped)
+                HolsterWeapon();
+        }
+
+        /// <summary>
+        /// Exits terminal interaction mode — unblocks weapon input so the player
+        /// can draw their weapon manually (1/2/scroll). Does NOT auto-draw to
+        /// avoid animation spam when the crosshair drifts off screen edges.
+        /// </summary>
+        public void ExitTerminalMode()
+        {
+            if (!_isInTerminalMode) return;
+
+            _isInTerminalMode = false;
+
+            // Unblock weapon input — player draws manually when ready
+            if (_tacticalPlayer != null)
+                _tacticalPlayer.BlockWeaponInput = false;
         }
 
         #endregion

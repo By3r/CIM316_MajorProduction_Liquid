@@ -169,8 +169,8 @@ namespace _Scripts.Systems.Terminal.UI
 
             _floorButtons = new FloorButtonUI[_totalFloors];
 
-            // Build top-down (highest floor first) to match the HTML concept
-            for (int i = _totalFloors; i >= 1; i--)
+            // Build low-to-high: floor 1 at top-left, fills left→right, top→bottom
+            for (int i = 1; i <= _totalFloors; i++)
             {
                 GameObject obj = Instantiate(_floorButtonPrefab, _floorGridContainer);
                 obj.name = $"Floor_{i:D2}";

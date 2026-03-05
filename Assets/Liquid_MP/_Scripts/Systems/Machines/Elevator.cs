@@ -6,7 +6,9 @@ using UnityEngine.Events;
 using _Scripts.Core.Managers;
 using _Scripts.Systems.Inventory;
 using _Scripts.Systems.Inventory.Pickups;
+using _Scripts.Systems.Player;
 using _Scripts.Systems.ProceduralGeneration;
+using _Scripts.Systems.Terminal;
 
 namespace _Scripts.Systems.Machines
 {
@@ -38,6 +40,8 @@ namespace _Scripts.Systems.Machines
 
         [Header("Transition Settings")]
         [SerializeField] private float _transitionDelay = 2f;
+        [SerializeField] private float _fadeOutDuration = 0.5f;
+        [SerializeField] private float _fadeInDuration  = 0.5f;
 
         [Header("Audio")]
         [SerializeField] private AudioSource _audioSource;
@@ -54,6 +58,10 @@ namespace _Scripts.Systems.Machines
 
         private bool _isTransitioning;
         private bool _isUIOpen;
+
+        // Terminal UI integration (lazy discovery — spawned by proc-gen)
+        private SafeRoomTerminalUI _terminalUI;
+        private bool _terminalResolved;
 
         #endregion
 
@@ -120,6 +128,16 @@ namespace _Scripts.Systems.Machines
                 }
                 _powerCellSlot.SetPoweredState(true, pcData);
             }
+
+            // Try to subscribe to terminal UI immediately
+            TryResolveTerminalUI();
+        }
+
+        private void Update()
+        {
+            // Lazy discovery — SafeRoomTerminalUI may spawn after this Elevator
+            if (!_terminalResolved)
+                TryResolveTerminalUI();
         }
 
         private void OnDestroy()
@@ -128,6 +146,11 @@ namespace _Scripts.Systems.Machines
             {
                 _floorUI.OnFloorSelected -= HandleFloorSelected;
                 _floorUI.OnUIClosed -= HandleUIClosedByKeyboard;
+            }
+
+            if (_terminalUI != null)
+            {
+                _terminalUI.OnTravelConfirmed -= HandleFloorSelected;
             }
 
             if (_powerCellSlot != null)
@@ -206,6 +229,15 @@ namespace _Scripts.Systems.Machines
 
         #region Private Methods
 
+        private void TryResolveTerminalUI()
+        {
+            _terminalUI = SafeRoomTerminalUI.Instance;
+            if (_terminalUI == null) return;
+
+            _terminalResolved = true;
+            _terminalUI.OnTravelConfirmed += HandleFloorSelected;
+        }
+
         private void HandleFloorSelected(int floor)
         {
             int currentFloor = GetCurrentFloor();
@@ -236,10 +268,14 @@ namespace _Scripts.Systems.Machines
 
             CloseFloorUI();
 
+            // Fade screen to black (runs concurrently with transition delay)
+            ScreenFade.Instance.FadeOut(_fadeOutDuration);
+
             // Play elevator movement sound
             PlaySound(_elevatorMoveSound);
 
             // Wait for transition (elevator moving simulation)
+            // Fade completes during this delay, so the screen is black before floor gen.
             yield return new WaitForSeconds(_transitionDelay);
 
             // Update floor state
@@ -277,6 +313,17 @@ namespace _Scripts.Systems.Machines
                         _powerCellSlot.IsPowered ? "powercell" : "");
                 }
 
+                // Save player position so they stay put after floor gen
+                // (instead of being teleported to room center)
+                var playerManager = PlayerManager.Instance;
+                if (playerManager != null && playerManager.CurrentPlayer != null)
+                {
+                    Transform playerTransform = playerManager.CurrentPlayer.transform;
+                    floorManager.SavePlayerPosition(
+                        playerTransform.position,
+                        playerTransform.rotation.eulerAngles);
+                }
+
                 // Sync dropped item positions (physics may have moved them since drop)
                 SyncDroppedItemPositions(floorManager);
 
@@ -297,39 +344,14 @@ namespace _Scripts.Systems.Machines
                 }
             }
 
-            // Publish event for level regeneration (LevelGenerator listens to this)
+            // Publish event for level regeneration (LevelGenerator listens to this).
+            // This Elevator gets destroyed during floor gen, so the coroutine ends here.
+            // All post-generation work (fade-in, inventory/equipment restore, player positioning)
+            // is handled by PlayerManager.HandleFloorGenerationComplete() which persists.
             if (GameManager.Instance?.EventManager != null)
             {
                 GameManager.Instance.EventManager.Publish("OnFloorTransitionRequested", targetFloor);
             }
-
-            // Wait a frame for floor generation to complete
-            yield return null;
-
-            // Restore player inventory after floor generation
-            if (floorManager != null && PlayerInventory.Instance != null)
-            {
-                InventorySaveData savedInventory = floorManager.GetSavedInventory();
-                PlayerInventory.Instance.RestoreFromSaveData(savedInventory);
-            }
-
-            // Restore player equipment after floor generation
-            if (floorManager != null && PlayerEquipment.Instance != null)
-            {
-                EquipmentSaveData savedEquipment = floorManager.GetSavedEquipment();
-                if (savedEquipment != null)
-                {
-                    PlayerEquipment.Instance.RestoreFromSaveData(savedEquipment);
-                }
-            }
-
-            // NOTE: PowerCellSlot restore happens in the NEW Elevator's Start(),
-            // since this Elevator instance gets destroyed during floor generation.
-
-            OnFloorTransitionComplete?.Invoke(targetFloor);
-            _onTransitionComplete?.Invoke();
-
-            _isTransitioning = false;
         }
 
         /// <summary>

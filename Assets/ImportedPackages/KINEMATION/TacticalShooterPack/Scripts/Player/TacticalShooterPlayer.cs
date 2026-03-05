@@ -39,6 +39,12 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
                  "weaponPrefabs[] is ignored and weapon switching input is handled externally.")]
         public bool UseEquipmentSystem = false;
 
+        /// <summary>
+        /// When true, all weapon input (fire, aim, reload, inspect, etc.) is suppressed.
+        /// Set by PlayerEquipment during terminal interaction or other blocking states.
+        /// </summary>
+        [HideInInspector] public bool BlockWeaponInput;
+
         [Tab("Animation")]
         [SerializeField] protected IKMotion aimIkMotion;
         [SerializeField] protected IKMotion fireModeIkMotion;
@@ -369,88 +375,96 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             var currentWeapon = GetPrimaryWeapon();
             if (currentWeapon != null && _weaponSettings != null)
             {
-                // --- Fire (blocked during active actions and sprinting) ---
-                if (_hasActiveAction || _wantsToSprint)
+                // --- All weapon input blocked (terminal interaction, etc.) ---
+                if (BlockWeaponInput)
                 {
                     if (currentWeapon.IsFiring) currentWeapon.StopFiring();
                 }
                 else
                 {
-                    if (InputManager.Instance.FireJustPressed)
+                    // --- Fire (blocked during active actions and sprinting) ---
+                    if (_hasActiveAction || _wantsToSprint)
                     {
-                        currentWeapon.StartFiring();
+                        if (currentWeapon.IsFiring) currentWeapon.StopFiring();
                     }
-                    else if (!InputManager.Instance.FirePressed && currentWeapon.IsFiring)
+                    else
                     {
-                        currentWeapon.StopFiring();
-                    }
-                }
-
-                // --- Aim (hold to aim) ---
-                if (InputManager.Instance.AimJustPressed && !_isAiming)
-                {
-                    OnAim();
-                }
-                else if (InputManager.Instance.AimJustReleased && _isAiming)
-                {
-                    OnAim();
-                }
-
-                // --- Reload ---
-                if (InputManager.Instance.ReloadPressed)
-                {
-                    OnReload();
-                }
-
-                // --- Inspect (I key) ---
-                if (InputManager.Instance.InspectPressed)
-                {
-                    OnInspect();
-                }
-
-                // --- Mag check (M key) ---
-                if (InputManager.Instance.MagCheckPressed)
-                {
-                    OnMagCheck();
-                }
-
-                // --- Toggle attachment (N key) — DISABLED, no attachments configured ---
-                // if (InputManager.Instance.ToggleAttachmentPressed)
-                // {
-                //     OnToggleAttachment();
-                // }
-
-                // --- Change fire mode (B key) ---
-                if (InputManager.Instance.ChangeFireModePressed)
-                {
-                    OnChangeFireMode();
-                }
-
-                // --- Weapon switching (only when NOT using equipment system) ---
-                if (!UseEquipmentSystem)
-                {
-                    // Scroll wheel
-                    float scrollInput = InputManager.Instance.SwitchWeaponInput;
-                    if (!_hasActiveAction && !_quickDrawPistol && !Mathf.Approximately(scrollInput, 0f))
-                    {
-                        if (scrollInput > 0f)
-                            EquipNextWeapon();
-                        else
-                            EquipPreviousWeapon();
-
-                        GetActiveWeapon()?.RestoreWeaponVisibility();
+                        if (InputManager.Instance.FireJustPressed)
+                        {
+                            currentWeapon.StartFiring();
+                        }
+                        else if (!InputManager.Instance.FirePressed && currentWeapon.IsFiring)
+                        {
+                            currentWeapon.StopFiring();
+                        }
                     }
 
-                    // F key
-                    if (InputManager.Instance.EquipNextWeaponPressed)
+                    // --- Aim (hold to aim) ---
+                    if (InputManager.Instance.AimJustPressed && !_isAiming)
                     {
-                        OnChangeWeapon();
+                        OnAim();
+                    }
+                    else if (InputManager.Instance.AimJustReleased && _isAiming)
+                    {
+                        OnAim();
                     }
 
-                    // X key — quick draw pistol
-                    if (InputManager.Instance.QuickDrawPistolPressed)
+                    // --- Reload ---
+                    if (InputManager.Instance.ReloadPressed)
                     {
-                        OnQuickPistolDraw();
+                        OnReload();
+                    }
+
+                    // --- Inspect (I key) ---
+                    if (InputManager.Instance.InspectPressed)
+                    {
+                        OnInspect();
+                    }
+
+                    // --- Mag check (M key) ---
+                    if (InputManager.Instance.MagCheckPressed)
+                    {
+                        OnMagCheck();
+                    }
+
+                    // --- Toggle attachment (N key) — DISABLED, no attachments configured ---
+                    // if (InputManager.Instance.ToggleAttachmentPressed)
+                    // {
+                    //     OnToggleAttachment();
+                    // }
+
+                    // --- Change fire mode (B key) ---
+                    if (InputManager.Instance.ChangeFireModePressed)
+                    {
+                        OnChangeFireMode();
+                    }
+
+                    // --- Weapon switching (only when NOT using equipment system) ---
+                    if (!UseEquipmentSystem)
+                    {
+                        // Scroll wheel
+                        float scrollInput = InputManager.Instance.SwitchWeaponInput;
+                        if (!_hasActiveAction && !_quickDrawPistol && !Mathf.Approximately(scrollInput, 0f))
+                        {
+                            if (scrollInput > 0f)
+                                EquipNextWeapon();
+                            else
+                                EquipPreviousWeapon();
+
+                            GetActiveWeapon()?.RestoreWeaponVisibility();
+                        }
+
+                        // F key
+                        if (InputManager.Instance.EquipNextWeaponPressed)
+                        {
+                            OnChangeWeapon();
+                        }
+
+                        // X key — quick draw pistol
+                        if (InputManager.Instance.QuickDrawPistolPressed)
+                        {
+                            OnQuickPistolDraw();
+                        }
                     }
                 }
             }
