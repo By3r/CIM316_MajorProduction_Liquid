@@ -226,14 +226,17 @@ namespace _Scripts.Systems.DebugConsole
             _isOpen = false;
             SetConsoleVisible(false);
 
-            // Only restore player input if we were in a gameplay state before opening
-            if (_stateBeforeOpen == GameState.Gameplay || _stateBeforeOpen == GameState.SafeRoom)
-            {
-                if (InputManager.Instance != null)
-                {
-                    InputManager.Instance.EnablePlayerInput(true);
-                }
+            // Always re-enable player input (we always disable it on open)
+            if (InputManager.Instance != null)
+                InputManager.Instance.EnablePlayerInput(true);
 
+            // Restore cursor based on the CURRENT game state, not the saved one
+            GameState currentState = GameManager.Instance != null
+                ? GameManager.Instance.CurrentState
+                : GameState.Gameplay;
+
+            if (currentState == GameState.Gameplay || currentState == GameState.SafeRoom)
+            {
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
             }

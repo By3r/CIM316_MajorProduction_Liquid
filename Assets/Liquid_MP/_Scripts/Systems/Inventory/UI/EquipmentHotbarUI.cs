@@ -45,7 +45,6 @@ namespace _Scripts.Systems.Inventory.UI
             if (_secondarySlotUI != null) _secondarySlotUI.OnRightClicked += HandleSlotRightClicked;
             if (_suitAddonSlotUI != null) _suitAddonSlotUI.OnRightClicked += HandleSlotRightClicked;
 
-            // Initial refresh
             RefreshAll();
         }
 

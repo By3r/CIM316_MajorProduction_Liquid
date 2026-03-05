@@ -31,7 +31,6 @@ namespace Liquid.Player.Equipment
 
         private CeilingDetector _ceilingDetector;
         
-        // State tracking
         private bool _isOnCeiling;
         private bool _isTransitioning;
         private float _activationHoldTimer;
@@ -41,7 +40,6 @@ namespace Liquid.Player.Equipment
         private float _dismountCooldownTimer; 
         private bool _isDismounting;
         
-        // Component references
         private _Scripts.Systems.Player.MovementController _movementController;
 
         // Ceiling physics state

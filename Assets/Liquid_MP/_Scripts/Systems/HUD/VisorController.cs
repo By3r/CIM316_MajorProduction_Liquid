@@ -1,4 +1,5 @@
 using System.Collections;
+using _Scripts.Core.Managers;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -157,6 +158,10 @@ namespace _Scripts.Systems.HUD
 
         private void OnRaiseVisor(InputAction.CallbackContext context)
         {
+            // Block if player input is disabled (e.g. debug console, menus)
+            if (InputManager.Instance != null && !InputManager.Instance.IsPlayerInputEnabled)
+                return;
+
             // If panel is open, close it first before allowing raise
             if (_isPanelOpen) return;
 

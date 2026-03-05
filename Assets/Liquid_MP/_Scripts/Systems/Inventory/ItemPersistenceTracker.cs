@@ -67,7 +67,6 @@ namespace _Scripts.Systems.Inventory
         {
             var floorManager = FloorStateManager.Instance;
 
-            // Current state
             _floorManagerInitialized = floorManager != null && floorManager.IsInitialized;
             _currentFloor = floorManager != null ? floorManager.CurrentFloorNumber : -1;
             _gameState = GameManager.Instance != null
@@ -84,7 +83,6 @@ namespace _Scripts.Systems.Inventory
 
             if (!_floorManagerInitialized) return;
 
-            // Saved inventory
             var savedInv = floorManager.GetSavedInventory();
             _hasSavedInventory = savedInv != null;
             _savedInventorySlots.Clear();

@@ -6,10 +6,6 @@ using System.Linq;
 
 namespace _Scripts.Editor.Tools
 {
-    /// <summary>
-    /// Editor tool to find GameObjects and assets with missing script or serialized field references.
-    /// Helps identify broken prefabs, deleted scripts, and null references across the project.
-    /// </summary>
     public class MissingReferenceFinder : EditorWindow
     {
         private Vector2 _scrollPosition;
@@ -51,16 +47,8 @@ namespace _Scripts.Editor.Tools
         {
             EditorGUILayout.Space(10);
             EditorGUILayout.LabelField("Missing Reference Finder", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(
-                "Scans for missing scripts and null serialized field references.\n" +
-                "- Click 'Scan' to find all issues\n" +
-                "- Click results to select objects\n" +
-                "- Use filters to narrow results",
-                MessageType.Info);
-
             EditorGUILayout.Space(10);
 
-            // === SCAN OPTIONS ===
             EditorGUILayout.LabelField("Scan Options", EditorStyles.boldLabel);
             
             _includeSceneObjects = EditorGUILayout.Toggle("Scan Scene Objects", _includeSceneObjects);
@@ -70,7 +58,6 @@ namespace _Scripts.Editor.Tools
 
             EditorGUILayout.Space(5);
 
-            // === SCAN BUTTON ===
             GUI.backgroundColor = Color.cyan;
             if (GUILayout.Button("Scan for Missing References", GUILayout.Height(40)))
             {
@@ -80,7 +67,6 @@ namespace _Scripts.Editor.Tools
 
             EditorGUILayout.Space(10);
 
-            // === RESULTS HEADER ===
             if (_missingReferences.Count > 0)
             {
                 EditorGUILayout.BeginHorizontal();
@@ -99,7 +85,6 @@ namespace _Scripts.Editor.Tools
 
                 EditorGUILayout.Space(5);
 
-                // === RESULTS LIST ===
                 _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
 
                 var filteredResults = _missingReferences;
@@ -123,7 +108,7 @@ namespace _Scripts.Editor.Tools
             }
             else
             {
-                EditorGUILayout.HelpBox("Click 'Scan' to search for missing references.", MessageType.None);
+                EditorGUILayout.HelpBox("No scan results.", MessageType.None);
             }
         }
 

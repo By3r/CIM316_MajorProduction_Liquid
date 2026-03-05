@@ -3,54 +3,20 @@ using UnityEngine;
 
 namespace _Scripts.Systems.ProceduralGeneration.Doors
 {
-    /// <summary>
-    /// ConnectionSocket represents a doorway connection point in a room prefab.
-    /// Attach this directly to a door frame wall piece (the mesh with the hole).
-    /// The connection point is the geometric center of this object's renderers,
-    /// so rooms align at doorway centers regardless of mesh pivot placement.
-    /// A child DoorSpawnPoint Transform marks where the door prefab instantiates.
-    /// </summary>
     public class ConnectionSocket : MonoBehaviour
     {
         #region Serialized Fields
 
-        [Header("-- Socket Configuration --")]
-        [Tooltip("The type of door that can connect to this socket. Must match Door.DoorType.")]
         [SerializeField] private Door.DoorType _socketType = Door.DoorType.Standard;
-
-        [Tooltip("Is this socket currently connected to another room?")]
         [SerializeField] private bool _isConnected;
-
-        [Header("-- Forward Direction --")]
-        [Tooltip("Angle offset (degrees) to correct the forward direction if the door frame model doesn't face outward. " +
-                 "Rotates around the Y axis. 0 = use transform.forward as-is.")]
         [Range(0f, 360f)]
         [SerializeField] private float _forwardAngleOffset;
-
-        [Header("-- Socket Bounds --")]
-        [Tooltip("Local-space center of this door frame's geometry. Calculated from renderers. " +
-                 "This is the actual connection point where rooms meet.")]
         [SerializeField] private Vector3 _boundsCenter = Vector3.zero;
-
-        [Tooltip("Local-space size of this door frame's geometry.")]
         [SerializeField] private Vector3 _boundsSize = Vector3.zero;
-
-        [Header("-- Door Spawn --")]
-        [Tooltip("Optional: Door prefab to instantiate when connected. Leave empty to use from database.")]
         [SerializeField] private GameObject _doorPrefab;
-
-        [Tooltip("Child Transform marking where the door spawns. If not assigned, uses the socket's center.")]
         [SerializeField] private Transform _doorSpawnPoint;
-
-        [Header("-- Blockade Prefabs --")]
-        [Tooltip("Prefabs to spawn if this socket remains unconnected (walls, barriers, etc.)")]
         [SerializeField] private List<GameObject> _blockadePrefabs = new List<GameObject>();
-
-        [Tooltip("Should this socket spawn a blockade if unconnected?")]
         [SerializeField] private bool _spawnBlockadeIfUnconnected = true;
-
-        [Header("-- Visual Debugging --")]
-        [Tooltip("Show debug gizmos in scene view?")]
         [SerializeField] private bool _showGizmos = false;
 
         #endregion
@@ -65,65 +31,32 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
         #region Public Properties
 
-        /// <summary>
-        /// Gets or sets the socket type (door tier).
-        /// </summary>
         public Door.DoorType SocketType
         {
             get => _socketType;
             set => _socketType = value;
         }
 
-        /// <summary>
-        /// Gets or sets whether this socket is connected.
-        /// </summary>
         public bool IsConnected
         {
             get => _isConnected;
             set => _isConnected = value;
         }
 
-        /// <summary>
-        /// Gets the door prefab assigned to this socket.
-        /// </summary>
         public GameObject DoorPrefab => _doorPrefab;
 
-        /// <summary>
-        /// Gets the list of blockade prefabs assigned to this socket.
-        /// </summary>
         public List<GameObject> BlockadePrefabs => _blockadePrefabs;
 
-        /// <summary>
-        /// Gets whether this socket should spawn a blockade if unconnected.
-        /// </summary>
         public bool SpawnBlockadeIfUnconnected => _spawnBlockadeIfUnconnected;
 
-        /// <summary>
-        /// Gets the instantiated door GameObject (if any).
-        /// </summary>
         public GameObject InstantiatedDoor => _instantiatedDoor;
 
-        /// <summary>
-        /// Gets the instantiated blockade GameObject (if any).
-        /// </summary>
         public GameObject InstantiatedBlockade => _instantiatedBlockade;
 
-        /// <summary>
-        /// Gets the socket this socket is connected to (if any).
-        /// </summary>
         public ConnectionSocket ConnectedSocket => _connectedSocket;
 
-        /// <summary>
-        /// Gets the forward direction of this socket, with angle offset applied.
-        /// This is the direction pointing OUTWARD from the room through the doorway.
-        /// </summary>
         public Vector3 Forward => Quaternion.AngleAxis(_forwardAngleOffset, Vector3.up) * transform.forward;
 
-        /// <summary>
-        /// Gets the world-space connection point of this socket.
-        /// Uses the geometric center of the door frame (from cached bounds).
-        /// Falls back to transform.position if bounds haven't been calculated.
-        /// </summary>
         public Vector3 Position
         {
             get
@@ -135,10 +68,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             }
         }
 
-        /// <summary>
-        /// Gets the local-space connection point relative to the room root.
-        /// Used by FloorGenerator for placement offset calculations.
-        /// </summary>
         public Vector3 LocalPosition
         {
             get
@@ -153,43 +82,20 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             }
         }
 
-        /// <summary>
-        /// Gets the rotation of this socket, with forward angle offset applied.
-        /// </summary>
         public Quaternion Rotation => Quaternion.AngleAxis(_forwardAngleOffset, Vector3.up) * transform.rotation;
 
-        /// <summary>
-        /// Gets the DoorSpawnPoint child Transform (if assigned).
-        /// </summary>
         public Transform DoorSpawnPointTransform => _doorSpawnPoint;
 
-        /// <summary>
-        /// Gets the world position where a door should be spawned.
-        /// Uses the DoorSpawnPoint child if assigned, otherwise falls back to the socket center.
-        /// </summary>
         public Vector3 DoorSpawnPosition =>
             _doorSpawnPoint != null ? _doorSpawnPoint.position : Position;
 
-        /// <summary>
-        /// Gets the rotation for door spawning.
-        /// Uses the DoorSpawnPoint child if assigned, otherwise uses socket rotation with offset.
-        /// </summary>
         public Quaternion DoorSpawnRotation =>
             _doorSpawnPoint != null ? _doorSpawnPoint.rotation : Rotation;
 
-        /// <summary>
-        /// Gets the local-space bounds center of this socket's door frame geometry.
-        /// </summary>
         public Vector3 BoundsCenter => _boundsCenter;
 
-        /// <summary>
-        /// Gets the local-space bounds size of this socket's door frame geometry.
-        /// </summary>
         public Vector3 BoundsSize => _boundsSize;
 
-        /// <summary>
-        /// Returns true if socket bounds have been calculated (size > 0).
-        /// </summary>
         public bool HasBounds => _boundsSize.sqrMagnitude > 0.001f;
 
         #endregion
@@ -207,20 +113,11 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
         #region Public Methods
 
-        /// <summary>
-        /// Checks if this socket is compatible with a given door type.
-        /// Currently exact match required.
-        /// </summary>
         public bool IsCompatibleWith(Door.DoorType otherType)
         {
             return _socketType == otherType;
         }
 
-        /// <summary>
-        /// Calculates the local-space bounds center and size from child renderers.
-        /// This determines the geometric center of the door frame piece,
-        /// which becomes the connection alignment point.
-        /// </summary>
         public void CalculateBoundsFromRenderers()
         {
             Renderer[] renderers = GetComponentsInChildren<Renderer>();
@@ -253,11 +150,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
                       $"Center={_boundsCenter}, Size={_boundsSize}");
         }
 
-        /// <summary>
-        /// Connects this socket to another socket and spawns a door.
-        /// Only the source socket spawns the door (one door per pair).
-        /// Returns the instantiated door GameObject.
-        /// </summary>
         public GameObject ConnectTo(ConnectionSocket otherSocket, GameObject doorPrefabOverride = null)
         {
             if (otherSocket == null)
@@ -304,10 +196,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             return null;
         }
 
-        /// <summary>
-        /// Spawns a blockade at this socket if it's unconnected.
-        /// Called by FloorGenerator at the end of generation.
-        /// </summary>
         public GameObject SpawnBlockade(Transform parentTransform = null)
         {
             if (_isConnected)
@@ -389,9 +277,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             return _instantiatedBlockade;
         }
 
-        /// <summary>
-        /// Disconnects this socket and destroys any spawned door or blockade.
-        /// </summary>
         public void Disconnect()
         {
             _isConnected = false;
@@ -422,10 +307,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
         #region Gizmo Drawing
 
-        /// <summary>
-        /// Draws the socket's adjusted forward direction as a blue arrow.
-        /// Only custom gizmo — all other visuals use Unity's built-in transform handles.
-        /// </summary>
         private void DrawForwardArrow()
         {
             Vector3 center = Position;

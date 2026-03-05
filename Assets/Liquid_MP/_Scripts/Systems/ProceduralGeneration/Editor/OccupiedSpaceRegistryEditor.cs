@@ -9,7 +9,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
     {
         private OccupiedSpaceRegistry _registry;
         
-        // Serialized properties
         private SerializedProperty _autoUpdateMovedRooms;
         private SerializedProperty _moveCheckInterval;
         private SerializedProperty _showDebugLogs;
@@ -17,7 +16,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
         private SerializedProperty _occupiedSpaceColor;
         private SerializedProperty _occupiedSpaces;
 
-        // Foldout states
         private bool _showStatsFoldout = true;
         private bool _showOccupiedSpacesFoldout = true;
 
@@ -25,7 +23,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
         {
             _registry = (OccupiedSpaceRegistry)target;
 
-            // Cache serialized properties
             _autoUpdateMovedRooms = serializedObject.FindProperty("_autoUpdateMovedRooms");
             _moveCheckInterval = serializedObject.FindProperty("_moveCheckInterval");
             _showDebugLogs = serializedObject.FindProperty("_showDebugLogs");
@@ -43,27 +40,22 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
 
             EditorGUILayout.Space();
 
-            // === REGISTRY SETTINGS ===
             DrawRegistrySettings();
 
             EditorGUILayout.Space();
 
-            // === DEBUG SETTINGS ===
             DrawDebugSettings();
 
             EditorGUILayout.Space();
 
-            // === STATISTICS ===
             DrawStatistics();
 
             EditorGUILayout.Space();
 
-            // === OCCUPIED SPACES LIST ===
             DrawOccupiedSpacesList();
 
             EditorGUILayout.Space();
 
-            // === ACTIONS ===
             DrawActions();
 
             serializedObject.ApplyModifiedProperties();
@@ -118,7 +110,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
                 {
                     EditorGUILayout.Space(5);
                     
-                    // Calculate total occupied volume
                     float totalVolume = 0f;
                     foreach (var space in allSpaces)
                     {
@@ -160,7 +151,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
                         
                         EditorGUILayout.BeginVertical(EditorStyles.helpBox);
                         
-                        // Room name and status
                         bool isValid = space.boundsChecker != null && space.roomTransform != null;
                         string statusIcon = isValid ? "âœ“" : "âœ—";
                         Color statusColor = isValid ? Color.green : Color.red;
@@ -174,23 +164,18 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
                         {
                             EditorGUI.indentLevel++;
                             
-                            // Room transform (clickable)
                             EditorGUILayout.ObjectField("Room Transform", space.roomTransform, typeof(Transform), true);
                             
-                            // Position and rotation
                             EditorGUILayout.LabelField("Position:", space.registeredPosition.ToString("F2"));
                             EditorGUILayout.LabelField("Rotation:", space.registeredRotation.eulerAngles.ToString("F1"));
                             
-                            // Bounds info
                             Bounds bounds = space.paddedBoundsWorld;
                             EditorGUILayout.LabelField("Bounds Center:", bounds.center.ToString("F2"));
                             EditorGUILayout.LabelField("Bounds Size:", bounds.size.ToString("F2"));
                             
-                            // Registration time
                             float timeSinceRegistration = Time.time - space.registrationTime;
                             EditorGUILayout.LabelField("Registered:", $"{timeSinceRegistration:F1}s ago");
                             
-                            // Movement check
                             if (space.HasMoved())
                             {
                                 EditorGUILayout.HelpBox("âš  Room has moved since registration!", MessageType.Warning);
@@ -226,7 +211,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
             
             EditorGUILayout.BeginHorizontal();
             
-            // Cleanup button
             GUI.backgroundColor = Color.yellow;
             if (GUILayout.Button("Clean Up Null Entries", GUILayout.Height(30)))
             {
@@ -242,8 +226,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
                 }
             }
             
-            // Clear button
-            GUI.backgroundColor = new Color(1f, 0.5f, 0.5f); // Light red
+            GUI.backgroundColor = new Color(1f, 0.5f, 0.5f);
             if (GUILayout.Button("Clear All", GUILayout.Height(30)))
             {
                 if (EditorUtility.DisplayDialog(
@@ -263,7 +246,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
             
             EditorGUILayout.Space(5);
             
-            // Refresh button
             GUI.backgroundColor = Color.cyan;
             if (GUILayout.Button("Refresh All Bounds", GUILayout.Height(25)))
             {

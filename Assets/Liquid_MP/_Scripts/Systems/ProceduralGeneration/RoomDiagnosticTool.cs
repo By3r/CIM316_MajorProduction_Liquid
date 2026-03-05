@@ -61,22 +61,18 @@ namespace _Scripts.Systems.ProceduralGeneration
         private Dictionary<Door.DoorType, int> _reachableCounts = new();
         private Dictionary<Door.DoorType, List<RoomCategory>> _reachableCategories = new();
 
-        // Connection simulation
         private int _selectedSocketIndex;
         private string[] _socketNames = System.Array.Empty<string>();
         private List<SimulationResult> _simulationResults = new();
 
-        // Obstacle analysis
         private List<DiagMessage> _obstacleMessages = new();
 
-        // Foldouts
         private bool _foldHealth = true;
         private bool _foldSockets = true;
         private bool _foldDatabase = true;
         private bool _foldSimulation = true;
         private bool _foldObstacles = true;
 
-        // Styles (lazy init)
         private GUIStyle _passStyle;
         private GUIStyle _warnStyle;
         private GUIStyle _failStyle;
@@ -120,7 +116,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             EditorGUILayout.LabelField("Room Generation Diagnostic Tool", _headerStyle);
             EditorGUILayout.Space(2);
 
-            // Input fields
             EditorGUI.BeginChangeCheck();
             _roomPrefab = (GameObject)EditorGUILayout.ObjectField(
                 "Room Prefab", _roomPrefab, typeof(GameObject), false);
@@ -141,13 +136,12 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             if (_roomPrefab == null)
             {
-                EditorGUILayout.HelpBox("Drag a room prefab here to analyze.", MessageType.Info);
+                EditorGUILayout.HelpBox("No room prefab assigned.", MessageType.Info);
                 return;
             }
 
             EditorGUILayout.Space(4);
 
-            // Action buttons
             EditorGUILayout.BeginHorizontal();
             GUI.backgroundColor = new Color(0.4f, 0.8f, 1f);
             if (GUILayout.Button("Run Full Diagnostic", GUILayout.Height(28)))
@@ -188,7 +182,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             EditorGUILayout.Space(6);
 
-            // Scrollable results
             _scrollPosition = EditorGUILayout.BeginScrollView(_scrollPosition);
 
             DrawPrefabHealthSection();
@@ -246,7 +239,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
                 EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
-                // Socket header
                 EditorGUILayout.LabelField($"Socket {i}: \"{socket.gameObject.name}\"", EditorStyles.boldLabel);
 
                 EditorGUI.indentLevel++;
@@ -261,7 +253,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                 else
                     EditorGUILayout.LabelField("Forward Offset", "0 (using raw transform.forward)");
 
-                // Socket bounds
                 if (socket.HasBounds)
                     DrawDiagLine(DiagLevel.Pass, $"Socket bounds calculated (center offset from pivot)");
                 else
@@ -273,7 +264,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                 else
                     DrawDiagLine(DiagLevel.Warning, "DoorSpawnPoint not assigned (door spawns at socket center)");
 
-                // Door prefab
                 if (socket.DoorPrefab != null)
                     DrawDiagLine(DiagLevel.Pass, $"Door prefab: {socket.DoorPrefab.name}");
                 else
@@ -306,7 +296,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                         DrawDiagLine(DiagLevel.Fail, $"NO rooms in database have a {socket.SocketType} socket!");
                 }
 
-                // Ping button
                 if (GUILayout.Button("Select in Hierarchy", EditorStyles.miniButton, GUILayout.Width(150)))
                 {
                     Selection.activeGameObject = socket.gameObject;
@@ -334,7 +323,7 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             if (_database == null)
             {
-                EditorGUILayout.HelpBox("No RoomPrefabDatabase assigned. Drag one in above to check database status.", MessageType.Warning);
+                EditorGUILayout.HelpBox("No RoomPrefabDatabase assigned.", MessageType.Warning);
                 EditorGUILayout.EndVertical();
                 EditorGUILayout.EndFoldoutHeaderGroup();
                 return;
@@ -371,7 +360,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                         $"types: {string.Join(", ", _databaseEntry.socketTypes)})");
                 }
 
-                // IsValid check
                 if (_databaseEntry.IsValid())
                     DrawDiagLine(DiagLevel.Pass, "Passes RoomEntry.IsValid() check");
                 else
@@ -386,7 +374,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                     MessageType.Error);
             }
 
-            // Reachability summary
             EditorGUILayout.Space(4);
             EditorGUILayout.LabelField("Reachability (who can connect to this room)", EditorStyles.miniBoldLabel);
 
@@ -415,7 +402,7 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             if (_database == null)
             {
-                EditorGUILayout.HelpBox("Assign a RoomPrefabDatabase to simulate connections.", MessageType.Warning);
+                EditorGUILayout.HelpBox("No RoomPrefabDatabase assigned.", MessageType.Warning);
                 EditorGUILayout.EndFoldoutHeaderGroup();
                 return;
             }
@@ -429,7 +416,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             EditorGUILayout.BeginVertical(_boxStyle);
 
-            // Socket selector
             EditorGUI.BeginChangeCheck();
             _selectedSocketIndex = EditorGUILayout.Popup("Source Socket", _selectedSocketIndex, _socketNames);
             if (EditorGUI.EndChangeCheck())
@@ -439,7 +425,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             EditorGUILayout.Space(4);
 
-            // Simulate buttons
             EditorGUILayout.BeginHorizontal();
             GUI.backgroundColor = new Color(1f, 0.9f, 0.4f);
             if (GUILayout.Button("Simulate All Connections", GUILayout.Height(24)))
@@ -516,7 +501,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                 EditorGUILayout.LabelField("Not yet simulated", EditorStyles.miniLabel);
             }
 
-            // Action buttons
             EditorGUILayout.BeginHorizontal();
             if (!result.Simulated)
             {
@@ -755,7 +739,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             {
                 List<RoomPrefabDatabase.RoomEntry> compatible = _database.GetRoomsWithSocketType(type);
 
-                // Exclude self
                 compatible = compatible.Where(r => r.prefab != _roomPrefab).ToList();
 
                 _reachableCounts[type] = compatible.Count;
@@ -868,7 +851,7 @@ namespace _Scripts.Systems.ProceduralGeneration
             EditorGUILayout.BeginVertical(_boxStyle);
             if (_obstacleMessages.Count == 0)
             {
-                EditorGUILayout.HelpBox("Run diagnostic first.", MessageType.Info);
+                EditorGUILayout.HelpBox("No diagnostic results.", MessageType.Info);
             }
             else
             {

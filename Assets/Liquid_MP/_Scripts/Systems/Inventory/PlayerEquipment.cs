@@ -56,7 +56,6 @@ namespace _Scripts.Systems.Inventory
         private EquipmentSlot[] _slots;
         private int _activeWeaponSlot; // 0 = primary, 1 = secondary
 
-        // Cached references
         private TacticalShooterPlayer _tacticalPlayer;
         private WeaponHitDetector _hitDetector;
         private MovementController _movementController;
@@ -67,7 +66,6 @@ namespace _Scripts.Systems.Inventory
         private InputAction _scrollWeapon;
         private InputAction _quickDrawSecondary;
 
-        // Switching state
         private bool _isSwitching;
 
         // Holster state — weapon is equipped but not drawn

@@ -217,16 +217,13 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
                 return false;
             }
 
-            // Get settings from spawn point
             SerializedObject so = new SerializedObject(spawnPoint);
             float maxDistance = so.FindProperty("_maxGroundCheckDistance").floatValue;
             LayerMask groundMask = so.FindProperty("_groundLayerMask").intValue;
 
-            // Get the bottom point of the collider
             Bounds bounds = itemCollider.bounds;
             Vector3 bottomPoint = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
 
-            // Raycast down
             RaycastHit hit;
             if (Physics.Raycast(bottomPoint, Vector3.down, out hit, maxDistance, groundMask))
             {

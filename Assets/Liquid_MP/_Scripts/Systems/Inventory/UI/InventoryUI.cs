@@ -101,7 +101,6 @@ namespace _Scripts.Systems.Inventory.UI
             // Initialize UI with current inventory state
             RefreshUI();
 
-            // Start closed
             CloseInventory();
         }
 

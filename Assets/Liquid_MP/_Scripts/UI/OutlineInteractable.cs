@@ -39,11 +39,11 @@ namespace Liquid.UI
 
         #region Serialized Fields
 
-        [Header("Outline (optional)")]
+        [Header("Outline")]
         [Tooltip("The Outline component to drive. Auto-found on this GameObject if left empty.")]
         [SerializeField] private Outline _outline;
 
-        [Header("Glow Material (optional)")]
+        [Header("Glow Material")]
         [Tooltip("A Graphic (Image, RawImage) whose material has a _GlowColor property (Liquid/UI/Glow shader). " +
                  "Leave empty to skip glow driving.")]
         [SerializeField] private Graphic _glowGraphic;
@@ -62,7 +62,7 @@ namespace Liquid.UI
         [Tooltip("How fast the outline color transitions between states.")]
         [SerializeField] private float _transitionSpeed = 12f;
 
-        [Header("Optional")]
+        [Header("Toggle")]
         [Tooltip("If true, this button stays in 'active' (pressed color) after clicking until manually deactivated.")]
         [SerializeField] private bool _toggleMode;
 

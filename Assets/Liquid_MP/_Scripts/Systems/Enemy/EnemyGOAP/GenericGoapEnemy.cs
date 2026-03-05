@@ -81,7 +81,6 @@ public class GenericGoapEnemy : EnemyBase, INoiseListener, IEnemyDebugTarget
     private float _stamina;
     private int _patrolIndex;
 
-    // Wander state
     private Vector3 _wanderTarget;
     private bool _hasWanderTarget;
     private float _wanderWaitTimer;

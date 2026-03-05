@@ -180,7 +180,6 @@ namespace _Scripts.Systems.Inventory.UI
                 out localPoint
             );
 
-            // Apply offset
             localPoint += _menuOffset;
 
             // Clamp to stay within canvas bounds

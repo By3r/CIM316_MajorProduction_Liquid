@@ -790,7 +790,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                         DestroyImmediate(child.gameObject);
                 }
 
-                // Pickups cleared
             }
         }
 

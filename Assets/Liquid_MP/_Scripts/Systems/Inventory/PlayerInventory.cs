@@ -229,6 +229,22 @@ namespace _Scripts.Systems.Inventory
             return remainingQuantity <= 0;
         }
 
+        /// <summary>
+        /// Returns total quantity of the specified item across all inventory slots.
+        /// </summary>
+        public int CountItem(InventoryItemData itemData)
+        {
+            if (itemData == null) return 0;
+
+            int total = 0;
+            for (int i = 0; i < _slotCount; i++)
+            {
+                if (_slots[i].ItemData == itemData)
+                    total += _slots[i].Quantity;
+            }
+            return total;
+        }
+
         #endregion
 
         #region AR Grams
@@ -342,7 +358,6 @@ namespace _Scripts.Systems.Inventory
             _arGrams = data.arGrams;
             OnARGramsChanged?.Invoke(_arGrams);
 
-            // Restore slots
             int slotsToRestore = Mathf.Min(data.slots.Length, _slotCount);
             for (int i = 0; i < _slotCount; i++)
             {

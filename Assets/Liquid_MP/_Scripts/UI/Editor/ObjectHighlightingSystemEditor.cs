@@ -134,7 +134,7 @@ namespace _Scripts.UI.Interaction.Editor
 
             if (_layerConfigs.arraySize == 0)
             {
-                EditorGUILayout.HelpBox("No layer configs. Click '+ Add Layer Config' to get started.", MessageType.Warning);
+                EditorGUILayout.HelpBox("No layer configs.", MessageType.Warning);
             }
         }
 
@@ -205,7 +205,7 @@ namespace _Scripts.UI.Interaction.Editor
                 
                 EditorGUILayout.PropertyField(config.FindPropertyRelative("bracketColor"), new GUIContent("Color"));
                 EditorGUILayout.PropertyField(config.FindPropertyRelative("bracketSize"), new GUIContent("Size"));
-                EditorGUILayout.PropertyField(config.FindPropertyRelative("bracketSprite"), new GUIContent("Custom Sprite (Optional)"));
+                EditorGUILayout.PropertyField(config.FindPropertyRelative("bracketSprite"), new GUIContent("Custom Sprite"));
                 
                 EditorGUI.indentLevel--;
                 EditorGUILayout.Space(3);
@@ -232,7 +232,7 @@ namespace _Scripts.UI.Interaction.Editor
             
             if (!_fadeCrosshairOnHighlight.boolValue)
             {
-                EditorGUILayout.HelpBox("Global crosshair fading is disabled. Enable it in Crosshair Integration section.", MessageType.Info);
+                EditorGUILayout.HelpBox("Global crosshair fading is disabled.", MessageType.Info);
             }
             else if (!fadeCrosshair.boolValue)
             {

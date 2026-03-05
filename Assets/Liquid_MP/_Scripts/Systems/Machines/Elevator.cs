@@ -225,7 +225,6 @@ namespace _Scripts.Systems.Machines
                 return;
             }
 
-            // Start transition
             StartCoroutine(TransitionCoroutine(floor, isNewFloor));
         }
 
@@ -235,7 +234,6 @@ namespace _Scripts.Systems.Machines
             OnFloorTransitionStarted?.Invoke(targetFloor);
             _onTransitionStarted?.Invoke();
 
-            // Close UI
             CloseFloorUI();
 
             // Play elevator movement sound

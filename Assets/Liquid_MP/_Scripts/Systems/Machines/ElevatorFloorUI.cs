@@ -87,7 +87,6 @@ namespace _Scripts.Systems.Machines
 
         private void Awake()
         {
-            // Singleton setup
             if (_instance != null && _instance != this)
             {
                 Debug.LogWarning("[ElevatorFloorUI] Multiple instances detected. Destroying duplicate.");
