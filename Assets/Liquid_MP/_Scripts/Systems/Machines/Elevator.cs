@@ -41,7 +41,6 @@ namespace _Scripts.Systems.Machines
         [Header("Transition Settings")]
         [SerializeField] private float _transitionDelay = 2f;
         [SerializeField] private float _fadeOutDuration = 0.5f;
-        [SerializeField] private float _fadeInDuration  = 0.5f;
 
         [Header("Audio")]
         [SerializeField] private AudioSource _audioSource;
@@ -59,7 +58,7 @@ namespace _Scripts.Systems.Machines
         private bool _isTransitioning;
         private bool _isUIOpen;
 
-        // Terminal UI integration (lazy discovery — spawned by proc-gen)
+        // Terminal UI integration (both persist in the permanent safe room)
         private SafeRoomTerminalUI _terminalUI;
         private bool _terminalResolved;
 
@@ -116,28 +115,8 @@ namespace _Scripts.Systems.Machines
                 _powerCellSlot.OnPowerStateChanged += HandlePowerStateChanged;
             }
 
-            // Restore PowerCellSlot state from previous floor transition
-            // (this Elevator is freshly spawned — the old one was destroyed during floor gen)
-            var fm = FloorStateManager.Instance;
-            if (fm != null && fm.PowerCellSlotWasPowered && _powerCellSlot != null)
-            {
-                InventoryItemData pcData = null;
-                if (!string.IsNullOrEmpty(fm.PowerCellSlotItemId))
-                {
-                    pcData = ItemDatabase.FindByItemId(fm.PowerCellSlotItemId);
-                }
-                _powerCellSlot.SetPoweredState(true, pcData);
-            }
-
-            // Try to subscribe to terminal UI immediately
+            // Resolve terminal UI — both persist in the permanent safe room
             TryResolveTerminalUI();
-        }
-
-        private void Update()
-        {
-            // Lazy discovery — SafeRoomTerminalUI may spawn after this Elevator
-            if (!_terminalResolved)
-                TryResolveTerminalUI();
         }
 
         private void OnDestroy()
@@ -240,6 +219,9 @@ namespace _Scripts.Systems.Machines
 
         private void HandleFloorSelected(int floor)
         {
+            // Prevent double transitions from rapid clicks or duplicate events
+            if (_isTransitioning) return;
+
             int currentFloor = GetCurrentFloor();
             int highestUnlocked = GetHighestUnlockedFloor();
 
@@ -304,15 +286,6 @@ namespace _Scripts.Systems.Machines
                     floorManager.SavePlayerEquipment(eqData);
                 }
 
-                // Save PowerCellSlot state before transition
-                // (so we can restore it after the Elevator prefab gets rebuilt)
-                if (_powerCellSlot != null)
-                {
-                    floorManager.SavePowerCellSlotState(
-                        _powerCellSlot.IsPowered,
-                        _powerCellSlot.IsPowered ? "powercell" : "");
-                }
-
                 // Save player position so they stay put after floor gen
                 // (instead of being teleported to room center)
                 var playerManager = PlayerManager.Instance;
@@ -334,24 +307,27 @@ namespace _Scripts.Systems.Machines
                 floorManager.CurrentFloorNumber = targetFloor;
             }
 
-            // Consume power cell if going to new floor — clear saved state too
+            // Consume power cell if going to new floor
             if (consumesPower && _powerCellSlot != null && _powerCellSlot.IsPowered)
             {
                 _powerCellSlot.SetPoweredState(false, null);
-                if (floorManager != null)
-                {
-                    floorManager.SavePowerCellSlotState(false, "");
-                }
             }
 
-            // Publish event for level regeneration (LevelGenerator listens to this).
-            // This Elevator gets destroyed during floor gen, so the coroutine ends here.
-            // All post-generation work (fade-in, inventory/equipment restore, player positioning)
-            // is handled by PlayerManager.HandleFloorGenerationComplete() which persists.
+            // Publish event for level regeneration (FloorGenerator listens to this).
+            // The Elevator now persists (permanent safe room), so the coroutine survives.
+            // Post-generation work (fade-in, inventory/equipment restore, player positioning)
+            // is handled by PlayerManager.HandleFloorGenerationComplete().
             if (GameManager.Instance?.EventManager != null)
             {
                 GameManager.Instance.EventManager.Publish("OnFloorTransitionRequested", targetFloor);
             }
+
+            // Wait one frame for floor generation to complete
+            yield return null;
+
+            _isTransitioning = false;
+            OnFloorTransitionComplete?.Invoke(targetFloor);
+            _onTransitionComplete?.Invoke();
         }
 
         /// <summary>

@@ -136,11 +136,6 @@ namespace _Scripts.Core.Managers
         // Equipment persistence: player equipment snapshot between floor transitions
         private EquipmentSaveData _savedEquipment;
 
-        // PowerCellSlot state: persists across floor transitions so the power cell
-        // isn't lost when revisiting already-visited floors
-        private bool _powerCellSlotPowered;
-        private string _powerCellSlotItemId;
-
         // Player position snapshot: saves the player's world position + rotation
         // during floor transition so they don't get teleported to room center.
         private Vector3 _transitionPlayerPosition;
@@ -425,25 +420,6 @@ namespace _Scripts.Core.Managers
         }
 
         /// <summary>
-        /// Saves the PowerCellSlot state so it persists across floor transitions.
-        /// </summary>
-        public void SavePowerCellSlotState(bool isPowered, string itemId)
-        {
-            _powerCellSlotPowered = isPowered;
-            _powerCellSlotItemId = itemId;
-        }
-
-        /// <summary>
-        /// Whether the PowerCellSlot had a power cell inserted before transition.
-        /// </summary>
-        public bool PowerCellSlotWasPowered => _powerCellSlotPowered;
-
-        /// <summary>
-        /// The itemId of the power cell that was in the slot, or null/empty if none.
-        /// </summary>
-        public string PowerCellSlotItemId => _powerCellSlotItemId;
-
-        /// <summary>
         /// Saves the player's world position and rotation before a floor transition.
         /// PlayerManager restores this after generation instead of centering the player.
         /// </summary>
@@ -481,17 +457,17 @@ namespace _Scripts.Core.Managers
         }
 
         /// <summary>
-        /// Checks if a world position is inside the safe room (EntryRoom).
-        /// Uses the EntryRoom's BoundsChecker to determine if the position is within the room bounds.
+        /// Checks if a world position is inside the safe room (SafeElevatorRoom).
+        /// Uses the room's BoundsChecker to determine if the position is within bounds.
         /// Falls back to GameState.SafeRoom check, then to Elevator proximity.
         /// </summary>
         public static bool IsPositionInSafeRoom(Vector3 worldPosition)
         {
-            // Method 1: Check if position is inside EntryRoom bounds
-            GameObject entryRoom = GameObject.Find("EntryRoom");
-            if (entryRoom != null)
+            // Method 1: Check if position is inside SafeElevatorRoom bounds
+            GameObject safeRoom = GameObject.Find("SafeElevatorRoom");
+            if (safeRoom != null)
             {
-                BoundsChecker boundsChecker = entryRoom.GetComponent<BoundsChecker>();
+                BoundsChecker boundsChecker = safeRoom.GetComponent<BoundsChecker>();
                 if (boundsChecker != null)
                 {
                     Bounds roomBounds = boundsChecker.GetBounds();

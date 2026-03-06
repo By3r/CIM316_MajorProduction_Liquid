@@ -143,6 +143,12 @@ namespace _Scripts.Systems.ProceduralGeneration
         }
 
         /// <summary>
+        /// Resets the internal registration flag WITHOUT unregistering from the registry.
+        /// Use after OccupiedSpaceRegistry.ClearRegistry() so this room can re-register.
+        /// </summary>
+        public void ResetRegistrationFlag() => _isRegistered = false;
+
+        /// <summary>
         /// Checks if this room is currently registered with the registry.
         /// </summary>
         public bool IsRegistered => _isRegistered;

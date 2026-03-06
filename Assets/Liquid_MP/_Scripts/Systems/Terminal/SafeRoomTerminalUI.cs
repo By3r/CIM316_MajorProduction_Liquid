@@ -143,6 +143,9 @@ namespace _Scripts.Systems.Terminal
 
             // Initialize elevator panel with floor data
             InitializeElevatorPanel();
+
+            // Refresh the elevator panel after floor transitions (terminal persists across floors)
+            GameManager.Instance?.EventManager?.Subscribe("OnFloorGenerationComplete", HandleFloorGenerationComplete);
         }
 
         private void Update()
@@ -155,6 +158,8 @@ namespace _Scripts.Systems.Terminal
         private void OnDestroy()
         {
             if (Instance == this) Instance = null;
+
+            GameManager.Instance?.EventManager?.Unsubscribe("OnFloorGenerationComplete", HandleFloorGenerationComplete);
 
             if (_powerCellSlot != null)
                 _powerCellSlot.OnPowerStateChanged -= OnPowerCellChanged;
@@ -331,6 +336,14 @@ namespace _Scripts.Systems.Terminal
                 _hasPowerCell,
                 _hasPowerCell ? 1 : 0
             );
+        }
+
+        private void HandleFloorGenerationComplete()
+        {
+            TryResolvePowerCellSlot();
+            RefreshElevatorPanel();
+            RefreshTabs();
+            RefreshPages();
         }
 
         private void HandleTravelConfirmed(int floor)
