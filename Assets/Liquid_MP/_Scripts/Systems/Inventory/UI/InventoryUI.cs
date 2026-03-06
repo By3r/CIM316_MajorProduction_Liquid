@@ -3,13 +3,16 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using _Scripts.Core.Managers;
+using _Scripts.Systems.HUD;
+using _Scripts.Systems.Inventory.ItemTypes;
 using _Scripts.Systems.Inventory.Pickups;
 
 namespace _Scripts.Systems.Inventory.UI
 {
     /// <summary>
     /// Main inventory UI controller.
-    /// Opens with TAB key, shows 3 physical item slots and AR grams counter.
+    /// Opens with TAB key — tells the VisorController to show/hide the visor panel.
+    /// Inventory slots and context menu live on the visor's World Space Canvas.
     /// </summary>
     public class InventoryUI : MonoBehaviour
     {
@@ -22,8 +25,12 @@ namespace _Scripts.Systems.Inventory.UI
 
         #region Serialized Fields
 
+        [Header("Visor")]
+        [Tooltip("The VisorController that owns the 3D visor HUD. " +
+                 "Inventory slots and context menu live on its World Space Canvas.")]
+        [SerializeField] private VisorController _visorController;
+
         [Header("UI References")]
-        [SerializeField] private GameObject _inventoryPanel;
         [SerializeField] private InventorySlotUI[] _slotUIs;
         // TODO: AR grams UI will be redesigned
         // [SerializeField] private ARGramsCounterUI _arGramsCounterUI;
@@ -79,19 +86,10 @@ namespace _Scripts.Systems.Inventory.UI
                 _playerInventory.OnARGramsChanged += HandleARGramsChanged;
             }
 
-            // If no panel assigned, assume this GO has a child panel or use self
-            if (_inventoryPanel == null)
+            // Find visor controller if not assigned
+            if (_visorController == null)
             {
-                // Try to find a child named "Panel" or use first child
-                Transform panelTransform = transform.Find("Panel");
-                if (panelTransform != null)
-                {
-                    _inventoryPanel = panelTransform.gameObject;
-                }
-                else if (transform.childCount > 0)
-                {
-                    _inventoryPanel = transform.GetChild(0).gameObject;
-                }
+                _visorController = VisorController.Instance;
             }
 
             // Set up slot indices and subscribe to right-click events
@@ -127,6 +125,7 @@ namespace _Scripts.Systems.Inventory.UI
             {
                 _contextMenu.OnDropRequested += HandleDropRequested;
                 _contextMenu.OnExamineRequested += HandleExamineRequested;
+                _contextMenu.OnEquipRequested += HandleEquipRequested;
             }
         }
 
@@ -181,6 +180,7 @@ namespace _Scripts.Systems.Inventory.UI
             {
                 _contextMenu.OnDropRequested -= HandleDropRequested;
                 _contextMenu.OnExamineRequested -= HandleExamineRequested;
+                _contextMenu.OnEquipRequested -= HandleEquipRequested;
             }
         }
 
@@ -194,16 +194,25 @@ namespace _Scripts.Systems.Inventory.UI
             if (!_isOpen && GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Paused)
                 return;
 
+            // Don't open inventory if visor is raised
+            if (!_isOpen && _visorController != null && _visorController.IsVisorRaised)
+                return;
+
             ToggleInventory();
         }
 
         private void OnCloseInventory(InputAction.CallbackContext context)
         {
-            // Only close if inventory is open
-            if (_isOpen)
+            if (!_isOpen) return;
+
+            // If examiner is open, close it first — inventory stays open
+            if (_itemExaminer != null && _itemExaminer.IsOpen)
             {
-                CloseInventory();
+                _itemExaminer.Hide();
+                return;
             }
+
+            CloseInventory();
         }
 
         #endregion
@@ -226,9 +235,10 @@ namespace _Scripts.Systems.Inventory.UI
         {
             _isOpen = true;
 
-            if (_inventoryPanel != null)
+            // Show the visor panel (glass + inventory/terminal/vitals)
+            if (_visorController != null)
             {
-                _inventoryPanel.SetActive(true);
+                _visorController.ShowPanel();
             }
 
             RefreshUI();
@@ -263,9 +273,10 @@ namespace _Scripts.Systems.Inventory.UI
                 _itemExaminer.Hide();
             }
 
-            if (_inventoryPanel != null)
+            // Hide the visor panel
+            if (_visorController != null)
             {
-                _inventoryPanel.SetActive(false);
+                _visorController.HidePanel();
             }
 
             if (_pauseGameWhenOpen)
@@ -328,10 +339,21 @@ namespace _Scripts.Systems.Inventory.UI
                 _itemExaminer.Hide();
             }
 
+            // Determine if this item is equippable (weapon or suit addon)
+            bool showEquip = false;
+            if (_playerInventory != null)
+            {
+                InventorySlot slot = _playerInventory.GetSlot(slotIndex);
+                if (slot != null && !slot.IsEmpty)
+                {
+                    showEquip = slot.ItemData is WeaponItemData || slot.ItemData is SuitAddonItemData;
+                }
+            }
+
             // Show context menu at click position
             if (_contextMenu != null)
             {
-                _contextMenu.Show(slotIndex, screenPosition);
+                _contextMenu.Show(slotIndex, screenPosition, showEquip);
             }
         }
 
@@ -342,13 +364,73 @@ namespace _Scripts.Systems.Inventory.UI
             InventorySlot slot = _playerInventory.GetSlot(slotIndex);
             if (slot == null || slot.IsEmpty) return;
 
-            // Close inventory panel while examining
-            if (_inventoryPanel != null)
+            // Inventory stays open — examiner overlays on top
+            _itemExaminer.Show(slot.ItemData);
+        }
+
+        private void HandleEquipRequested(int slotIndex)
+        {
+            if (_playerInventory == null) return;
+
+            InventorySlot slot = _playerInventory.GetSlot(slotIndex);
+            if (slot == null || slot.IsEmpty) return;
+
+            PlayerEquipment equipment = PlayerEquipment.Instance;
+            if (equipment == null)
             {
-                _inventoryPanel.SetActive(false);
+                Debug.LogWarning("[InventoryUI] PlayerEquipment not found.");
+                return;
             }
 
-            _itemExaminer.Show(slot.ItemData);
+            InventoryItemData itemData = slot.ItemData;
+            EquipmentSlotType targetSlot = DetermineEquipSlot(itemData, equipment);
+
+            if (!equipment.CanEquip(itemData, targetSlot))
+            {
+                Debug.LogWarning($"[InventoryUI] Cannot equip '{itemData.displayName}' to {targetSlot}.");
+                return;
+            }
+
+            if (equipment.TryEquip(itemData, targetSlot))
+            {
+                // Remove from inventory — TryEquip handles returning any swapped item
+                _playerInventory.RemoveItemFromSlot(slotIndex, 1);
+            }
+        }
+
+        /// <summary>
+        /// Determines the best equipment slot for an item.
+        /// Weapons: prefers empty slot matching their type, falls back to the other if compatible.
+        /// Suit addons: always go to SuitAddon slot.
+        /// </summary>
+        private EquipmentSlotType DetermineEquipSlot(InventoryItemData itemData, PlayerEquipment equipment)
+        {
+            if (itemData is SuitAddonItemData)
+                return EquipmentSlotType.SuitAddon;
+
+            if (itemData is WeaponItemData weaponData)
+            {
+                switch (weaponData.weaponSlot)
+                {
+                    case WeaponSlotType.PrimaryOnly:
+                        return EquipmentSlotType.PrimaryWeapon;
+
+                    case WeaponSlotType.SecondaryOnly:
+                        return EquipmentSlotType.SecondaryWeapon;
+
+                    case WeaponSlotType.PrimaryOrSecondary:
+                        // Prefer the empty slot; if both empty prefer primary; if both full prefer primary (swap)
+                        EquipmentSlot primary = equipment.GetSlot(EquipmentSlotType.PrimaryWeapon);
+                        EquipmentSlot secondary = equipment.GetSlot(EquipmentSlotType.SecondaryWeapon);
+
+                        if (primary.IsEmpty && !secondary.IsEmpty) return EquipmentSlotType.PrimaryWeapon;
+                        if (!primary.IsEmpty && secondary.IsEmpty) return EquipmentSlotType.SecondaryWeapon;
+                        return EquipmentSlotType.PrimaryWeapon; // both empty or both full → primary
+                }
+            }
+
+            // Fallback (should never happen for equippable items)
+            return EquipmentSlotType.PrimaryWeapon;
         }
 
         private void HandleDropRequested(int slotIndex)

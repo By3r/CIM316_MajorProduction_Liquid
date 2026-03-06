@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: WpnItem_TR15
   displayName: TR15
   itemType: 2
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: d10c47f79a7f4fa40af730f2668eb50d, type: 3}
   worldPrefab: {fileID: 6356262942742611153, guid: 5b39904471868224f85b7db2935e4286, type: 3}
   description: 
   isStackable: 0

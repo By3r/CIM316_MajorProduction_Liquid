@@ -67,7 +67,13 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
         public Vector2 deltaLookInput;
         
         public float aimingWeight;
-        
+
+        /// <summary>
+        /// Controls hand IK weight: 0 = unarmed (base animation layer controls arms),
+        /// 1 = armed (weapon IK fully active). Smoothly interpolated by TacticalProceduralAnimation.
+        /// </summary>
+        public float armedWeight;
+
         public KTransform _ikMotion;
         public NativeArray<SpineBoneAtom> lookUpBones;
         public NativeArray<SpineBoneAtom> lookRightBones;
@@ -164,6 +170,8 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
             
             _rightHandIk.SetWeights(1f, 0f);
             _leftHandIk.SetWeights(1f, 0f);
+
+            armedWeight = 1f; // Default to armed for backwards compatibility
 
             _rootHandle = _animator.BindSceneTransform(animator.transform);
             cachedIkHandGunRight = KTransform.Identity;
@@ -480,13 +488,24 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
         
         public void ProcessAnimation(AnimationStream stream)
         {
-            ProcessWeaponIk(stream);
-            ProcessWeaponOffsets(stream);
-            ProcessAds(stream);
-            ProcessAdditives(stream);
-            ProcessSway(stream);
-            ProcessAimOffset(stream);
-            ProcessInverseKinematics(stream);
+            // Scale hand IK weights by armed state
+            _rightHandIk.SetWeights(armedWeight, 0f);
+            _leftHandIk.SetWeights(armedWeight, 0f);
+
+            // Only process weapon IK/offsets/sway when armed and weapon settings are available
+            if (_weaponSettings != null && armedWeight > 0.01f)
+            {
+                ProcessWeaponIk(stream);
+                ProcessWeaponOffsets(stream);
+                ProcessAds(stream);
+                ProcessAdditives(stream);
+                ProcessSway(stream);
+                ProcessAimOffset(stream);
+                ProcessInverseKinematics(stream);
+            }
+            // When unarmed: skip ALL processing so the animation job doesn't touch any bones.
+            // The camera still handles look via fpsCamera.lookInput (independent of spine IK).
+            // The body still rotates for yaw via transform.rotation in UpdateLookInput().
         }
 
         public void ProcessRootMotion(AnimationStream stream)

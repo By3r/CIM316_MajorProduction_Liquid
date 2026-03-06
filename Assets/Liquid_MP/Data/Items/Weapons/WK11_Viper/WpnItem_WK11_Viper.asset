@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: WpnItem_WK11_Viper
   displayName: WK11_Viper
   itemType: 3
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: a2b3ea17516fcd1498df036fa323539a, type: 3}
   worldPrefab: {fileID: 6356262942742611153, guid: 3e0ca856af8356e40817301490b1e665, type: 3}
   description: 
   isStackable: 0

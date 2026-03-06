@@ -76,6 +76,8 @@ namespace _Scripts.Systems.Weapon
             if (_camera == null) return;
 
             TacticalShooterWeapon weapon = _player.GetPrimaryWeapon();
+            if (weapon == null) return;
+
             WeaponCombatData data = weapon.combatData;
 
             if (data == null)
@@ -94,7 +96,19 @@ namespace _Scripts.Systems.Weapon
 
         private void FireSingleRaycast(TacticalShooterWeapon weapon, WeaponCombatData data)
         {
-            Ray ray = new Ray(_camera.transform.position, _camera.transform.forward);
+            // ADS: ray from camera center (precise screen-center aiming).
+            // Hip fire: ray from the gun barrel (muzzle position + muzzle forward).
+            Ray ray;
+            if (_player.IsAiming)
+            {
+                ray = new Ray(_camera.transform.position, _camera.transform.forward);
+            }
+            else
+            {
+                Transform muzzle = weapon.GetMuzzleTransform();
+                ray = new Ray(muzzle.position, muzzle.forward);
+            }
+
             Vector3 endPoint;
 
             if (Physics.Raycast(ray, out RaycastHit hit, data.range, hitLayers,
@@ -121,15 +135,26 @@ namespace _Scripts.Systems.Weapon
         private void FireMultiPellet(TacticalShooterWeapon weapon, WeaponCombatData data)
         {
             float damagePerPellet = data.damage / data.pelletCount;
-            Vector3 muzzle = weapon.GetMuzzlePosition();
+            Transform muzzleTransform = weapon.GetMuzzleTransform();
+            Vector3 muzzle = muzzleTransform.position;
+
+            // ADS: spread around camera forward (screen-center).
+            // Hip fire: spread around muzzle forward (barrel direction).
+            Vector3 baseDirection = _player.IsAiming
+                ? _camera.transform.forward
+                : muzzleTransform.forward;
+
+            Vector3 rayOrigin = _player.IsAiming
+                ? _camera.transform.position
+                : muzzle;
 
             for (int i = 0; i < data.pelletCount; i++)
             {
                 Vector2 spread = Random.insideUnitCircle * data.spreadAngle;
                 Vector3 direction = Quaternion.Euler(spread.x, spread.y, 0f)
-                                    * _camera.transform.forward;
+                                    * baseDirection;
 
-                Ray ray = new Ray(_camera.transform.position, direction);
+                Ray ray = new Ray(rayOrigin, direction);
                 Vector3 endPoint;
 
                 if (Physics.Raycast(ray, out RaycastHit hit, data.range, hitLayers,

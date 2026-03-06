@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: WpnItem_Herrington_Police
   displayName: Herrington Police
   itemType: 2
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: f424e9d9dc48b524180ed1aaa1805aa2, type: 3}
   worldPrefab: {fileID: 6356262942742611153, guid: eecad41ff4445ad44a862dd0d1faa8c8, type: 3}
   description: 
   isStackable: 0

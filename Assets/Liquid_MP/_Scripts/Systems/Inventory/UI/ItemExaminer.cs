@@ -1,13 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using _Scripts.Core.Managers;
 
 namespace _Scripts.Systems.Inventory.UI
 {
     /// <summary>
     /// Simple item examination system using a render texture camera.
     /// Spawns item below the map, renders to texture, allows horizontal rotation.
+    /// Does NOT manage input or cursor — the parent UI (InventoryUI) owns that.
     /// </summary>
     public class ItemExaminer : MonoBehaviour
     {
@@ -19,6 +19,10 @@ namespace _Scripts.Systems.Inventory.UI
         [SerializeField] private TextMeshProUGUI _descriptionText;
         [SerializeField] private RawImage _itemDisplayImage;
 
+        [Header("Buttons")]
+        [SerializeField] private Button _closeButton;
+        [SerializeField] private Button _minimizeButton;
+
         [Header("Render Setup")]
         [SerializeField] private Camera _examineCamera;
         [SerializeField] private Transform _itemSpawnPoint;
@@ -26,10 +30,6 @@ namespace _Scripts.Systems.Inventory.UI
 
         [Header("Rotation Settings")]
         [SerializeField] private float _rotationSpeed = 0.5f;
-
-        [Header("Close Settings")]
-        [SerializeField] private KeyCode _closeKey = KeyCode.Escape;
-        [SerializeField] private KeyCode _alternateCloseKey = KeyCode.E;
 
         #endregion
 
@@ -71,26 +71,39 @@ namespace _Scripts.Systems.Inventory.UI
                 _examineCamera.targetTexture = _renderTexture;
                 _examineCamera.enabled = false;
             }
+
+            // Wire both buttons to Hide
+            if (_closeButton != null)
+            {
+                _closeButton.onClick.AddListener(Hide);
+            }
+
+            if (_minimizeButton != null)
+            {
+                _minimizeButton.onClick.AddListener(Hide);
+            }
         }
 
         private void Update()
         {
             if (!_isOpen) return;
 
-            // Handle close input
-            if (Input.GetKeyDown(_closeKey) || Input.GetKeyDown(_alternateCloseKey))
-            {
-                Hide();
-                return;
-            }
-
-            // Handle rotation
             HandleRotationInput();
         }
 
         private void OnDestroy()
         {
             CleanupItem();
+
+            if (_closeButton != null)
+            {
+                _closeButton.onClick.RemoveListener(Hide);
+            }
+
+            if (_minimizeButton != null)
+            {
+                _minimizeButton.onClick.RemoveListener(Hide);
+            }
         }
 
         #endregion
@@ -150,16 +163,6 @@ namespace _Scripts.Systems.Inventory.UI
 
             // Reset rotation
             _currentYRotation = 0f;
-
-            // Freeze player input
-            if (InputManager.Instance != null)
-            {
-                InputManager.Instance.EnablePlayerInput(false);
-            }
-
-            // Show cursor
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
         }
 
         /// <summary>
@@ -183,16 +186,6 @@ namespace _Scripts.Systems.Inventory.UI
 
             // Cleanup spawned item
             CleanupItem();
-
-            // Unfreeze player input
-            if (InputManager.Instance != null)
-            {
-                InputManager.Instance.EnablePlayerInput(true);
-            }
-
-            // Hide cursor
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
         }
 
         #endregion
@@ -272,7 +265,6 @@ namespace _Scripts.Systems.Inventory.UI
             // Start drag on mouse down over the display area
             if (Input.GetMouseButtonDown(0))
             {
-                // Check if mouse is over the display image
                 if (IsMouseOverDisplay())
                 {
                     _isDragging = true;
@@ -301,7 +293,11 @@ namespace _Scripts.Systems.Inventory.UI
             if (_itemDisplayImage == null) return false;
 
             RectTransform rect = _itemDisplayImage.rectTransform;
-            return RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition);
+
+            // Input.mousePosition is in main camera screen space, so always use
+            // Camera.main for the projection — NOT the canvas's Event Camera
+            // (which is the Visor Overlay Camera used for rendering only).
+            return RectTransformUtility.RectangleContainsScreenPoint(rect, Input.mousePosition, Camera.main);
         }
 
         private void CleanupItem()

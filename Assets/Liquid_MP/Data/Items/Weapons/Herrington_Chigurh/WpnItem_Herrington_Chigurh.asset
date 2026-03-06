@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: WpnItem_Herrington_Chigurh
   displayName: Herrington Chigurh
   itemType: 2
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 05d2c0bc21059bf4497f30555b206760, type: 3}
   worldPrefab: {fileID: 6356262942742611153, guid: 0559436dfd836004cb33fbf87cafd0fb, type: 3}
   description: 
   isStackable: 0

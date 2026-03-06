@@ -19,8 +19,8 @@ MonoBehaviour:
   m_RendererDataList:
   - {fileID: 11400000, guid: ecae9c2ac62d94b43b23c7c7c907c48e, type: 2}
   m_DefaultRendererIndex: 0
-  m_RequireDepthTexture: 0
-  m_RequireOpaqueTexture: 0
+  m_RequireDepthTexture: 1
+  m_RequireOpaqueTexture: 1
   m_OpaqueDownsampling: 1
   m_SupportsTerrainHoles: 1
   m_SupportsHDR: 1
@@ -43,7 +43,7 @@ MonoBehaviour:
   m_ProbeVolumeSHBands: 1
   m_MainLightRenderingMode: 1
   m_MainLightShadowsSupported: 1
-  m_MainLightShadowmapResolution: 4096
+  m_MainLightShadowmapResolution: 512
   m_AdditionalLightsRenderingMode: 1
   m_AdditionalLightsPerObjectLimit: 8
   m_AdditionalLightShadowsSupported: 1

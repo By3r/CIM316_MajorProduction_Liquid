@@ -263,6 +263,13 @@ namespace _Scripts.Systems.Machines
                     floorManager.SavePlayerInventory(invData);
                 }
 
+                // Save player equipment before floor transition
+                if (PlayerEquipment.Instance != null)
+                {
+                    var eqData = PlayerEquipment.Instance.ToSaveData();
+                    floorManager.SavePlayerEquipment(eqData);
+                }
+
                 // Save PowerCellSlot state before transition
                 // (so we can restore it after the Elevator prefab gets rebuilt)
                 if (_powerCellSlot != null)
@@ -306,6 +313,16 @@ namespace _Scripts.Systems.Machines
             {
                 InventorySaveData savedInventory = floorManager.GetSavedInventory();
                 PlayerInventory.Instance.RestoreFromSaveData(savedInventory);
+            }
+
+            // Restore player equipment after floor generation
+            if (floorManager != null && PlayerEquipment.Instance != null)
+            {
+                EquipmentSaveData savedEquipment = floorManager.GetSavedEquipment();
+                if (savedEquipment != null)
+                {
+                    PlayerEquipment.Instance.RestoreFromSaveData(savedEquipment);
+                }
             }
 
             // NOTE: PowerCellSlot restore happens in the NEW Elevator's Start(),

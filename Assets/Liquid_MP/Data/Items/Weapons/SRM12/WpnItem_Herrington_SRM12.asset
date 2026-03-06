@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: WpnItem_SRM12
   displayName: SRM12
   itemType: 2
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: 8819e89c555d02d46bc46da2c9ab06f9, type: 3}
   worldPrefab: {fileID: 6356262942742611153, guid: 0f79d1bee992290448032d30c0fc3b71, type: 3}
   description: 
   isStackable: 0

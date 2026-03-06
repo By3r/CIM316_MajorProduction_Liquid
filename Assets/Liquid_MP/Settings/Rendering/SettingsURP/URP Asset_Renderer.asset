@@ -1,5 +1,19 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-2915964736068638634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 784870d669581ef4286e78ae61939132, type: 3}
+  m_Name: VisorPixelationFeature
+  m_EditorClassIdentifier: Assembly-CSharp::Liquid.Rendering.VisorPixelationFeature
+  m_Active: 1
+  _shader: {fileID: 4800000, guid: c96ed4932a0dd684cb859ac3cfb38a50, type: 3}
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -24,8 +38,11 @@ MonoBehaviour:
     probeSamplingDebugMesh: {fileID: 0}
     probeSamplingDebugTexture: {fileID: 0}
     probeVolumeBlendStatesCS: {fileID: 0}
-  m_RendererFeatures: []
-  m_RendererFeatureMap: 
+  m_RendererFeatures:
+  - {fileID: 9033805497637153784}
+  - {fileID: 936202262446029368}
+  - {fileID: -2915964736068638634}
+  m_RendererFeatureMap: f82ba2a83c865e7d383a035bff0efe0c562810a1856988d7
   m_UseNativeRenderPass: 0
   xrSystemData: {fileID: 0}
   postProcessData: {fileID: 11400000, guid: 41439944d30ece34e96484bdb6645b55, type: 2}
@@ -47,10 +64,70 @@ MonoBehaviour:
     failOperation: 0
     zFailOperation: 0
   m_ShadowTransparentReceive: 1
-  m_RenderingMode: 0
+  m_RenderingMode: 2
   m_DepthPrimingMode: 0
   m_CopyDepthMode: 1
   m_DepthAttachmentFormat: 0
   m_DepthTextureFormat: 0
   m_AccurateGbufferNormals: 0
   m_IntermediateTextureMode: 1
+--- !u!114 &936202262446029368
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8cfd8a276368c7140bdbd86e806898a8, type: 3}
+  m_Name: HazeRendererFeature
+  m_EditorClassIdentifier: Haze.Runtime::Haze.Runtime.HazeRendererFeature
+  m_Active: 1
+  _froxelFogComputeShader: {fileID: 7200000, guid: e9ff39ed12ea7bf469b0b8bce4265ab1, type: 3}
+  _froxelFogCompositeShader: {fileID: 4800000, guid: b9e3eff296ab9a847ba7e2c588b7238f, type: 3}
+  _bloomShader: {fileID: 4800000, guid: ee50c2823ceea334383936f8d0ff9666, type: 3}
+  _renderBeforeTransparents: 1
+  _froxelBufferResolution: 2
+  _aspectRatioAdjustment: 0
+  _froxelBufferDepth: 2
+  _froxelFogRange:
+    x: 0.1
+    y: 500
+  _tricubicSampling: 1
+  _interleavedGradientNoiseStrength: 1
+  _temporalAccumulationBlending: 0.95
+  _mainLightShadowBias: 0
+  _maximumVolumeDistance: 100
+  _noiseTexture: {fileID: 11700000, guid: 72d1c9c4660825443891c86b3f611274, type: 2}
+  _noiseData:
+    noiseTiling: 0.1
+    noisePanningSpeed:
+      x: 0
+      y: 0
+      z: 0
+    noiseWeights:
+      x: 1
+      y: 1
+      z: 1
+      w: 1
+  _multipleScatteringData:
+    intensity: 1
+    radius: 1
+    scatter: 1
+    threshold: 0
+    maxIterations: 5
+--- !u!114 &9033805497637153784
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c2602d08d84696409fcb6377e976fe2, type: 3}
+  m_Name: CASSharpeningFeature
+  m_EditorClassIdentifier: Assembly-CSharp::Liquid.Rendering.CASSharpeningFeature
+  m_Active: 1
+  _shader: {fileID: 4800000, guid: 9fd92ad3300165148bf4d856b7594a5e, type: 3}
