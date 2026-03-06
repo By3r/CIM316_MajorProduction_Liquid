@@ -7,18 +7,20 @@ public class CursorManager : MonoBehaviour
     #region Variables
     [Header("Cursor Textures")]
     [SerializeField] private Texture2D defaultCursorTexture;
+    [SerializeField] private Texture2D highlightCursorTexture;
+    [SerializeField] private Texture2D clickCursorTexture;
 
-    [Tooltip("Pixel position inside the texture that acts as the click point.")]
-    [SerializeField] private Vector2 cursorHotspot = Vector2.zero;
+    [Tooltip("Pixel position inside the default texture that acts as the click point.")]
+    [SerializeField] private Vector2 defaultCursorHotspot = Vector2.zero;
+
+    [Tooltip("Pixel position inside the highlight texture that acts as the click point.")]
+    [SerializeField] private Vector2 highlightCursorHotspot = Vector2.zero;
+
+    [Tooltip("Pixel position inside the click texture that acts as the click point.")]
+    [SerializeField] private Vector2 clickCursorHotspot = Vector2.zero;
 
     [SerializeField] private CursorMode cursorMode = CursorMode.Auto;
-
-    [Header("Cursor Size")]
-    [Range(0.5f, 4f)]
-    [SerializeField] private float cursorScale = 1f;
     #endregion
-
-    private Texture2D scaledCursor;
 
     private void Awake()
     {
@@ -29,12 +31,10 @@ public class CursorManager : MonoBehaviour
         }
 
         CursorInstance = this;
-
         SetDefaultCursor();
     }
 
     #region Public Functions
-
     public void HideCursor()
     {
         Cursor.visible = false;
@@ -58,7 +58,31 @@ public class CursorManager : MonoBehaviour
             return;
         }
 
-        SetCursor(defaultCursorTexture, cursorHotspot);
+        Cursor.SetCursor(defaultCursorTexture, defaultCursorHotspot, cursorMode);
+    }
+
+    public void SetHighlightCursor()
+    {
+        if (highlightCursorTexture == null)
+        {
+            Debug.LogWarning("Highlight cursor texture not assigned.");
+            return;
+        }
+
+        Cursor.SetCursor(highlightCursorTexture, highlightCursorHotspot, cursorMode);
+    }
+
+    public void SetClickCursor()
+    {
+        if (clickCursorTexture == null)
+        {
+            Debug.LogWarning("Click cursor texture not assigned.");
+            return;
+        }
+
+        Cursor.SetCursor(clickCursorTexture, clickCursorHotspot, cursorMode);
+
+        Invoke("SetDefaultCursor", 0.15f);
     }
 
     public void SetCursor(Texture2D texture, Vector2 hotspot)
@@ -69,47 +93,7 @@ public class CursorManager : MonoBehaviour
             return;
         }
 
-        Texture2D finalTexture = texture;
-
-        if (Mathf.Abs(cursorScale - 1f) > 0.01f)
-        {
-            finalTexture = ScaleTexture(texture, cursorScale);
-        }
-
-        Cursor.SetCursor(finalTexture, hotspot * cursorScale, cursorMode);
-    }
-
-    public void SetCursorScale(float scale)
-    {
-        cursorScale = scale;
-        SetDefaultCursor();
-    }
-
-    #endregion
-
-
-    #region Texture Scaling
-
-    private Texture2D ScaleTexture(Texture2D source, float scale)
-    {
-        int newWidth = Mathf.RoundToInt(source.width * scale);
-        int newHeight = Mathf.RoundToInt(source.height * scale);
-
-        Texture2D scaled = new Texture2D(newWidth, newHeight, source.format, false);
-
-        for (int y = 0; y < newHeight; y++)
-        {
-            for (int x = 0; x < newWidth; x++)
-            {
-                float u = (float)x / newWidth;
-                float v = (float)y / newHeight;
-
-                scaled.SetPixel(x, y, source.GetPixelBilinear(u, v));
-            }
-        }
-
-        scaled.Apply();
-        return scaled;
+        Cursor.SetCursor(texture, hotspot, cursorMode);
     }
     #endregion
 }
