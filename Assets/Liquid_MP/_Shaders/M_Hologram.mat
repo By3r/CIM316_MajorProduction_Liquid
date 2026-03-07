@@ -1,0 +1,47 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 8
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: M_Hologram
+  m_Shader: {fileID: 4800000, guid: 1e59ebf50b7f66b43bd62374a8046cc5, type: 3}
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords: []
+  m_InvalidKeywords: []
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_LockedProperties: 
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs: []
+    m_Ints: []
+    m_Floats:
+    - _Alpha: 0.045
+    - _AlphaFresnelBoost: 0.4
+    - _EmissionIntensity: 0.73
+    - _FlickerIntensity: 0.234
+    - _FlickerSpeed: 1.5
+    - _FresnelIntensity: 2
+    - _FresnelPower: 4.19
+    - _IridescenceScale: 2.53
+    - _IridescenceShift: 0.5
+    - _IridescenceSpeed: 0.16
+    - _ScanlineCount: 14
+    - _ScanlineIntensity: 0.8
+    - _ScanlineSpeed: 3.22
+    - _ScanlineWidth: 0.4
+    m_Colors:
+    - _ColorA: {r: 0.9019608, g: 0, b: 0.2155001, a: 1}
+    - _ColorB: {r: 0.95487785, g: 0.19999999, b: 1, a: 1}
+    - _ColorC: {r: 0.09803921, g: 1, b: 0.8650221, a: 1}
+  m_BuildTextureStacks: []
+  m_AllowLocking: 1
