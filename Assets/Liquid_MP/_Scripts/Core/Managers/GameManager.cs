@@ -104,6 +104,7 @@ namespace _Scripts.Core.Managers
                     {
                         InputManager.EnablePlayerInput(false);
                         InputManager.LockCursor(false);
+                        InputManager.EnableUIInput(true);
                     }
                     break;
 
@@ -112,6 +113,7 @@ namespace _Scripts.Core.Managers
                     {
                         InputManager.EnablePlayerInput(false);
                         InputManager.LockCursor(false);
+                        InputManager.EnableUIInput(true);
                     }
                     Time.timeScale = 1f;
                     break;

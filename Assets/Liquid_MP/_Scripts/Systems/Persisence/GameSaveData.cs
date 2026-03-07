@@ -7,11 +7,13 @@ namespace _Scripts.Core.Persistence
     [Serializable]
     public class GameSaveData
     {
-        public string playerName;
+        public string PlayerName;
+        public bool HasCompletedTutorial;
 
-        public GameSaveData(string playerName)
+        public GameSaveData(string playerName, bool hasCompletedTutorial = false)
         {
-            this.playerName = playerName;
+            PlayerName = playerName;
+            HasCompletedTutorial = hasCompletedTutorial;
         }
     }
 
