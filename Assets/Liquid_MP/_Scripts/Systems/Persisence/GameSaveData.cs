@@ -1,91 +1,223 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
 namespace _Scripts.Core.Persistence
 {
+    public enum StoryStage
+    {
+        Tutorial,
+        IntroRockyPlanet,
+        MainGame
+    }
+
     [Serializable]
     public class GameSaveData
     {
         public string PlayerName;
         public bool HasCompletedTutorial;
+        public StoryStage CurrentStoryStage;
+        public string SaveCreatedAt;
 
-        public GameSaveData(string playerName, bool hasCompletedTutorial = false)
+        public GameSaveData(string playerName, bool hasCompletedTutorial = false, StoryStage currentStoryStage = StoryStage.Tutorial)
         {
             PlayerName = playerName;
             HasCompletedTutorial = hasCompletedTutorial;
+            CurrentStoryStage = currentStoryStage;
+            SaveCreatedAt = DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+        }
+
+        public string GetDisplayLocationName()
+        {
+            switch (CurrentStoryStage)
+            {
+                case StoryStage.Tutorial:
+                    return "Tutorial";
+
+                case StoryStage.IntroRockyPlanet:
+                    return "(Intro)\nRocky Planet";
+
+                case StoryStage.MainGame:
+                    return "Main Game";
+
+                default:
+                    return "Unknown";
+            }
         }
     }
 
     public static class SaveSystem
     {
-        private const string SaveFileName = "liquid_save.json";
+        private const int MaxSaveSlots = 3;
 
-        private static string SaveFilePath =>
-            Path.Combine(Application.persistentDataPath, SaveFileName);
-
-        #region Returns true if a save file exists.
-        public static bool SaveExists()
+        private static string GetSaveFilePath(int slotIndex)
         {
-            return File.Exists(SaveFilePath);
+            return Path.Combine(Application.persistentDataPath, $"liquid_save_slot_{slotIndex}.json");
         }
-        #endregion
 
-        #region Creates or overwrites the save file with the given data.
-        public static void SaveGame(GameSaveData data)
+        public static int GetMaxSaveSlots()
         {
+            return MaxSaveSlots;
+        }
+
+        public static bool SaveExists(int slotIndex)
+        {
+            if (!IsValidSlotIndex(slotIndex))
+            {
+                return false;
+            }
+
+            return File.Exists(GetSaveFilePath(slotIndex));
+        }
+
+        public static bool AnySaveExists()
+        {
+            for (int i = 0; i < MaxSaveSlots; i++)
+            {
+                if (SaveExists(i))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public static void SaveGame(GameSaveData data, int slotIndex)
+        {
+            if (!IsValidSlotIndex(slotIndex))
+            {
+                Debug.LogError($"Invalid save slot index: {slotIndex}");
+                return;
+            }
+
             try
             {
                 string json = JsonUtility.ToJson(data, true);
-                File.WriteAllText(SaveFilePath, json);
-                Debug.Log($"Saved game to: {SaveFilePath}");
+                File.WriteAllText(GetSaveFilePath(slotIndex), json);
+                Debug.Log($"Saved game to slot {slotIndex}: {GetSaveFilePath(slotIndex)}");
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to save game: {ex}");
+                Debug.LogError($"Failed to save game in slot {slotIndex}: {ex}");
             }
         }
-        #endregion
 
-        #region Loads the save file if it exists.
-        public static GameSaveData LoadGame()
+        public static GameSaveData LoadGame(int slotIndex)
         {
+            if (!IsValidSlotIndex(slotIndex))
+            {
+                Debug.LogError($"Invalid save slot index: {slotIndex}");
+                return null;
+            }
+
             try
             {
-                if (!File.Exists(SaveFilePath))
+                string path = GetSaveFilePath(slotIndex);
+
+                if (!File.Exists(path))
                 {
-                    Debug.LogWarning("No save file found when trying to load.");
                     return null;
                 }
 
-                string json = File.ReadAllText(SaveFilePath);
+                string json = File.ReadAllText(path);
                 GameSaveData data = JsonUtility.FromJson<GameSaveData>(json);
                 return data;
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to load game: {ex}");
+                Debug.LogError($"Failed to load game from slot {slotIndex}: {ex}");
                 return null;
             }
         }
-        #endregion
 
-        #region Deletes the existing save file if present.
-        public static void DeleteSave()
+        public static List<GameSaveData> LoadAllSaves()
         {
+            List<GameSaveData> saves = new List<GameSaveData>();
+
+            for (int i = 0; i < MaxSaveSlots; i++)
+            {
+                saves.Add(LoadGame(i));
+            }
+
+            return saves;
+        }
+
+        public static int GetFirstEmptySlotIndex()
+        {
+            for (int i = 0; i < MaxSaveSlots; i++)
+            {
+                if (!SaveExists(i))
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        public static int GetMostRecentSaveSlotIndex()
+        {
+            int mostRecentSlot = -1;
+            DateTime mostRecentTime = DateTime.MinValue;
+
+            for (int i = 0; i < MaxSaveSlots; i++)
+            {
+                string path = GetSaveFilePath(i);
+
+                if (!File.Exists(path))
+                {
+                    continue;
+                }
+
+                DateTime lastWriteTime = File.GetLastWriteTime(path);
+
+                if (lastWriteTime > mostRecentTime)
+                {
+                    mostRecentTime = lastWriteTime;
+                    mostRecentSlot = i;
+                }
+            }
+
+            return mostRecentSlot;
+        }
+
+        public static void DeleteSave(int slotIndex)
+        {
+            if (!IsValidSlotIndex(slotIndex))
+            {
+                Debug.LogError($"Invalid save slot index: {slotIndex}");
+                return;
+            }
+
             try
             {
-                if (File.Exists(SaveFilePath))
+                string path = GetSaveFilePath(slotIndex);
+
+                if (File.Exists(path))
                 {
-                    File.Delete(SaveFilePath);
-                    Debug.Log("Deleted save file.");
+                    File.Delete(path);
+                    Debug.Log($"Deleted save slot {slotIndex}.");
                 }
             }
             catch (Exception ex)
             {
-                Debug.LogError($"Failed to delete save file: {ex}");
+                Debug.LogError($"Failed to delete save slot {slotIndex}: {ex}");
             }
         }
-        #endregion
+
+        public static void DeleteAllSaves()
+        {
+            for (int i = 0; i < MaxSaveSlots; i++)
+            {
+                DeleteSave(i);
+            }
+        }
+
+        private static bool IsValidSlotIndex(int slotIndex)
+        {
+            return slotIndex >= 0 && slotIndex < MaxSaveSlots;
+        }
     }
 }

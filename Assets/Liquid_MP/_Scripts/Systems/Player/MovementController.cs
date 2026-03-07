@@ -324,11 +324,11 @@ namespace _Scripts.Systems.Player
             {
                 _footstepTimer = 0f;
 
-                NoiseManager.Instance.EmitNoise(
-                    transform.position,
-                    level,
-                    NoiseCategory.Footsteps,
-                    _currentRoomNoise);
+                //NoiseManager.Instance.EmitNoise(
+                //    transform.position,
+                //    level,
+                //    NoiseCategory.Footsteps,
+                //    _currentRoomNoise);
             }
         }
 
@@ -344,7 +344,7 @@ namespace _Scripts.Systems.Player
                 return;
             }
 
-            NoiseManager.Instance.EmitNoise(transform.position, NoiseLevel.Medium, NoiseCategory.Jump, _currentRoomNoise);
+          //  NoiseManager.Instance.EmitNoise(transform.position, NoiseLevel.Medium, NoiseCategory.Jump, _currentRoomNoise);
         }
 
         #endregion

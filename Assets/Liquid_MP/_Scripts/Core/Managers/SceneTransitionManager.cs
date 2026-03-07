@@ -11,12 +11,14 @@ namespace _Scripts.Core.SceneFlow
     /// </summary>
     public class SceneTransitionManager : MonoBehaviour
     {
+        #region Variables
         public static SceneTransitionManager Instance { get; private set; }
 
         [Header("Scene Names")]
         [SerializeField] private string menuSceneName = "Menu";
         [SerializeField] private string tutorialSceneName = "Tutorial";
         [SerializeField] private string gameSceneName = "Game";
+        #endregion
 
         private void Awake()
         {
@@ -36,66 +38,59 @@ namespace _Scripts.Core.SceneFlow
             DontDestroyOnLoad(gameObject);
         }
 
-        /// <summary>
-        /// Loads the main menu scene.
-        /// </summary>
         public void LoadMenuScene()
         {
-            SetLoadingState();
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.SetGameState(GameState.Loading);
+            }
+
             SceneManager.LoadScene(menuSceneName);
-            SetMainMenuState();
+
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.SetGameState(GameState.MainMenu);
+            }
         }
 
-        /// <summary>
-        /// Loads the tutorial scene directly.
-        /// </summary>
-        public void LoadTutorialScene()
+        public void StartNewGameWithName(string playerName)
         {
-            SetLoadingState();
-            SceneManager.LoadScene(tutorialSceneName);
-            SetGameplayState();
-        }
+            int slotIndex = SaveSystem.GetFirstEmptySlotIndex();
 
-        /// <summary>
-        /// Loads the main gameplay scene directly.
-        /// </summary>
-        public void LoadGameScene()
-        {
-            SetLoadingState();
-            SceneManager.LoadScene(gameSceneName);
-            SetGameplayState();
-        }
+            if (slotIndex == -1)
+            {
+                slotIndex = 0;
+            }
 
-        /// <summary>
-        /// Creates a new save and starts from the tutorial.
-        /// </summary>
-        public void StartNewGame()
-        {
-            GameSaveData newSave = new GameSaveData("Player", false);
-            SaveSystem.SaveGame(newSave);
+            GameSaveData data = new GameSaveData(playerName, false, StoryStage.Tutorial);
+            SaveSystem.SaveGame(data, slotIndex);
             LoadTutorialScene();
         }
 
-        /// <summary>
-        /// Loads the current save and routes to Tutorial or Game depending on tutorial completion.
-        /// </summary>
-        public void ContinueFromMostRecentSave()
+        public void ContinueFromSave()
         {
-            if (!SaveSystem.SaveExists())
+            int mostRecentSlot = SaveSystem.GetMostRecentSaveSlotIndex();
+
+            if (mostRecentSlot == -1)
             {
-                Debug.LogWarning("Continue requested but no save file exists.");
+                Debug.LogWarning("Continue requested but no save exists.");
                 return;
             }
 
-            GameSaveData saveData = SaveSystem.LoadGame();
+            ContinueFromSaveSlot(mostRecentSlot);
+        }
 
-            if (saveData == null)
+        public void ContinueFromSaveSlot(int slotIndex)
+        {
+            GameSaveData data = SaveSystem.LoadGame(slotIndex);
+
+            if (data == null)
             {
-                Debug.LogWarning("Continue requested but save data failed to load.");
+                Debug.LogWarning($"Continue requested but slot {slotIndex} could not be loaded.");
                 return;
             }
 
-            if (saveData.HasCompletedTutorial)
+            if (data.HasCompletedTutorial)
             {
                 LoadGameScene();
             }
@@ -105,33 +100,30 @@ namespace _Scripts.Core.SceneFlow
             }
         }
 
-        /// <summary>
-        /// For now it routes the same way as Continue,
-        /// but this is where the slot-based loading will branch out.
-        /// </summary>
-        public void LoadFromSave()
-        {
-            ContinueFromMostRecentSave();
-        }
-
-        private void SetLoadingState()
+        public void LoadTutorialScene()
         {
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.SetGameState(GameState.Loading);
             }
-        }
 
-        private void SetMainMenuState()
-        {
+            SceneManager.LoadScene(tutorialSceneName);
+
             if (GameManager.Instance != null)
             {
-                GameManager.Instance.SetGameState(GameState.MainMenu);
+                GameManager.Instance.SetGameState(GameState.Gameplay);
             }
         }
 
-        private void SetGameplayState()
+        public void LoadGameScene()
         {
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.SetGameState(GameState.Loading);
+            }
+
+            SceneManager.LoadScene(gameSceneName);
+
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.SetGameState(GameState.Gameplay);

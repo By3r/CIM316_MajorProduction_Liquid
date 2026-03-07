@@ -30,6 +30,7 @@ namespace _Scripts.UI.MainMenu
         [Header("Panels")]
         [SerializeField] private GameObject rootMenuPanel;
         [SerializeField] private GameObject loadGamePanel;
+        [SerializeField] private GameObject newGamePanel;
         [SerializeField] private GameObject settingsPanel;
 
         [Header("Optional Labels")]
@@ -55,12 +56,12 @@ namespace _Scripts.UI.MainMenu
         {
             BindButtons();
             CloseAllSubPanels();
-            RefreshMenuState();
+            RefreshMenu();
         }
 
         private void OnEnable()
         {
-            RefreshMenuState();
+            RefreshMenu();
         }
 
         private void Update()
@@ -133,9 +134,9 @@ namespace _Scripts.UI.MainMenu
             RefreshButtonColors();
         }
 
-        private void RefreshMenuState()
+        public void RefreshMenu()
         {
-            hasSave = SaveSystem.SaveExists();
+            hasSave = SaveSystem.AnySaveExists();
 
             SetButtonAndSeparatorVisibility();
             CloseAllSubPanels();
@@ -189,6 +190,11 @@ namespace _Scripts.UI.MainMenu
             if (loadGamePanel != null)
             {
                 loadGamePanel.SetActive(false);
+            }
+
+            if (newGamePanel != null)
+            {
+                newGamePanel.SetActive(false);
             }
 
             if (settingsPanel != null)
@@ -265,41 +271,87 @@ namespace _Scripts.UI.MainMenu
         #region Button Actions
         private void OnContinuePressed()
         {
+            if (!SaveSystem.AnySaveExists())
+            {
+                return;
+            }
+
+            LoadGameManager loadGameManager = loadGamePanel != null ? loadGamePanel.GetComponent<LoadGameManager>() : null;
+
+            if (loadGameManager != null)
+            {
+                loadGameManager.ContinueMostRecentSave();
+                return;
+            }
+
             if (SceneTransitionManager.Instance == null)
             {
                 Debug.LogError("SceneTransitionManager instance is missing.");
                 return;
             }
 
-            SceneTransitionManager.Instance.ContinueFromMostRecentSave();
+            SceneTransitionManager.Instance.ContinueFromSave();
         }
 
         private void OnLoadPressed()
         {
+            if (!SaveSystem.AnySaveExists())
+            {
+                return;
+            }
+
+            if (rootMenuPanel != null)
+            {
+                rootMenuPanel.SetActive(false);
+            }
+
             if (loadGamePanel != null)
             {
-                rootMenuPanel?.SetActive(false);
                 loadGamePanel.SetActive(true);
+
+                LoadGameManager loadGameManager = loadGamePanel.GetComponent<LoadGameManager>();
+                if (loadGameManager != null)
+                {
+                    loadGameManager.RefreshPanel();
+                }
             }
         }
 
         private void OnNewGamePressed()
         {
-            if (SceneTransitionManager.Instance == null)
+            if (rootMenuPanel != null)
             {
-                Debug.LogError("SceneTransitionManager instance is missing.");
-                return;
+                rootMenuPanel.SetActive(false);
             }
 
-            SceneTransitionManager.Instance.StartNewGame();
+            if (newGamePanel != null)
+            {
+                newGamePanel.SetActive(true);
+
+                NewGameManager newGameManager = newGamePanel.GetComponent<NewGameManager>();
+                if (newGameManager != null)
+                {
+                    newGameManager.PreparePanel();
+                }
+            }
         }
 
         private void OnSettingsPressed()
         {
+            if (rootMenuPanel != null)
+            {
+                rootMenuPanel.SetActive(false);
+            }
+
             if (settingsPanel != null)
             {
-                rootMenuPanel?.SetActive(false);
                 settingsPanel.SetActive(true);
+
+                SettingsManager settingsManager = settingsPanel.GetComponent<SettingsManager>();
+                if (settingsManager != null)
+                {
+                    settingsManager.OpenSettings();
+                }
             }
         }
 
@@ -316,17 +368,22 @@ namespace _Scripts.UI.MainMenu
         #region Public UI Hooks
         public void UI_BackFromLoadPanel()
         {
-            RefreshMenuState();
+            RefreshMenu();
+        }
+
+        public void UI_BackFromNewGamePanel()
+        {
+            RefreshMenu();
         }
 
         public void UI_BackFromSettingsPanel()
         {
-            RefreshMenuState();
+            RefreshMenu();
         }
 
         public void UI_RefreshMenuState()
         {
-            RefreshMenuState();
+            RefreshMenu();
         }
         #endregion
     }
