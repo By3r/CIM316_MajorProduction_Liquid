@@ -862,11 +862,19 @@ namespace _Scripts.Systems.ProceduralGeneration
         }
 
         /// <summary>
-        /// Destroys all spawned enemies in the enemies container.
-        /// Called during floor transitions to clean up enemies before regeneration.
+        /// Clears all active enemies on floor transition.
+        /// Pool-managed enemies are returned to their pools via SpawnPoolManager.
+        /// Any remaining enemies in the legacy "--- ENEMIES ---" container are destroyed
+        /// as a fallback (covers editor-placed test enemies and any non-pool stragglers).
         /// </summary>
         private void ClearAllEnemies()
         {
+            // Pool-managed enemies: disable and reset via SpawnPoolManager.
+            // This does NOT destroy them — they stay in the pool ready for the next floor.
+            SpawnPoolManager.Instance?.NotifyFloorTransition();
+
+            // Fallback: destroy anything still parented to the legacy enemies container
+            // (editor-placed enemies, debug spawns, anything the pool doesn't own).
             GameObject enemiesContainer = GameObject.Find("--- ENEMIES ---");
             if (enemiesContainer != null)
             {
