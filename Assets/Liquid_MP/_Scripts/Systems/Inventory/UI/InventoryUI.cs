@@ -95,9 +95,6 @@ namespace _Scripts.Systems.Inventory.UI
             // Set up slot indices and subscribe to right-click events
             SetupSlotUIs();
 
-            // Set up context menu events
-            SetupContextMenu();
-
             // Initialize UI with current inventory state
             RefreshUI();
 
@@ -115,16 +112,6 @@ namespace _Scripts.Systems.Inventory.UI
                     _slotUIs[i].SetSlotIndex(i);
                     _slotUIs[i].OnRightClicked += HandleSlotRightClicked;
                 }
-            }
-        }
-
-        private void SetupContextMenu()
-        {
-            if (_contextMenu != null)
-            {
-                _contextMenu.OnDropRequested += HandleDropRequested;
-                _contextMenu.OnExamineRequested += HandleExamineRequested;
-                _contextMenu.OnEquipRequested += HandleEquipRequested;
             }
         }
 
@@ -174,13 +161,8 @@ namespace _Scripts.Systems.Inventory.UI
                 }
             }
 
-            // Unsubscribe from context menu events
-            if (_contextMenu != null)
-            {
-                _contextMenu.OnDropRequested -= HandleDropRequested;
-                _contextMenu.OnExamineRequested -= HandleExamineRequested;
-                _contextMenu.OnEquipRequested -= HandleEquipRequested;
-            }
+            // Context menu no longer uses persistent event subscriptions —
+            // actions are wired dynamically per Show() call.
         }
 
         #endregion
@@ -332,28 +314,42 @@ namespace _Scripts.Systems.Inventory.UI
 
         private void HandleSlotRightClicked(int slotIndex, Vector2 screenPosition)
         {
+            if (_playerInventory == null || _contextMenu == null) return;
+
+            InventorySlot slot = _playerInventory.GetSlot(slotIndex);
+            if (slot == null || slot.IsEmpty) return;
+
             // Close examiner if open
             if (_itemExaminer != null && _itemExaminer.IsOpen)
-            {
                 _itemExaminer.Hide();
-            }
 
-            // Determine if this item is equippable (weapon or suit addon)
-            bool showEquip = false;
-            if (_playerInventory != null)
-            {
-                InventorySlot slot = _playerInventory.GetSlot(slotIndex);
-                if (slot != null && !slot.IsEmpty)
-                {
-                    showEquip = slot.ItemData is WeaponItemData || slot.ItemData is SuitAddonItemData;
-                }
-            }
+            var actions = BuildContextActions(slot.ItemData);
+            _contextMenu.Show(slotIndex, screenPosition, actions);
+        }
 
-            // Show context menu at click position
-            if (_contextMenu != null)
-            {
-                _contextMenu.Show(slotIndex, screenPosition, showEquip);
-            }
+        /// <summary>
+        /// Builds the context menu action list based on item type.
+        /// Order: type-specific action → Examine → Drop.
+        /// </summary>
+        private List<ContextMenuAction> BuildContextActions(InventoryItemData itemData)
+        {
+            var actions = new List<ContextMenuAction>();
+
+            // Type-specific actions first
+            if (itemData is SchematicItemData)
+                actions.Add(new ContextMenuAction { Label = "UPLOAD", Callback = HandleUploadSchematic });
+
+            if (itemData is WeaponItemData || itemData is SuitAddonItemData)
+                actions.Add(new ContextMenuAction { Label = "EQUIP", Callback = HandleEquipRequested });
+
+            // Universal actions
+            actions.Add(new ContextMenuAction { Label = "EXAMINE", Callback = HandleExamineRequested });
+
+            // Drop — everything except key items
+            if (itemData.itemType != PhysicalItemType.KeyItem)
+                actions.Add(new ContextMenuAction { Label = "DROP", Callback = HandleDropRequested });
+
+            return actions;
         }
 
         private void HandleExamineRequested(int slotIndex)
@@ -394,6 +390,42 @@ namespace _Scripts.Systems.Inventory.UI
             {
                 // Remove from inventory — TryEquip handles returning any swapped item
                 _playerInventory.RemoveItemFromSlot(slotIndex, 1);
+            }
+        }
+
+        private void HandleUploadSchematic(int slotIndex)
+        {
+            if (_playerInventory == null) return;
+
+            InventorySlot slot = _playerInventory.GetSlot(slotIndex);
+            if (slot == null || slot.IsEmpty) return;
+
+            if (slot.ItemData is not SchematicItemData schematicItem) return;
+
+            SchematicSO schematic = schematicItem.schematicToUnlock;
+            if (schematic == null)
+            {
+                Debug.LogWarning($"[InventoryUI] Schematic item '{schematicItem.displayName}' has no schematicToUnlock assigned.");
+                return;
+            }
+
+            // Check if already unlocked
+            if (SchematicRegistry.Instance != null && SchematicRegistry.Instance.IsUnlocked(schematic))
+            {
+                Debug.Log($"[InventoryUI] Schematic '{schematic.schematicId}' already uploaded.");
+                return;
+            }
+
+            // Unlock the schematic and consume the item
+            if (SchematicRegistry.Instance != null)
+            {
+                SchematicRegistry.Instance.UnlockSchematic(schematic);
+                _playerInventory.RemoveItemFromSlot(slotIndex, 1);
+                Debug.Log($"[InventoryUI] Uploaded schematic '{schematic.schematicId}' — recipe unlocked.");
+            }
+            else
+            {
+                Debug.LogWarning("[InventoryUI] SchematicRegistry not found. Cannot upload schematic.");
             }
         }
 

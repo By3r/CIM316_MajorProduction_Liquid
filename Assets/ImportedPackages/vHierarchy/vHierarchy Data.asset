@@ -90,8 +90,10 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1898024859-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1861208315-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1978549177-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-27317789-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1031815055-0
         values:
-        - colorIndex: 6
+        - colorIndex: 7
           iconNameOrGuid: Canvas Icon
           isIconRecursive: 0
           isColorRecursive: 0
@@ -357,6 +359,14 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 1
           iconNameOrGuid: Canvas Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: BigIcons.ExclamationMark
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Camera Icon
           isIconRecursive: 0
           isColorRecursive: 0
     - goDatas_byGlobalId:

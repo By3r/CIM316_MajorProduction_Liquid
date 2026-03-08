@@ -21,8 +21,6 @@ namespace _Scripts.Systems.Machines
     {
         #region Events
 
-        public event Action OnFloorUIOpened;
-        public event Action OnFloorUIClosed;
         public event Action<int> OnFloorTransitionStarted;
         public event Action<int> OnFloorTransitionComplete;
 
@@ -32,7 +30,6 @@ namespace _Scripts.Systems.Machines
 
         [Header("References")]
         [SerializeField] private PowerCellSlot _powerCellSlot;
-        [SerializeField] private ElevatorFloorUI _floorUI;
         [SerializeField] private Transform _controlPanel;
 
         [Header("Floor Settings")]
@@ -56,7 +53,6 @@ namespace _Scripts.Systems.Machines
         #region Private Fields
 
         private bool _isTransitioning;
-        private bool _isUIOpen;
 
         // Terminal UI integration (both persist in the permanent safe room)
         private SafeRoomTerminalUI _terminalUI;
@@ -68,7 +64,6 @@ namespace _Scripts.Systems.Machines
 
         public bool IsPowered => _powerCellSlot != null && _powerCellSlot.IsPowered;
         public bool IsTransitioning => _isTransitioning;
-        public bool IsUIOpen => _isUIOpen;
         public Transform ControlPanel => _controlPanel;
 
         public string ControlPanelPrompt
@@ -88,27 +83,6 @@ namespace _Scripts.Systems.Machines
 
         private void Start()
         {
-            // Use singleton if not assigned directly (prefab won't have scene reference)
-            if (_floorUI == null)
-            {
-                _floorUI = ElevatorFloorUI.Instance;
-                if (_floorUI == null)
-                {
-                    Debug.LogWarning("[Elevator] ElevatorFloorUI not found in scene!");
-                }
-            }
-
-            // Subscribe to floor selection events
-            if (_floorUI != null)
-            {
-                _floorUI.OnFloorSelected += HandleFloorSelected;
-                _floorUI.OnUIClosed += HandleUIClosedByKeyboard;
-
-                int currentFloor = GetCurrentFloor();
-                int highestUnlocked = GetHighestUnlockedFloor();
-                _floorUI.Initialize(_totalFloors, currentFloor, highestUnlocked);
-            }
-
             // Subscribe to power state changes
             if (_powerCellSlot != null)
             {
@@ -121,12 +95,6 @@ namespace _Scripts.Systems.Machines
 
         private void OnDestroy()
         {
-            if (_floorUI != null)
-            {
-                _floorUI.OnFloorSelected -= HandleFloorSelected;
-                _floorUI.OnUIClosed -= HandleUIClosedByKeyboard;
-            }
-
             if (_terminalUI != null)
             {
                 _terminalUI.OnTravelConfirmed -= HandleFloorSelected;
@@ -135,72 +103,6 @@ namespace _Scripts.Systems.Machines
             if (_powerCellSlot != null)
             {
                 _powerCellSlot.OnPowerStateChanged -= HandlePowerStateChanged;
-            }
-        }
-
-        /// <summary>
-        /// Called when the UI is closed via keyboard (TAB, E, or Escape).
-        /// </summary>
-        private void HandleUIClosedByKeyboard()
-        {
-            _isUIOpen = false;
-            OnFloorUIClosed?.Invoke();
-
-            // Re-enable player input
-            if (InputManager.Instance != null)
-            {
-                InputManager.Instance.EnablePlayerInput(true);
-            }
-        }
-
-        #endregion
-
-        #region Public Methods
-
-        /// <summary>
-        /// Opens the floor selection UI.
-        /// Called when player interacts with control panel.
-        /// </summary>
-        public void OpenFloorUI()
-        {
-            if (_isTransitioning || _floorUI == null)
-            {
-                return;
-            }
-
-            int currentFloor = GetCurrentFloor();
-            int highestUnlocked = GetHighestUnlockedFloor();
-
-            _floorUI.Show(currentFloor, highestUnlocked, IsPowered);
-            _isUIOpen = true;
-
-            PlaySound(_uiOpenSound);
-            OnFloorUIOpened?.Invoke();
-
-            // Disable player input while UI is open
-            if (InputManager.Instance != null)
-            {
-                InputManager.Instance.EnablePlayerInput(false);
-            }
-        }
-
-        /// <summary>
-        /// Closes the floor selection UI.
-        /// </summary>
-        public void CloseFloorUI()
-        {
-            if (_floorUI != null)
-            {
-                _floorUI.Hide();
-            }
-
-            _isUIOpen = false;
-            OnFloorUIClosed?.Invoke();
-
-            // Re-enable player input
-            if (InputManager.Instance != null)
-            {
-                InputManager.Instance.EnablePlayerInput(true);
             }
         }
 
@@ -247,8 +149,6 @@ namespace _Scripts.Systems.Machines
             _isTransitioning = true;
             OnFloorTransitionStarted?.Invoke(targetFloor);
             _onTransitionStarted?.Invoke();
-
-            CloseFloorUI();
 
             // Fade screen to black (runs concurrently with transition delay)
             ScreenFade.Instance.FadeOut(_fadeOutDuration);
@@ -378,11 +278,6 @@ namespace _Scripts.Systems.Machines
 
         private void HandlePowerStateChanged(bool isPowered)
         {
-            // Refresh UI if open
-            if (_isUIOpen && _floorUI != null)
-            {
-                _floorUI.SetPoweredState(isPowered);
-            }
         }
 
         private int GetCurrentFloor()

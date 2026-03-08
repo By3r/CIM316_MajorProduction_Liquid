@@ -13,9 +13,9 @@ MonoBehaviour:
   m_Name: Item_SupplyCrate
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Inventory.InventoryItemData
   itemId: supply_crate
-  displayName: SUPPLY CRATE
+  displayName: Supply Crate
   itemType: 0
-  icon: {fileID: 10911, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: 21300000, guid: 103fa81d9d00e8045be836dd5555bb4f, type: 3}
   worldPrefab: {fileID: 7530650875717680049, guid: 49064cc34d3dfd642b81ba1df9a04e4e, type: 3}
   description: AGEU supply crate, you can open this crate to get components out of
     it.

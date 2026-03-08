@@ -226,6 +226,32 @@ namespace _Scripts.Systems.Inventory
         }
 
         /// <summary>
+        /// Removes up to <paramref name="quantity"/> units of the specified item across all slots.
+        /// Returns the total quantity actually removed.
+        /// </summary>
+        public int RemoveItem(InventoryItemData itemData, int quantity)
+        {
+            if (itemData == null || quantity <= 0) return 0;
+
+            int remaining = quantity;
+            for (int i = 0; i < _slotCount && remaining > 0; i++)
+            {
+                if (_slots[i].ItemData != itemData) continue;
+
+                int toRemove = Mathf.Min(remaining, _slots[i].Quantity);
+                _slots[i].Quantity -= toRemove;
+                remaining -= toRemove;
+
+                if (_slots[i].Quantity <= 0)
+                    _slots[i].Clear();
+
+                OnSlotChanged?.Invoke(i, _slots[i]);
+            }
+
+            return quantity - remaining;
+        }
+
+        /// <summary>
         /// Returns total quantity of the specified item across all inventory slots.
         /// </summary>
         public int CountItem(InventoryItemData itemData)

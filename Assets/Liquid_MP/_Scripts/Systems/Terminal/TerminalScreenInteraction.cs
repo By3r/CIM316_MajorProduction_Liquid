@@ -40,6 +40,12 @@ namespace _Scripts.Systems.Terminal
         [Tooltip("Flip the vertical UV if the cursor is inverted vertically.")]
         [SerializeField] private bool _flipV;
 
+        [Header("Cursor Sprites")]
+        [Tooltip("Default cursor sprite (arrow).")]
+        [SerializeField] private Sprite _defaultCursorSprite;
+        [Tooltip("Pointer cursor sprite shown when hovering a clickable element.")]
+        [SerializeField] private Sprite _pointerCursorSprite;
+
         #endregion
 
         #region Private Fields
@@ -47,6 +53,7 @@ namespace _Scripts.Systems.Terminal
         private Camera _mainCamera;
         private MeshCollider _screenCollider;
         private RectTransform _cursorRect;
+        private Image _cursorImage;
         private RectTransform _canvasRect;
 
         private PointerEventData _pointerData;
@@ -148,6 +155,7 @@ namespace _Scripts.Systems.Terminal
             if (terminal == null) return;
 
             _cursorRect = terminal.CursorRect;
+            _cursorImage = _cursorRect != null ? _cursorRect.GetComponent<Image>() : null;
 
             // Get the canvas RectTransform from the terminal's GraphicRaycaster or canvas
             var raycaster = terminal.GraphicRaycaster;
@@ -223,6 +231,7 @@ namespace _Scripts.Systems.Terminal
                     ExecuteEvents.ExecuteHierarchy(newHandler, _pointerData, ExecuteEvents.pointerEnterHandler);
 
                 _currentHovered = newHandler;
+                UpdateCursorSprite();
             }
 
             // Handle mouse clicks
@@ -240,9 +249,10 @@ namespace _Scripts.Systems.Terminal
             if (equipment != null)
                 equipment.ExitTerminalMode();
 
-            // Hide cursor
+            // Hide cursor and reset sprite
             if (_cursorRect != null)
                 _cursorRect.gameObject.SetActive(false);
+            SetCursorSprite(_defaultCursorSprite);
 
             // Send exit to hovered element
             if (_currentHovered != null)
@@ -348,6 +358,21 @@ namespace _Scripts.Systems.Terminal
             }
 
             return bestHit != null ? bestHit.gameObject : null;
+        }
+
+        private void UpdateCursorSprite()
+        {
+            bool isClickable = _currentHovered != null
+                               && _currentHovered.GetComponent<Selectable>() != null
+                               && _currentHovered.GetComponent<Selectable>().interactable;
+
+            SetCursorSprite(isClickable ? _pointerCursorSprite : _defaultCursorSprite);
+        }
+
+        private void SetCursorSprite(Sprite sprite)
+        {
+            if (_cursorImage != null && sprite != null)
+                _cursorImage.sprite = sprite;
         }
 
         #endregion

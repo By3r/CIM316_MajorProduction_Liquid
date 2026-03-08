@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using _Scripts.Core.Managers;
+using _Scripts.Systems.Inventory;
 using _Scripts.Systems.Machines;
 using _Scripts.Systems.Terminal.UI;
 
@@ -69,6 +71,9 @@ namespace _Scripts.Systems.Terminal
         [SerializeField] private FabricationPanelUI _fabricationPanel;
         [SerializeField] private ElevatorControlPanelUI _elevatorPanel;
 
+        [Header("Notification")]
+        [SerializeField] private TerminalNotification _notification;
+
         [Header("Dot Colors")]
         [SerializeField] private Color _activeDotColor   = new Color(0.20f, 1.00f, 0.53f, 1.00f);
         [SerializeField] private Color _inactiveDotColor = new Color(0.25f, 0.19f, 0.00f, 1.00f);
@@ -83,6 +88,9 @@ namespace _Scripts.Systems.Terminal
         private PowerCellSlot _powerCellSlot;
         private bool _powerCellSlotResolved;
 
+        /// <summary>Index-aligned with the fabrication list — maps recipe index to SchematicSO.</summary>
+        private readonly List<SchematicSO> _cachedSchematics = new List<SchematicSO>();
+
         #endregion
 
         #region Properties
@@ -91,6 +99,7 @@ namespace _Scripts.Systems.Terminal
         public bool HasPowerCell => _hasPowerCell;
         public FabricationPanelUI FabricationPanel => _fabricationPanel;
         public ElevatorControlPanelUI ElevatorPanel => _elevatorPanel;
+        public TerminalNotification Notification => _notification;
 
         public Camera TerminalUICamera => _terminalUICamera;
         public GraphicRaycaster GraphicRaycaster => _graphicRaycaster;
@@ -126,7 +135,10 @@ namespace _Scripts.Systems.Terminal
                 _elevatorPanel.OnTravelConfirmed += HandleTravelConfirmed;
 
             if (_fabricationPanel != null)
+            {
                 _fabricationPanel.OnCraftConfirmed += HandleCraftConfirmed;
+                _fabricationPanel.OnSchematicSelected += HandleSchematicSelected;
+            }
         }
 
         private void Start()
@@ -143,6 +155,17 @@ namespace _Scripts.Systems.Terminal
 
             // Initialize elevator panel with floor data
             InitializeElevatorPanel();
+
+            // Initialize fabrication panel with unlocked schematics
+            RefreshFabricationPanel();
+
+            // Subscribe to schematic changes so the list updates when new ones are uploaded
+            if (SchematicRegistry.Instance != null)
+                SchematicRegistry.Instance.OnSchematicsChanged += RefreshFabricationPanel;
+
+            // Refresh fabrication availability when inventory changes (pick up / drop materials)
+            if (PlayerInventory.Instance != null)
+                PlayerInventory.Instance.OnSlotChanged += HandleInventoryChanged;
 
             // Refresh the elevator panel after floor transitions (terminal persists across floors)
             GameManager.Instance?.EventManager?.Subscribe("OnFloorGenerationComplete", HandleFloorGenerationComplete);
@@ -174,7 +197,16 @@ namespace _Scripts.Systems.Terminal
                 _elevatorPanel.OnTravelConfirmed -= HandleTravelConfirmed;
 
             if (_fabricationPanel != null)
+            {
                 _fabricationPanel.OnCraftConfirmed -= HandleCraftConfirmed;
+                _fabricationPanel.OnSchematicSelected -= HandleSchematicSelected;
+            }
+
+            if (SchematicRegistry.Instance != null)
+                SchematicRegistry.Instance.OnSchematicsChanged -= RefreshFabricationPanel;
+
+            if (PlayerInventory.Instance != null)
+                PlayerInventory.Instance.OnSlotChanged -= HandleInventoryChanged;
         }
 
         #endregion
@@ -342,6 +374,7 @@ namespace _Scripts.Systems.Terminal
         {
             TryResolvePowerCellSlot();
             RefreshElevatorPanel();
+            RefreshFabricationPanel();
             RefreshTabs();
             RefreshPages();
         }
@@ -353,7 +386,195 @@ namespace _Scripts.Systems.Terminal
 
         private void HandleCraftConfirmed(int recipeIndex)
         {
+            if (recipeIndex < 0 || recipeIndex >= _cachedSchematics.Count) return;
+
+            SchematicSO schematic = _cachedSchematics[recipeIndex];
+            PlayerInventory inventory = PlayerInventory.Instance;
+            if (schematic == null || inventory == null) return;
+
+            // Verify all ingredients are available
+            foreach (var ingredient in schematic.ingredients)
+            {
+                if (inventory.CountItem(ingredient.item) < ingredient.quantity)
+                {
+                    Debug.LogWarning($"[Terminal] Cannot craft '{schematic.schematicId}' — missing ingredients.");
+                    return;
+                }
+            }
+
+            // Check output can fit in inventory
+            if (!inventory.HasRoomFor(schematic.outputItem, schematic.outputQuantity))
+            {
+                Debug.LogWarning($"[Terminal] Cannot craft '{schematic.schematicId}' — inventory full.");
+                return;
+            }
+
+            // Consume ingredients
+            foreach (var ingredient in schematic.ingredients)
+            {
+                inventory.RemoveItem(ingredient.item, ingredient.quantity);
+            }
+
+            // Produce output
+            inventory.TryAddItem(schematic.outputItem, schematic.outputQuantity);
+            Debug.Log($"[Terminal] Crafted {schematic.outputQuantity}x {schematic.outputItem.displayName} from schematic '{schematic.schematicId}'.");
+
+            // Show notification with 3D rotating preview
+            if (_notification == null)
+                Debug.LogWarning("[Terminal] _notification is NULL — assign it in the Inspector.");
+            else if (schematic.outputItem == null)
+                Debug.LogWarning("[Terminal] outputItem is NULL on schematic.");
+            else
+            {
+                string itemName = schematic.outputItem.displayName.ToUpper();
+                Debug.Log($"[Terminal] Firing notification: '{itemName} CRAFTED', worldPrefab={schematic.outputItem.worldPrefab}");
+                _notification.Show($"{itemName} CRAFTED", schematic.outputItem.worldPrefab);
+            }
+
             OnCraftConfirmed?.Invoke(recipeIndex);
+
+            // Refresh detail to update ingredient counts
+            ShowSchematicDetail(recipeIndex);
+
+            // Refresh list availability
+            RefreshFabricationAvailability();
+        }
+
+        #endregion
+
+        #region Fabrication
+
+        /// <summary>
+        /// Rebuilds the fabrication panel list from the SchematicRegistry.
+        /// </summary>
+        private void RefreshFabricationPanel()
+        {
+            if (_fabricationPanel == null) return;
+
+            _cachedSchematics.Clear();
+
+            var registry = SchematicRegistry.Instance;
+            if (registry == null || registry.Count == 0)
+            {
+                _fabricationPanel.PopulateList(null, null);
+                return;
+            }
+
+            var unlocked = registry.GetUnlockedSchematics();
+            var names = new string[unlocked.Count];
+            var available = new bool[unlocked.Count];
+
+            PlayerInventory inventory = PlayerInventory.Instance;
+
+            for (int i = 0; i < unlocked.Count; i++)
+            {
+                SchematicSO schematic = unlocked[i];
+                _cachedSchematics.Add(schematic);
+
+                names[i] = schematic.outputItem != null
+                    ? schematic.outputItem.displayName
+                    : schematic.schematicId;
+
+                available[i] = CanCraft(schematic, inventory);
+            }
+
+            _fabricationPanel.PopulateList(names, available);
+        }
+
+        /// <summary>
+        /// Updates availability indicators without rebuilding the list.
+        /// </summary>
+        private void RefreshFabricationAvailability()
+        {
+            if (_fabricationPanel == null) return;
+
+            PlayerInventory inventory = PlayerInventory.Instance;
+
+            for (int i = 0; i < _cachedSchematics.Count; i++)
+            {
+                _fabricationPanel.UpdateAvailability(i, CanCraft(_cachedSchematics[i], inventory));
+            }
+        }
+
+        private void HandleSchematicSelected(int index)
+        {
+            ShowSchematicDetail(index);
+        }
+
+        private void HandleInventoryChanged(int slotIndex, InventorySlot slot)
+        {
+            RefreshFabricationAvailability();
+
+            // Also refresh the detail view so ingredient counts update live
+            if (_fabricationPanel != null && _fabricationPanel.SelectedIndex >= 0)
+                ShowSchematicDetail(_fabricationPanel.SelectedIndex);
+        }
+
+        /// <summary>
+        /// Populates the detail panel for the given schematic index.
+        /// </summary>
+        private void ShowSchematicDetail(int index)
+        {
+            if (_fabricationPanel == null) return;
+            if (index < 0 || index >= _cachedSchematics.Count) return;
+
+            SchematicSO schematic = _cachedSchematics[index];
+            PlayerInventory inventory = PlayerInventory.Instance;
+
+            // Build ingredient data
+            int ingredientCount = schematic.ingredients?.Length ?? 0;
+            string[] ingredientNames = new string[ingredientCount];
+            Sprite[] ingredientIcons = new Sprite[ingredientCount];
+            int[] have = new int[ingredientCount];
+            int[] need = new int[ingredientCount];
+
+            for (int i = 0; i < ingredientCount; i++)
+            {
+                var ingredient = schematic.ingredients[i];
+                ingredientNames[i] = ingredient.item != null ? ingredient.item.displayName : "???";
+                ingredientIcons[i] = ingredient.item != null ? ingredient.item.icon : null;
+                need[i] = ingredient.quantity;
+                have[i] = inventory != null && ingredient.item != null
+                    ? inventory.CountItem(ingredient.item)
+                    : 0;
+            }
+
+            // Output data
+            Sprite outputIcon = schematic.outputItem != null ? schematic.outputItem.icon : null;
+            string outputName = schematic.outputItem != null ? schematic.outputItem.displayName : "???";
+            bool canCraft = CanCraft(schematic, inventory);
+
+            string detailTitle = schematic.outputItem != null
+                ? schematic.outputItem.displayName
+                : schematic.schematicId;
+            string detailSubtitle = schematic.category ?? "";
+
+            _fabricationPanel.ShowDetail(
+                detailTitle,
+                detailSubtitle,
+                ingredientNames, ingredientIcons,
+                have, need,
+                outputIcon, outputName, schematic.outputQuantity,
+                canCraft
+            );
+        }
+
+        /// <summary>
+        /// Returns true if the player has all ingredients for the given schematic.
+        /// </summary>
+        private static bool CanCraft(SchematicSO schematic, PlayerInventory inventory)
+        {
+            if (schematic == null || inventory == null) return false;
+            if (schematic.ingredients == null) return true;
+
+            foreach (var ingredient in schematic.ingredients)
+            {
+                if (ingredient.item == null) return false;
+                if (inventory.CountItem(ingredient.item) < ingredient.quantity)
+                    return false;
+            }
+
+            return true;
         }
 
         #endregion

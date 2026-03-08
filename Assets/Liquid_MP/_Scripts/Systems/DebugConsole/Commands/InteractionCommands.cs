@@ -90,7 +90,6 @@ namespace _Scripts.Systems.DebugConsole.Commands
             sb.AppendLine($"  Door: {(ic.IsLookingAtDoor ? $"<color=green>{ic.CurrentDoor?.name}</color>" : "no")}");
             sb.AppendLine($"  Pickup: {(ic.IsLookingAtPickup ? $"<color=green>{ic.CurrentPickup?.name}</color>" : "no")}");
             sb.AppendLine($"  PowerCellSlot: {(ic.IsLookingAtPowerCellSlot ? $"<color=green>{ic.CurrentPowerCellSlot?.name}</color>" : "no")}");
-            sb.AppendLine($"  Elevator: {(ic.IsLookingAtElevatorPanel ? $"<color=green>{ic.CurrentElevator?.name}</color>" : "no")}");
             sb.AppendLine($"  NPC Dialogue: {(ic.IsLookingAtNpcDialogue ? "<color=green>yes</color>" : "no")}");
 
             // --- Raycast test ---

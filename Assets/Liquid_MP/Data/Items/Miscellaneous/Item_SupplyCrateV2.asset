@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: supply_crate_v2
   displayName: AGEU Supply Crate
   itemType: 0
-  icon: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+  icon: {fileID: 21300000, guid: 103fa81d9d00e8045be836dd5555bb4f, type: 3}
   worldPrefab: {fileID: 4870821793472388967, guid: 0257e21cc11f5d84aa2391dd6dcb233a, type: 3}
   description: AGEU supply crate, you can bring this crate to the elevator room to
     open it and get components.

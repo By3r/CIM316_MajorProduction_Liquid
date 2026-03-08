@@ -39,15 +39,12 @@ namespace _Scripts.Systems.Player
         private Door _currentDoor;
         private Pickup _currentPickup;
         private PowerCellSlot _currentPowerCellSlot;
-        private Elevator _currentElevator;
-
         private NpcDialogueSource _currentNpcDialogueSource;
         private bool _isLookingAtNpcDialogue;
 
         private bool _isLookingAtDoor;
         private bool _isLookingAtPickup;
         private bool _isLookingAtPowerCellSlot;
-        private bool _isLookingAtElevatorPanel;
 
         #endregion
 
@@ -84,16 +81,6 @@ namespace _Scripts.Systems.Player
         public bool IsLookingAtPowerCellSlot => _isLookingAtPowerCellSlot;
 
         /// <summary>
-        /// Gets the Elevator the player is currently looking at (null if none).
-        /// </summary>
-        public Elevator CurrentElevator => _currentElevator;
-
-        /// <summary>
-        /// Gets whether the player is currently looking at an elevator control panel.
-        /// </summary>
-        public bool IsLookingAtElevatorPanel => _isLookingAtElevatorPanel;
-
-        /// <summary>
         /// Gets whether the player is currently looking at an NPC dialogue source.
         /// </summary>
         public bool IsLookingAtNpcDialogue => _isLookingAtNpcDialogue;
@@ -101,7 +88,7 @@ namespace _Scripts.Systems.Player
         /// <summary>
         /// Gets whether the player is looking at any interactable.
         /// </summary>
-        public bool IsLookingAtInteractable => _isLookingAtDoor || _isLookingAtPickup || _isLookingAtPowerCellSlot || _isLookingAtElevatorPanel || _isLookingAtNpcDialogue;
+        public bool IsLookingAtInteractable => _isLookingAtDoor || _isLookingAtPickup || _isLookingAtPowerCellSlot || _isLookingAtNpcDialogue;
         #endregion
 
         #region Initialization
@@ -235,27 +222,7 @@ namespace _Scripts.Systems.Player
                     return;
                 }
 
-                // Check for Elevator control panel BEFORE PowerCellSlot
-                // (PowerCellSlot may be on the same object as Elevator, and we want elevator interaction to take priority)
-                Elevator elevator = hit.collider.GetComponent<Elevator>();
-                if (elevator == null) elevator = hit.collider.GetComponentInParent<Elevator>();
-
-                if (elevator != null)
-                {
-                    // Check if we hit the control panel specifically or the elevator in general
-                    bool isControlPanel = elevator.ControlPanel == null ||
-                                          hit.collider.transform == elevator.ControlPanel ||
-                                          hit.collider.transform.IsChildOf(elevator.ControlPanel);
-
-                    if (isControlPanel)
-                    {
-                        SetElevatorTarget(elevator);
-                        if (_showDebugRays) Debug.DrawRay(ray.origin, ray.direction * hit.distance, Color.blue);
-                        return;
-                    }
-                }
-
-                // Check for PowerCellSlot (after Elevator, so elevator panel takes priority)
+                // Check for PowerCellSlot
                 PowerCellSlot powerCellSlot = hit.collider.GetComponent<PowerCellSlot>();
                 if (powerCellSlot == null) powerCellSlot = hit.collider.GetComponentInParent<PowerCellSlot>();
 
@@ -281,8 +248,7 @@ namespace _Scripts.Systems.Player
             _currentPickup = null;
             _isLookingAtPowerCellSlot = false;
             _currentPowerCellSlot = null;
-            _isLookingAtElevatorPanel = false;
-            _currentElevator = null;
+
         }
 
         private void SetDoorTarget(Door door)
@@ -297,8 +263,7 @@ namespace _Scripts.Systems.Player
             _currentPickup = null;
             _isLookingAtPowerCellSlot = false;
             _currentPowerCellSlot = null;
-            _isLookingAtElevatorPanel = false;
-            _currentElevator = null;
+
         }
 
         private void SetPickupTarget(Pickup pickup)
@@ -313,8 +278,7 @@ namespace _Scripts.Systems.Player
             _currentDoor = null;
             _isLookingAtPowerCellSlot = false;
             _currentPowerCellSlot = null;
-            _isLookingAtElevatorPanel = false;
-            _currentElevator = null;
+
         }
 
         private void SetPowerCellSlotTarget(PowerCellSlot slot)
@@ -329,24 +293,7 @@ namespace _Scripts.Systems.Player
             _currentDoor = null;
             _isLookingAtPickup = false;
             _currentPickup = null;
-            _isLookingAtElevatorPanel = false;
-            _currentElevator = null;
-        }
 
-        private void SetElevatorTarget(Elevator elevator)
-        {
-            _isLookingAtElevatorPanel = true;
-            _currentElevator = elevator;
-
-            _isLookingAtNpcDialogue = false;
-            _currentNpcDialogueSource = null;
-
-            _isLookingAtDoor = false;
-            _currentDoor = null;
-            _isLookingAtPickup = false;
-            _currentPickup = null;
-            _isLookingAtPowerCellSlot = false;
-            _currentPowerCellSlot = null;
         }
 
         private void ClearAllTargets()
@@ -360,8 +307,7 @@ namespace _Scripts.Systems.Player
             _currentPickup = null;
             _isLookingAtPowerCellSlot = false;
             _currentPowerCellSlot = null;
-            _isLookingAtElevatorPanel = false;
-            _currentElevator = null;
+
         }
 
         /// <summary>
@@ -444,14 +390,6 @@ namespace _Scripts.Systems.Player
                 return;
             }
 
-            // Try Elevator panel interaction
-            if (_isLookingAtElevatorPanel && _currentElevator != null)
-            {
-                if (!_currentElevator.IsTransitioning && !_currentElevator.IsUIOpen)
-                {
-                    _currentElevator.OpenFloorUI();
-                }
-            }
         }
 
         #endregion

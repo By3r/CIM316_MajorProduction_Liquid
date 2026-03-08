@@ -20,6 +20,12 @@ namespace _Scripts.Systems.Terminal.UI
         /// </summary>
         public event Action<int> OnCraftConfirmed;
 
+        /// <summary>
+        /// Fired when the player selects a schematic in the list. Passes the recipe index.
+        /// The controller (SafeRoomTerminalUI) should call ShowDetail() in response.
+        /// </summary>
+        public event Action<int> OnSchematicSelected;
+
         #endregion
 
         #region Serialized Fields
@@ -93,6 +99,7 @@ namespace _Scripts.Systems.Terminal.UI
             }
 
             ResetCraftProgress();
+            ClearDetail();
         }
 
         private void Update()
@@ -191,6 +198,8 @@ namespace _Scripts.Systems.Terminal.UI
 
             _selectedIndex = index;
             _listItems[index].SetSelected(true);
+
+            OnSchematicSelected?.Invoke(index);
         }
 
         /// <summary>
@@ -234,8 +243,11 @@ namespace _Scripts.Systems.Terminal.UI
             }
 
             // Output
-            if (_outputIcon != null && outputIcon != null)
+            if (_outputIcon != null)
+            {
                 _outputIcon.sprite = outputIcon;
+                _outputIcon.color = outputIcon != null ? Color.white : new Color(1f, 1f, 1f, 0f);
+            }
 
             if (_outputName != null)
                 _outputName.text = outputName ?? "";
@@ -276,6 +288,23 @@ namespace _Scripts.Systems.Terminal.UI
             _selectedIndex = -1;
 
             ClearIngredients();
+            ClearDetail();
+        }
+
+        private void ClearDetail()
+        {
+            if (_detailTitle != null) _detailTitle.text = "NO SCHEMATIC SELECTED";
+            if (_detailSubtitle != null) _detailSubtitle.text = "";
+
+            if (_outputIcon != null)
+            {
+                _outputIcon.sprite = null;
+                _outputIcon.color = new Color(1f, 1f, 1f, 0f);
+            }
+            if (_outputName != null) _outputName.text = "";
+            if (_outputQuantity != null) _outputQuantity.text = "";
+
+            SetCraftButtonState(false);
         }
 
         private void ClearIngredients()
