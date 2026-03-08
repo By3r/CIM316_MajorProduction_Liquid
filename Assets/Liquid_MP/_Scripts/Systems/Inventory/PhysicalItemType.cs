@@ -15,6 +15,7 @@ namespace _Scripts.Systems.Inventory
         PowerCell,          // Powers elevator safe room
         SuitProcessor,      // One-time-use suit enhancement (extra slots, silent move, etc.)
         SuitAddon,          // Equippable in Suit Add-On slot (neutronic boots, etc.)
+        ComsDevice,         // Equippable in COMS slot — left-hand communication/scanning device
         KeyItem             // Quest/progression items — cannot be dropped
     }
 }

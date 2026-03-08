@@ -674,7 +674,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f32835a19c1cdac4fa1b6f967e3144e5, type: 3}
   m_Name: CASSharpeningVolume
   m_EditorClassIdentifier: Assembly-CSharp::Liquid.Rendering.CASSharpeningVolume
-  active: 1
+  active: 0
   intensity:
     m_OverrideState: 1
     m_Value: 1.35

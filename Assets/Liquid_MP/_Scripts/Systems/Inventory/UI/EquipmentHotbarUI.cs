@@ -3,7 +3,7 @@ using UnityEngine;
 namespace _Scripts.Systems.Inventory.UI
 {
     /// <summary>
-    /// Manages the 3 equipment slot UIs on the player's hotbar.
+    /// Manages the 4 equipment slot UIs on the player's hotbar.
     /// Subscribes to PlayerEquipment events and updates each EquipmentSlotUI.
     /// Handles right-click on equipment slots for unequipping back to inventory.
     /// </summary>
@@ -20,6 +20,9 @@ namespace _Scripts.Systems.Inventory.UI
 
         [Tooltip("The EquipmentSlotUI for the Suit Addon slot.")]
         [SerializeField] private EquipmentSlotUI _suitAddonSlotUI;
+
+        [Tooltip("The EquipmentSlotUI for the COMS Device slot.")]
+        [SerializeField] private EquipmentSlotUI _comsDeviceSlotUI;
 
         #endregion
 
@@ -44,6 +47,7 @@ namespace _Scripts.Systems.Inventory.UI
             if (_primarySlotUI != null) _primarySlotUI.OnRightClicked += HandleSlotRightClicked;
             if (_secondarySlotUI != null) _secondarySlotUI.OnRightClicked += HandleSlotRightClicked;
             if (_suitAddonSlotUI != null) _suitAddonSlotUI.OnRightClicked += HandleSlotRightClicked;
+            if (_comsDeviceSlotUI != null) _comsDeviceSlotUI.OnRightClicked += HandleSlotRightClicked;
 
             RefreshAll();
         }
@@ -58,6 +62,7 @@ namespace _Scripts.Systems.Inventory.UI
             if (_primarySlotUI != null) _primarySlotUI.OnRightClicked -= HandleSlotRightClicked;
             if (_secondarySlotUI != null) _secondarySlotUI.OnRightClicked -= HandleSlotRightClicked;
             if (_suitAddonSlotUI != null) _suitAddonSlotUI.OnRightClicked -= HandleSlotRightClicked;
+            if (_comsDeviceSlotUI != null) _comsDeviceSlotUI.OnRightClicked -= HandleSlotRightClicked;
         }
 
         #endregion
@@ -65,7 +70,7 @@ namespace _Scripts.Systems.Inventory.UI
         #region Public Methods
 
         /// <summary>
-        /// Refreshes all 3 equipment slot UIs from current PlayerEquipment state.
+        /// Refreshes all 4 equipment slot UIs from current PlayerEquipment state.
         /// </summary>
         public void RefreshAll()
         {
@@ -74,6 +79,7 @@ namespace _Scripts.Systems.Inventory.UI
             UpdateSlotUI(_primarySlotUI, EquipmentSlotType.PrimaryWeapon);
             UpdateSlotUI(_secondarySlotUI, EquipmentSlotType.SecondaryWeapon);
             UpdateSlotUI(_suitAddonSlotUI, EquipmentSlotType.SuitAddon);
+            UpdateSlotUI(_comsDeviceSlotUI, EquipmentSlotType.ComsDevice);
         }
 
         #endregion
@@ -117,6 +123,7 @@ namespace _Scripts.Systems.Inventory.UI
                 case EquipmentSlotType.PrimaryWeapon: return _primarySlotUI;
                 case EquipmentSlotType.SecondaryWeapon: return _secondarySlotUI;
                 case EquipmentSlotType.SuitAddon: return _suitAddonSlotUI;
+                case EquipmentSlotType.ComsDevice: return _comsDeviceSlotUI;
                 default: return null;
             }
         }

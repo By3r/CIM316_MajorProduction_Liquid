@@ -11,8 +11,8 @@ using UnityEngine.InputSystem;
 namespace _Scripts.Systems.Inventory
 {
     /// <summary>
-    /// Manages the player's 3 equipment slots (Primary Weapon, Secondary Weapon, Suit Addon).
-    /// Bridges inventory items to runtime gameplay systems (Kinemation weapons, suit addon behaviours).
+    /// Manages the player's 4 equipment slots (Primary Weapon, Secondary Weapon, Suit Addon, COMS Device).
+    /// Bridges inventory items to runtime gameplay systems (Kinemation weapons, suit addon behaviours, COMS device).
     /// Lives on the same GameObject as TacticalShooterPlayer and PlayerInventory.
     /// </summary>
     public class PlayerEquipment : MonoBehaviour
@@ -44,7 +44,7 @@ namespace _Scripts.Systems.Inventory
 
         #region Private Fields
 
-        private const int SlotCount = 3;
+        private const int SlotCount = 4;
 
         private EquipmentSlot[] _slots;
         private int _activeWeaponSlot; // 0 = primary, 1 = secondary
@@ -52,12 +52,14 @@ namespace _Scripts.Systems.Inventory
         private TacticalShooterPlayer _tacticalPlayer;
         private WeaponHitDetector _hitDetector;
         private MovementController _movementController;
+        private ComsDeviceController _comsController;
 
         // Input
         private InputAction _selectWeapon1;
         private InputAction _selectWeapon2;
         private InputAction _scrollWeapon;
         private InputAction _quickDrawSecondary;
+        private InputAction _comsToggle;
 
         private bool _isSwitching;
 
@@ -107,6 +109,7 @@ namespace _Scripts.Systems.Inventory
             _slots[0] = new EquipmentSlot { SlotType = EquipmentSlotType.PrimaryWeapon };
             _slots[1] = new EquipmentSlot { SlotType = EquipmentSlotType.SecondaryWeapon };
             _slots[2] = new EquipmentSlot { SlotType = EquipmentSlotType.SuitAddon };
+            _slots[3] = new EquipmentSlot { SlotType = EquipmentSlotType.ComsDevice };
         }
 
         private void Start()
@@ -114,6 +117,7 @@ namespace _Scripts.Systems.Inventory
             _tacticalPlayer = GetComponent<TacticalShooterPlayer>();
             _hitDetector = GetComponent<WeaponHitDetector>();
             _movementController = GetComponent<MovementController>();
+            _comsController = GetComponent<ComsDeviceController>();
 
             // Tell TacticalShooterPlayer to skip its hardcoded weapon spawn
             if (_tacticalPlayer != null)
@@ -148,6 +152,11 @@ namespace _Scripts.Systems.Inventory
             _quickDrawSecondary = new InputAction("QuickDrawSecondary", InputActionType.Button, "<Keyboard>/x");
             _quickDrawSecondary.performed += _ => OnQuickDrawSecondary();
             _quickDrawSecondary.Enable();
+
+            // Key 3 → toggle COMS device
+            _comsToggle = new InputAction("ComsToggle", InputActionType.Button, "<Keyboard>/3");
+            _comsToggle.performed += _ => HandleComsToggle();
+            _comsToggle.Enable();
         }
 
         private void OnDisable()
@@ -163,6 +172,9 @@ namespace _Scripts.Systems.Inventory
 
             _quickDrawSecondary?.Disable();
             _quickDrawSecondary?.Dispose();
+
+            _comsToggle?.Disable();
+            _comsToggle?.Dispose();
         }
 
         #endregion
@@ -192,6 +204,9 @@ namespace _Scripts.Systems.Inventory
 
                 case EquipmentSlotType.SuitAddon:
                     return itemData is SuitAddonItemData;
+
+                case EquipmentSlotType.ComsDevice:
+                    return itemData is ComsDeviceItemData;
 
                 default:
                     return false;
@@ -372,6 +387,12 @@ namespace _Scripts.Systems.Inventory
             // Block switching while quick draw is active — player must holster pistol first (X)
             if (_tacticalPlayer != null && _tacticalPlayer.IsQuickDrawActive) return;
 
+            // If COMS is active and switching to primary → deactivate COMS first
+            if (_comsController != null && _comsController.IsActive && slotIndex == 0)
+            {
+                _comsController.ToggleComs();
+            }
+
             // Pressing the active slot's key while drawn → holster
             if (slotIndex == _activeWeaponSlot && !_isHolstered)
             {
@@ -501,6 +522,61 @@ namespace _Scripts.Systems.Inventory
 
         #endregion
 
+        #region COMS Device
+
+        /// <summary>
+        /// Handles key 3 press — toggles the COMS device on/off.
+        /// If the primary weapon is active, holsters it first.
+        /// </summary>
+        private void HandleComsToggle()
+        {
+            if (_isInTerminalMode) return;
+            if (_comsController == null || !_comsController.IsEquipped) return;
+            if (_isSwitching) return;
+
+            if (_comsController.IsActive)
+            {
+                // Deactivate COMS
+                _comsController.ToggleComs();
+            }
+            else
+            {
+                // Block if quick draw is active
+                if (_tacticalPlayer != null && _tacticalPlayer.IsQuickDrawActive) return;
+
+                // Primary weapon active → holster first, then activate COMS
+                if (_activeWeaponSlot == 0 && !_isHolstered && !_slots[0].IsEmpty)
+                {
+                    StartCoroutine(HolsterThenActivateComs());
+                }
+                else
+                {
+                    // Pistol active or unarmed → activate directly
+                    _comsController.ToggleComs();
+                }
+            }
+        }
+
+        private IEnumerator HolsterThenActivateComs()
+        {
+            _isSwitching = true;
+
+            float holsterDelay = _tacticalPlayer.HolsterActiveWeapon();
+            if (holsterDelay > 0f)
+                yield return new WaitForSeconds(holsterDelay);
+
+            _tacticalPlayer.EnterUnarmedState();
+            _isHolstered = true;
+            _isSwitching = false;
+
+            _comsController.ToggleComs();
+        }
+
+        /// <summary>Whether the COMS device is currently active (toggled on).</summary>
+        public bool IsComsActive => _comsController != null && _comsController.IsActive;
+
+        #endregion
+
         #region Terminal Mode
 
         /// <summary>
@@ -513,6 +589,10 @@ namespace _Scripts.Systems.Inventory
             if (_isInTerminalMode) return;
 
             _isInTerminalMode = true;
+
+            // Deactivate COMS if active
+            if (_comsController != null && _comsController.IsActive)
+                _comsController.ToggleComs();
 
             // Block weapon input on TacticalShooterPlayer
             if (_tacticalPlayer != null)
@@ -613,6 +693,10 @@ namespace _Scripts.Systems.Inventory
             {
                 InstantiateSuitAddon(slot);
             }
+            else if (slotType == EquipmentSlotType.ComsDevice)
+            {
+                InstantiateComsDevice(slot);
+            }
         }
 
         private void InstantiateWeapon(EquipmentSlot slot)
@@ -667,6 +751,10 @@ namespace _Scripts.Systems.Inventory
             {
                 DestroySuitAddon(slot);
             }
+            else if (slotType == EquipmentSlotType.ComsDevice)
+            {
+                DestroyComsDevice(slot);
+            }
         }
 
         private void DestroyWeapon(EquipmentSlot slot)
@@ -698,6 +786,27 @@ namespace _Scripts.Systems.Inventory
             {
                 _movementController.ClearEquipmentSpeedMultiplier();
             }
+
+            slot.RuntimeInstance = null;
+        }
+
+        private void InstantiateComsDevice(EquipmentSlot slot)
+        {
+            var comsData = slot.ItemData as ComsDeviceItemData;
+            if (comsData == null || comsData.comsBehaviourPrefab == null)
+            {
+                Debug.LogWarning($"[PlayerEquipment] ComsDeviceItemData '{slot.ItemData?.displayName}' has no comsBehaviourPrefab.");
+                return;
+            }
+
+            if (_comsController != null)
+                _comsController.EquipDevice(comsData);
+        }
+
+        private void DestroyComsDevice(EquipmentSlot slot)
+        {
+            if (_comsController != null)
+                _comsController.UnequipDevice();
 
             slot.RuntimeInstance = null;
         }

@@ -74,6 +74,11 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
         /// </summary>
         public float armedWeight;
 
+        // Liquid: COMS device left-hand IK override.
+        public float comsLeftHandWeight;
+        public Vector3 comsLeftHandTargetPos;
+        public Quaternion comsLeftHandTargetRot;
+
         public KTransform _ikMotion;
         public NativeArray<SpineBoneAtom> lookUpBones;
         public NativeArray<SpineBoneAtom> lookRightBones;
@@ -490,7 +495,11 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
         {
             // Scale hand IK weights by armed state
             _rightHandIk.SetWeights(armedWeight, 0f);
-            _leftHandIk.SetWeights(armedWeight, 0f);
+
+            // Left hand: use COMS weight if higher than armed weight so IK stays
+            // active even when unarmed (COMS device in left hand)
+            float leftHandWeight = Mathf.Max(armedWeight, comsLeftHandWeight);
+            _leftHandIk.SetWeights(leftHandWeight, 0f);
 
             // Only process weapon IK/offsets/sway when armed and weapon settings are available
             if (_weaponSettings != null && armedWeight > 0.01f)
@@ -503,9 +512,14 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
                 ProcessAimOffset(stream);
                 ProcessInverseKinematics(stream);
             }
-            // When unarmed: skip ALL processing so the animation job doesn't touch any bones.
-            // The camera still handles look via fpsCamera.lookInput (independent of spine IK).
-            // The body still rotates for yaw via transform.rotation in UpdateLookInput().
+
+            // Liquid: COMS left-hand IK override — runs even when unarmed.
+            // Overrides weapon's left-hand target with COMS grip position.
+            if (comsLeftHandWeight > 0.01f)
+            {
+                _leftHandIk.twoBoneIkData.target = new KTransform(comsLeftHandTargetPos, comsLeftHandTargetRot);
+                _leftHandIk.ProcessTwoBoneIK(stream);
+            }
         }
 
         public void ProcessRootMotion(AnimationStream stream)

@@ -73,6 +73,11 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
         private float _armedWeight = 1f;
         private const float ArmedTransitionSpeed = 6f;
 
+        // Liquid: COMS device left-hand IK override.
+        private float _comsLeftHandWeight;
+        private Vector3 _comsLeftHandTargetPos;
+        private Quaternion _comsLeftHandTargetRot = Quaternion.identity;
+
         public void UpdateRightHandPose(KTransform rightHandPose)
         {
             _job.cachedIkHandGunRight = rightHandPose;
@@ -105,6 +110,16 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
                     _playable.SetJobData(_job);
                 }
             }
+        }
+
+        /// <summary>
+        /// Sets the COMS device left-hand IK data. Called by TacticalShooterPlayer.
+        /// </summary>
+        public void SetComsLeftHand(float weight, Vector3 targetPos, Quaternion targetRot)
+        {
+            _comsLeftHandWeight = weight;
+            _comsLeftHandTargetPos = targetPos;
+            _comsLeftHandTargetRot = targetRot;
         }
 
         public void UpdateAnimationSettings(WeaponAnimationData newSettings)
@@ -172,6 +187,11 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
             float targetArmedWeight = _isArmed ? 1f : 0f;
             _armedWeight = Mathf.MoveTowards(_armedWeight, targetArmedWeight, Time.deltaTime * ArmedTransitionSpeed);
             _job.armedWeight = _armedWeight;
+
+            // COMS device left-hand IK override
+            _job.comsLeftHandWeight = _comsLeftHandWeight;
+            _job.comsLeftHandTargetPos = _comsLeftHandTargetPos;
+            _job.comsLeftHandTargetRot = _comsLeftHandTargetRot;
 
             _job.UpdateJob(_playable);
             _playable.SetJobData(_job);
