@@ -16,7 +16,7 @@ namespace Liquid.Audio
 
         public EnvironmentNoiseProfile environmentProfile;
 
-        public float intensity01; 
+        public float intensity01;
         public float perceivedLoudness01;
     }
     #endregion
@@ -70,6 +70,9 @@ namespace Liquid.Audio
 
         [Header("Debug")]
         [SerializeField] private bool showDebugLogs = false;
+
+        [Header("Noise Zones")]
+        [SerializeField] private NoiseZoneTracker zoneTracker;
         #endregion
 
         public static NoiseManager Instance { get; private set; }
@@ -83,7 +86,7 @@ namespace Liquid.Audio
         public void RefreshRooms()
         {
             _rooms.Clear();
-            _rooms.AddRange(FindObjectsOfType<RoomNoisePreset>(true));
+            _rooms.AddRange(FindObjectsByType<RoomNoisePreset>(FindObjectsInactive.Include, FindObjectsSortMode.None));
         }
 
         private RoomNoisePreset FindRoomAt(Vector3 position)
@@ -153,6 +156,9 @@ namespace Liquid.Audio
             // Clamp and build event
             finalRadius = Mathf.Max(0.01f, finalRadius);
             intensity01 = Mathf.Clamp01(intensity01);
+
+            if (zoneTracker != null)
+                zoneTracker.Apply(category, ref finalRadius, ref intensity01, ref ambient01);
 
             NoiseEvent noiseEvent = new NoiseEvent
             {
@@ -256,6 +262,7 @@ namespace Liquid.Audio
                 }
 
                 // Deliver event
+                noiseEvent.perceivedLoudness01 = perceived;
                 listener.OnNoiseHeard(noiseEvent);
             }
         }
