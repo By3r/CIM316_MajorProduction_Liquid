@@ -16,11 +16,11 @@ public class SettingsManager : MonoBehaviour
         [Header("Tab")]
         public Button Button;
         public GameObject Panel;
+        public TMP_Text Label;
 
         [Header("Visual States")]
         public GameObject HighlightObject;
-        public GameObject PressedObjectA;
-        public GameObject PressedObjectB;
+        public GameObject PressedObject;
     }
 
     private enum SettingsCategory
@@ -39,6 +39,10 @@ public class SettingsManager : MonoBehaviour
     [SerializeField] private SettingsTabVisuals controlsTab;
     [SerializeField] private SettingsTabVisuals graphicsTab;
     [SerializeField] private SettingsTabVisuals audioTab;
+
+    [Header("Tab Label Colors")]
+    [SerializeField] private Color normalTabTextColor = new Color(0.55f, 0.55f, 0.55f, 1f);
+    [SerializeField] private Color selectedTabTextColor = Color.white;
 
     [Header("Controls")]
     [SerializeField] private Slider sensitivitySlider;
@@ -66,6 +70,7 @@ public class SettingsManager : MonoBehaviour
     private GameSettingsData temporarySettings;
     private Resolution[] availableResolutions;
     private SettingsCategory currentCategory = SettingsCategory.Controls;
+    private SettingsTabVisuals highlightedTab;
 
     private void Awake()
     {
@@ -80,6 +85,11 @@ public class SettingsManager : MonoBehaviour
         {
             ApplyLiveSettings(SettingsDataManager.Instance.CurrentSettings);
         }
+    }
+
+    private void Update()
+    {
+        UpdateTabHighlightFromEventSystem();
     }
 
     public void OpenSettings()
@@ -102,6 +112,8 @@ public class SettingsManager : MonoBehaviour
         if (controlsTab.Button != null)
         {
             EventSystem.current?.SetSelectedGameObject(controlsTab.Button.gameObject);
+            highlightedTab = controlsTab;
+            RefreshTabVisualStates();
         }
     }
 
@@ -209,53 +221,98 @@ public class SettingsManager : MonoBehaviour
     private void ShowControlsCategory()
     {
         currentCategory = SettingsCategory.Controls;
+        highlightedTab = controlsTab;
         SetCategoryVisibility(SettingsCategory.Controls);
     }
 
     private void ShowGraphicsCategory()
     {
         currentCategory = SettingsCategory.Graphics;
+        highlightedTab = graphicsTab;
         SetCategoryVisibility(SettingsCategory.Graphics);
     }
 
     private void ShowAudioCategory()
     {
         currentCategory = SettingsCategory.Audio;
+        highlightedTab = audioTab;
         SetCategoryVisibility(SettingsCategory.Audio);
     }
 
     private void SetCategoryVisibility(SettingsCategory activeCategory)
     {
-        SetTabState(controlsTab, activeCategory == SettingsCategory.Controls);
-        SetTabState(graphicsTab, activeCategory == SettingsCategory.Graphics);
-        SetTabState(audioTab, activeCategory == SettingsCategory.Audio);
+        if (controlsTab.Panel != null) controlsTab.Panel.SetActive(activeCategory == SettingsCategory.Controls);
+        if (graphicsTab.Panel != null) graphicsTab.Panel.SetActive(activeCategory == SettingsCategory.Graphics);
+        if (audioTab.Panel != null) audioTab.Panel.SetActive(activeCategory == SettingsCategory.Audio);
+
+        RefreshTabVisualStates();
     }
 
-    private void SetTabState(SettingsTabVisuals tab, bool isActive)
+    private void RefreshTabVisualStates()
     {
-        if (tab.Panel != null)
-        {
-            tab.Panel.SetActive(isActive);
-        }
+        RefreshSingleTabVisualState(controlsTab, SettingsCategory.Controls);
+        RefreshSingleTabVisualState(graphicsTab, SettingsCategory.Graphics);
+        RefreshSingleTabVisualState(audioTab, SettingsCategory.Audio);
+    }
+
+    private void RefreshSingleTabVisualState(SettingsTabVisuals tab, SettingsCategory tabCategory)
+    {
+        bool isHighlighted = highlightedTab == tab;
+        bool isPressed = currentCategory == tabCategory;
 
         if (tab.HighlightObject != null)
         {
-            tab.HighlightObject.SetActive(isActive);
+            tab.HighlightObject.SetActive(isHighlighted);
         }
 
-        if (tab.PressedObjectA != null)
+        if (tab.PressedObject != null)
         {
-            tab.PressedObjectA.SetActive(isActive);
+            tab.PressedObject.SetActive(isPressed);
         }
 
-        if (tab.PressedObjectB != null)
+        if (tab.Label != null)
         {
-            tab.PressedObjectB.SetActive(isActive);
+            tab.Label.color = isPressed ? selectedTabTextColor : normalTabTextColor;
+        }
+    }
+
+    private void UpdateTabHighlightFromEventSystem()
+    {
+        if (EventSystem.current == null)
+        {
+            return;
+        }
+
+        GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
+
+        SettingsTabVisuals newHighlightedTab = null;
+
+        if (selectedObject != null)
+        {
+            if (controlsTab.Button != null && selectedObject == controlsTab.Button.gameObject)
+            {
+                newHighlightedTab = controlsTab;
+            }
+            else if (graphicsTab.Button != null && selectedObject == graphicsTab.Button.gameObject)
+            {
+                newHighlightedTab = graphicsTab;
+            }
+            else if (audioTab.Button != null && selectedObject == audioTab.Button.gameObject)
+            {
+                newHighlightedTab = audioTab;
+            }
+        }
+
+        if (highlightedTab != newHighlightedTab)
+        {
+            highlightedTab = newHighlightedTab;
+            RefreshTabVisualStates();
         }
     }
 
     private void ForceTabVisualRefresh()
     {
+        highlightedTab = controlsTab;
         SetCategoryVisibility(currentCategory);
     }
 
