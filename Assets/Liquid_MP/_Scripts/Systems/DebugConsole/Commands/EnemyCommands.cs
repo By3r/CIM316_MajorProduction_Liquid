@@ -122,7 +122,6 @@ namespace _Scripts.Systems.DebugConsole.Commands
         {
             var sb = new StringBuilder();
 
-            // Grid info
             GridPathfinder pf = GridPathfinder.Instance;
             if (pf == null)
             {
@@ -132,7 +131,6 @@ namespace _Scripts.Systems.DebugConsole.Commands
             sb.AppendLine("=== Pathfinding Test ===");
             sb.AppendLine(pf.GridStatsString);
 
-            // Find player
             GameObject player = GameObject.FindWithTag("Player");
             if (player == null) player = GameObject.Find("Player");
 

@@ -17,7 +17,8 @@ MonoBehaviour:
   itemType: 2
   icon: {fileID: 21300000, guid: 692b49c5f8a06a74291019c0093242ad, type: 3}
   worldPrefab: {fileID: 6356262942742611153, guid: 266f1a91ee3372b46a6c41476a220797, type: 3}
-  description: 
+  description: The AK 105 was a weapon developed centuries ago, before the United
+    Earth.
   isStackable: 0
   maxStackSize: 1
   weaponSlot: 0

@@ -184,12 +184,12 @@ namespace _Scripts.UI.Editor
         {
             EditorGUILayout.PropertyField(_crosshairImageProp, new GUIContent("Crosshair Image", 
                 "Image component that displays the crosshair sprite"));
-            EditorGUILayout.PropertyField(_crosshairCanvasGroupProp, new GUIContent("Canvas Group (Optional)", 
-                "Canvas group for smooth fading (optional)"));
+            EditorGUILayout.PropertyField(_crosshairCanvasGroupProp, new GUIContent("Canvas Group",
+                "Canvas group for smooth fading"));
 
             if (_crosshairImageProp.objectReferenceValue == null)
             {
-                EditorGUILayout.HelpBox("Crosshair Image is required! Assign the Image component.", MessageType.Error);
+                EditorGUILayout.HelpBox("Crosshair Image is required!", MessageType.Error);
             }
 
             if (_crosshairCanvasGroupProp.objectReferenceValue == null)
@@ -366,7 +366,7 @@ namespace _Scripts.UI.Editor
             }
             else
             {
-                EditorGUILayout.HelpBox("Enter Play Mode to use runtime utilities.", MessageType.Info);
+                EditorGUILayout.HelpBox("Runtime utilities available in Play Mode.", MessageType.Info);
             }
         }
     }

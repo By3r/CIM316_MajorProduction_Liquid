@@ -89,7 +89,6 @@ namespace _Scripts.Systems.Inventory.Pickups
                 }
             }
 
-            // Update highlight
             if (_currentTarget != nearest)
             {
                 if (_currentTarget != null)

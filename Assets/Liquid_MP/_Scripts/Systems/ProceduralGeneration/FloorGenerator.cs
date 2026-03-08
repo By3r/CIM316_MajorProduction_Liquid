@@ -65,6 +65,10 @@ namespace _Scripts.Systems.ProceduralGeneration
         [Tooltip("Use FloorStateManager for seed-based generation? If false, uses pure random generation.")]
         [SerializeField] private bool _useSeedBasedGeneration = true;
 
+        [Header("Permanent Safe Room")]
+        [Tooltip("Scene-placed safe room. Not destroyed during floor transitions. Leave null for old spawning behavior.")]
+        [SerializeField] private GameObject _permanentSafeRoom;
+
         [Header("Gizmos")]
         [SerializeField] private bool _showGizmos = false;
 
@@ -192,11 +196,14 @@ namespace _Scripts.Systems.ProceduralGeneration
                 {
                     if (_showDebugLogs)
                     {
-                        Debug.Log($"[FloorGenerator] Replaying cached layout for floor {_currentFloorNumber}");
                     }
 
                     if (ReplayCachedLayout(floorState.cachedLayout))
                     {
+                        // Sync _currentSeed so that SaveCurrentFloorGenerationSeed
+                        // saves this floor's seed (not a stale seed from the previous floor).
+                        _currentSeed = floorState.generationSeed;
+
                         // Re-spawn dropped items on this floor and in the safe room
                         SpawnDroppedItems(floorState);
                         SpawnSafeRoomItems();
@@ -318,7 +325,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorGenerator] Starting Floor {_currentFloorNumber} generation (Seed: {_currentSeed}, Budget: {_doorCreditBudget})");
             }
 
             _creditsRemaining = _doorCreditBudget;
@@ -363,12 +369,18 @@ namespace _Scripts.Systems.ProceduralGeneration
             // Summary log (only in debug mode)
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorGenerator] Floor {_currentFloorNumber} complete: {_spawnedRooms.Count} rooms, {_connectionsMade} connections, {_blockadeSpawnCount} blockades");
             }
         }
 
         private GameObject SpawnStartingRoom()
         {
+            // Use the permanent safe room if assigned (persists across floor transitions)
+            if (_permanentSafeRoom != null)
+            {
+                return PreparePermanentSafeRoom();
+            }
+
+            // Fallback: instantiate from database (original behavior)
             RoomPrefabDatabase.RoomEntry startRoomEntry = _roomDatabase.SafeElevatorRoom;
 
             if (startRoomEntry == null || startRoomEntry.prefab == null)
@@ -384,6 +396,57 @@ namespace _Scripts.Systems.ProceduralGeneration
             _spawnedRooms.Add(startRoom);
 
             return startRoom;
+        }
+
+        /// <summary>
+        /// Prepares the permanent (scene-placed) safe room for a new generation cycle.
+        /// Disconnects all sockets so rooms can branch from them again,
+        /// re-registers with OccupiedSpaceRegistry (which was just cleared),
+        /// and adds itself to _spawnedRooms for blockade/socket iteration.
+        /// </summary>
+        private GameObject PreparePermanentSafeRoom()
+        {
+            // Disconnect all sockets — destroys any doors/blockades from previous generation.
+            // Disconnect() uses deferred Destroy(), so we follow up with an immediate cleanup
+            // pass to remove stale Door_/Blockade_ children before the replay proceeds.
+            ConnectionSocket[] sockets = _permanentSafeRoom.GetComponentsInChildren<ConnectionSocket>();
+            foreach (ConnectionSocket socket in sockets)
+            {
+                if (socket != null)
+                    socket.Disconnect();
+            }
+
+            // Immediately destroy stale door/blockade children that Disconnect() deferred.
+            // Without this, SpawnBlockade() finds old "Door_" children and incorrectly
+            // marks sockets as connected, preventing blockade spawning.
+            foreach (ConnectionSocket socket in sockets)
+            {
+                if (socket == null) continue;
+                for (int i = socket.transform.childCount - 1; i >= 0; i--)
+                {
+                    Transform child = socket.transform.GetChild(i);
+                    if (child.name.StartsWith("Door_") || child.name.StartsWith("Blockade_"))
+                    {
+                        DestroyImmediate(child.gameObject);
+                    }
+                }
+            }
+
+            // Re-register with the freshly cleared OccupiedSpaceRegistry
+            BoundsChecker bc = _permanentSafeRoom.GetComponent<BoundsChecker>();
+            if (bc != null)
+            {
+                bc.ResetRegistrationFlag();
+                bc.RegisterWithRegistry();
+            }
+
+            // Ensure consistent naming for PlayerManager.MovePlayerToSafeRoom() etc.
+            _permanentSafeRoom.name = "SafeElevatorRoom";
+
+            // Track in _spawnedRooms so blockade spawning and socket iteration include it
+            _spawnedRooms.Add(_permanentSafeRoom);
+
+            return _permanentSafeRoom;
         }
 
         /// <summary>
@@ -713,28 +776,33 @@ namespace _Scripts.Systems.ProceduralGeneration
         {
             foreach (GameObject room in _spawnedRooms)
             {
-                if (room != null)
+                if (room == null) continue;
+
+                // Skip the permanent safe room — it survives floor transitions.
+                // Its sockets are reset separately in PreparePermanentSafeRoom().
+                if (_permanentSafeRoom != null && room == _permanentSafeRoom) continue;
+
+                ConnectionSocket[] sockets = room.GetComponentsInChildren<ConnectionSocket>();
+                foreach (ConnectionSocket socket in sockets)
                 {
-                    ConnectionSocket[] sockets = room.GetComponentsInChildren<ConnectionSocket>();
-                    foreach (ConnectionSocket socket in sockets)
-                    {
-                        if (socket != null) socket.Disconnect();
-                    }
+                    if (socket != null) socket.Disconnect();
                 }
             }
 
             foreach (GameObject room in _spawnedRooms)
             {
-                if (room != null)
-                {
-                    BoundsChecker boundsChecker = room.GetComponent<BoundsChecker>();
-                    if (boundsChecker != null) boundsChecker.UnregisterFromRegistry();
+                if (room == null) continue;
 
-                    if (Application.isPlaying)
-                        Destroy(room);
-                    else
-                        DestroyImmediate(room);
-                }
+                // Skip the permanent safe room — do NOT destroy it
+                if (_permanentSafeRoom != null && room == _permanentSafeRoom) continue;
+
+                BoundsChecker boundsChecker = room.GetComponent<BoundsChecker>();
+                if (boundsChecker != null) boundsChecker.UnregisterFromRegistry();
+
+                if (Application.isPlaying)
+                    Destroy(room);
+                else
+                    DestroyImmediate(room);
             }
 
             foreach (GameObject blockade in _spawnedBlockades)
@@ -790,7 +858,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                         DestroyImmediate(child.gameObject);
                 }
 
-                // Pickups cleared
             }
         }
 
@@ -896,7 +963,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             if (spawnedCount > 0 && _showDebugLogs)
             {
-                Debug.Log($"[ItemPersistence] Respawned {spawnedCount}/{droppedItems.Count} items from {sourceLabel}.");
             }
         }
 
@@ -919,6 +985,9 @@ namespace _Scripts.Systems.ProceduralGeneration
             {
                 if (room == null) continue;
 
+                // Don't cache the permanent safe room — it's always in the scene
+                if (_permanentSafeRoom != null && room == _permanentSafeRoom) continue;
+
                 // Find the matching RoomEntry by comparing prefab structure
                 string displayName = FindRoomDisplayName(room);
 
@@ -932,7 +1001,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
                 if (_showDebugLogs)
                 {
-                    Debug.Log($"[FloorGenerator] Cached room '{room.name}' with displayName '{displayName}'");
                 }
             }
 
@@ -940,7 +1008,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorGenerator] Cached layout for floor {_currentFloorNumber}: {layout.roomPlacements.Count} rooms");
             }
         }
 
@@ -1027,13 +1094,27 @@ namespace _Scripts.Systems.ProceduralGeneration
             ClearFloor();
             OccupiedSpaceRegistry.Instance.ClearRegistry();
 
+            // Prepare the permanent safe room first (re-register, disconnect sockets)
+            if (_permanentSafeRoom != null)
+            {
+                PreparePermanentSafeRoom();
+            }
+
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorGenerator] Replaying cached layout for floor {_currentFloorNumber}: {layout.roomPlacements.Count} rooms");
             }
 
             foreach (var placement in layout.roomPlacements)
             {
+                // Skip SafeElevatorRoom entries — the permanent room is already prepared
+                // (backwards compat: old caches may include it)
+                if (_permanentSafeRoom != null &&
+                    (placement.prefabDisplayName == "SafeElevatorRoom" ||
+                     placement.roomInstanceName == "SafeElevatorRoom"))
+                {
+                    continue;
+                }
+
                 // Find the room entry by display name
                 RoomPrefabDatabase.RoomEntry roomEntry = _roomDatabase.GetRoomByDisplayName(placement.prefabDisplayName);
 
@@ -1079,7 +1160,6 @@ namespace _Scripts.Systems.ProceduralGeneration
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorGenerator] Replay complete: {_spawnedRooms.Count} rooms, {_connectionsMade} connections, {_blockadeSpawnCount} blockades");
             }
 
             return true;
@@ -1091,8 +1171,6 @@ namespace _Scripts.Systems.ProceduralGeneration
         /// </summary>
         private void ConnectOverlappingSockets()
         {
-            EnsureConnectionSystemExists();
-
             // Collect all sockets from all rooms
             List<ConnectionSocket> allSockets = new List<ConnectionSocket>();
             foreach (GameObject room in _spawnedRooms)
@@ -1101,27 +1179,30 @@ namespace _Scripts.Systems.ProceduralGeneration
                 allSockets.AddRange(room.GetComponentsInChildren<ConnectionSocket>());
             }
 
-            // Find overlapping socket pairs and connect them
-            float connectionThreshold = 0.5f; // Sockets within this distance are considered overlapping
+            // Find overlapping socket pairs and connect them.
+            // During replay, rooms are already at their cached positions, so we call
+            // ConnectTo() directly instead of ConnectRooms() to avoid repositioning rooms.
+            // ConnectRooms() recalculates and overwrites position/rotation, which is wrong
+            // for replay (and catastrophic if socketB belongs to the permanent safe room).
+            float connectionThreshold = 0.5f;
             HashSet<ConnectionSocket> connectedSockets = new HashSet<ConnectionSocket>();
 
             for (int i = 0; i < allSockets.Count; i++)
             {
                 ConnectionSocket socketA = allSockets[i];
-                if (socketA == null || connectedSockets.Contains(socketA)) continue;
+                if (socketA == null || socketA.IsConnected || connectedSockets.Contains(socketA)) continue;
 
                 for (int j = i + 1; j < allSockets.Count; j++)
                 {
                     ConnectionSocket socketB = allSockets[j];
-                    if (socketB == null || connectedSockets.Contains(socketB)) continue;
+                    if (socketB == null || socketB.IsConnected || connectedSockets.Contains(socketB)) continue;
 
-                    // Check if sockets are at the same position
                     float distance = Vector3.Distance(socketA.Position, socketB.Position);
                     if (distance <= connectionThreshold && socketA.IsCompatibleWith(socketB.SocketType))
                     {
-                        // Connect these sockets
-                        bool success = _connectionSystem.ConnectRooms(socketA, socketB, socketB.transform.root, _doorPrefab);
-                        if (success)
+                        // Connect directly — no repositioning. Rooms are already placed.
+                        GameObject door = socketA.ConnectTo(socketB, _doorPrefab);
+                        if (door != null || socketA.IsConnected)
                         {
                             connectedSockets.Add(socketA);
                             connectedSockets.Add(socketB);

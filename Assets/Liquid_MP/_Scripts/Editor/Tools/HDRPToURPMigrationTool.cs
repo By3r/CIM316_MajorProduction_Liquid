@@ -316,10 +316,6 @@ namespace _Scripts.Editor.Tools
             
             EditorUtility.ClearProgressBar();
             _hasScanned = true;
-            
-            Debug.Log($"[HDRP→URP] Scan complete. Found: {_hdrpMaterialCount} materials, " +
-                     $"{_hdCameraDataCount} HD cameras, {_hdLightDataCount} HD lights, " +
-                     $"{_volumeProfileCount} volume profiles");
         }
         
         private void ScanMaterials()
@@ -781,7 +777,6 @@ namespace _Scripts.Editor.Tools
                 }
             }
             
-            Debug.Log($"[HDRP→URP] Backed up {materialResults.Count} materials to {_backupFolder}");
         }
         
         private void ConvertMaterial(ScanResult result)
@@ -824,7 +819,6 @@ namespace _Scripts.Editor.Tools
             EditorUtility.SetDirty(mat);
             result.Converted = true;
             
-            Debug.Log($"[HDRP→URP] Converted material: {mat.name}");
         }
         
         private void RemoveHDComponentsFromAssets()
@@ -858,8 +852,6 @@ namespace _Scripts.Editor.Tools
             
             // This is a simplified approach - for production, you'd want to
             // properly parse YAML and remove the specific components
-            Debug.Log($"[HDRP→URP] Scene {scenePath} needs manual HD component removal. " +
-                     "Open the scene and components will be automatically cleaned up when HDRP is removed.");
         }
         
         private void ProcessPrefabForHDComponentRemoval(string prefabPath)
@@ -890,7 +882,6 @@ namespace _Scripts.Editor.Tools
             if (modified)
             {
                 PrefabUtility.SaveAsPrefabAsset(prefabRoot, assetPath);
-                Debug.Log($"[HDRP→URP] Cleaned HD components from prefab: {prefabPath}");
             }
             
             PrefabUtility.UnloadPrefabContents(prefabRoot);

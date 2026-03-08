@@ -25,10 +25,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
         [Tooltip("Delay before spawning enemies (useful if waiting for nav grid to rebuild).")]
         [SerializeField] private float _spawnDelay = 0f;
 
-        [Header("Debug")]
-        [Tooltip("Show debug logs for spawn operations?")]
-        [SerializeField] private bool _showDebugLogs = false;
-
         #endregion
 
         #region Private Fields
@@ -99,8 +95,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
                 }
             }
 
-            if (_showDebugLogs)
-                Debug.Log($"[RoomEnemySpawner] Found {_spawnPoints.Count} spawn points and {_ventPoints.Count} vents in room '{gameObject.name}'");
         }
 
         #endregion
@@ -115,8 +109,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
         {
             if (_spawnPoints == null || _spawnPoints.Count == 0)
             {
-                if (_showDebugLogs)
-                    Debug.Log($"[RoomEnemySpawner] No static spawn points in room '{gameObject.name}'");
                 return;
             }
 
@@ -135,8 +127,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
                 }
             }
 
-            if (_showDebugLogs)
-                Debug.Log($"[RoomEnemySpawner] Spawned {_totalEnemiesSpawned} enemies in room '{gameObject.name}'");
         }
 
         /// <summary>
@@ -168,8 +158,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
 
             _totalEnemiesSpawned = 0;
 
-            if (_showDebugLogs)
-                Debug.Log($"[RoomEnemySpawner] Cleared all spawned enemies in room '{gameObject.name}'");
         }
 
         /// <summary>

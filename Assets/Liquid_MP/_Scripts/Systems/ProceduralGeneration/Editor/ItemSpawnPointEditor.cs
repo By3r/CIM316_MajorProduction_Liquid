@@ -124,7 +124,6 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
                 }
             }
 
-            Debug.Log($"[ItemSpawnPoint] Snapped {snappedCount}/{selectedObjects.Length} items to ground.");
         }
 
         private void SnapAllChildrenToGround(ItemSpawnPoint spawnPoint)
@@ -143,7 +142,6 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
                 }
             }
 
-            Debug.Log($"[ItemSpawnPoint] Snapped {snappedCount} child items to ground.");
         }
 
         private bool SnapItemToGround(GameObject item, ItemSpawnPoint spawnPoint)
@@ -172,7 +170,6 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
                 
                 EditorUtility.SetDirty(item);
 
-                Debug.Log($"[ItemSpawnPoint] Snapped '{item.name}' to ground at {hit.point}");
                 return true;
             }
             else

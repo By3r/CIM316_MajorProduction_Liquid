@@ -139,10 +139,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
 
             _spawnPointId = string.Join("/", pathParts);
 
-            if (_showDebugLogs)
-            {
-                Debug.Log($"[ItemSpawnPoint] Generated ID: {_spawnPointId}");
-            }
         }
 
         #endregion
@@ -196,10 +192,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
                 _spawnedItem = SpawnAndCacheResult(floorState);
             }
 
-            if (_spawnedItem != null && _showDebugLogs)
-            {
-                Debug.Log($"[ItemSpawnPoint] Spawned '{_spawnedItem.name}' at '{gameObject.name}' (cached: {hasCachedResult})");
-            }
         }
 
         /// <summary>
@@ -210,8 +202,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
             // Empty string means nothing spawned originally
             if (string.IsNullOrEmpty(prefabName))
             {
-                if (_showDebugLogs)
-                    Debug.Log($"[ItemSpawnPoint] Cached result: nothing spawned at '{_spawnPointId}'");
                 return null;
             }
 
@@ -219,8 +209,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
             string pickupId = GetPickupIdForSpawnPoint();
             if (floorState != null && floorState.collectedItems.TryGetValue(pickupId, out bool collected) && collected)
             {
-                if (_showDebugLogs)
-                    Debug.Log($"[ItemSpawnPoint] Item at '{_spawnPointId}' was already collected, not spawning");
                 return null;
             }
 
@@ -267,8 +255,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
             {
                 floorState.spawnPointResults[_spawnPointId] = spawnedPrefabName;
 
-                if (_showDebugLogs)
-                    Debug.Log($"[ItemSpawnPoint] Cached spawn result for '{_spawnPointId}': '{spawnedPrefabName}'");
             }
 
             return spawned;
@@ -401,8 +387,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Items
                 float distanceToGround = bottomPoint.y - hit.point.y;
                 item.transform.position += Vector3.down * distanceToGround;
 
-                if (_showDebugLogs)
-                    Debug.Log($"[ItemSpawnPoint] Snapped '{item.name}' to ground at {hit.point}");
             }
             else if (_showDebugLogs)
             {

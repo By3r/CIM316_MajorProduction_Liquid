@@ -1,4 +1,4 @@
-﻿using UnityEditor;
+using UnityEditor;
 using UnityEngine;
 
 namespace _Scripts.UI.Editor
@@ -106,7 +106,6 @@ namespace _Scripts.UI.Editor
             }
 
             serializedObject.ApplyModifiedProperties();
-            Debug.Log($"[DevTestingMenu] Added {_sceneNames.arraySize} scenes from Build Settings.");
         }
     }
 }

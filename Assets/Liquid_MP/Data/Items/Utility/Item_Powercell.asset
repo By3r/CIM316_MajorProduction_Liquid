@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: powercell
   displayName: Power Cell
   itemType: 6
-  icon: {fileID: 21300000, guid: ef9d9edc1f11c7a4888fa75f9233ba9c, type: 3}
+  icon: {fileID: 21300000, guid: aa4cd2b3c0a1d714da7e76cdb93c70f1, type: 3}
   worldPrefab: {fileID: 569574005221879927, guid: 9d1ab7475d4d2b34daea1b2fe36f3b2d, type: 3}
   description: Powercell used to power up machines that have a slot for it.
   isStackable: 0

@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
@@ -167,7 +167,6 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
                 EditorUtility.ClearProgressBar();
             }
 
-            Debug.Log($"[ItemSpawnUtilities] {(enabled ? "Enabled" : "Disabled")} gizmos on {updatedCount}/{spawnPoints.Length} spawn points.");
         }
 
         private void SnapAllSpawnPointsChildren(ItemSpawnPoint[] spawnPoints)
@@ -205,7 +204,6 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
                 EditorUtility.ClearProgressBar();
             }
 
-            Debug.Log($"[ItemSpawnUtilities] Snapped {totalSnapped}/{totalProcessed} items to ground across {spawnPoints.Length} spawn points.");
         }
 
         private bool SnapItemToGround(GameObject item, ItemSpawnPoint spawnPoint)
@@ -217,16 +215,13 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
                 return false;
             }
 
-            // Get settings from spawn point
             SerializedObject so = new SerializedObject(spawnPoint);
             float maxDistance = so.FindProperty("_maxGroundCheckDistance").floatValue;
             LayerMask groundMask = so.FindProperty("_groundLayerMask").intValue;
 
-            // Get the bottom point of the collider
             Bounds bounds = itemCollider.bounds;
             Vector3 bottomPoint = new Vector3(bounds.center.x, bounds.min.y, bounds.center.z);
 
-            // Raycast down
             RaycastHit hit;
             if (Physics.Raycast(bottomPoint, Vector3.down, out hit, maxDistance, groundMask))
             {

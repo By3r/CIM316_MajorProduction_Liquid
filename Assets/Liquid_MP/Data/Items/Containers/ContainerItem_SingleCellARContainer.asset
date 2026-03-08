@@ -15,7 +15,7 @@ MonoBehaviour:
   itemId: ContainerItem_SingleCellARContainer
   displayName: S. Cell AR Container
   itemType: 5
-  icon: {fileID: 0}
+  icon: {fileID: 21300000, guid: c07bff3055e70b146a391dedf34911b3, type: 3}
   worldPrefab: {fileID: 5725912407974990886, guid: 2e20fe3f0d4cc8340959434f13ddeabf, type: 3}
   description: Single Cell AR Container. The magnetif field doesn't allow for massive
     collection.

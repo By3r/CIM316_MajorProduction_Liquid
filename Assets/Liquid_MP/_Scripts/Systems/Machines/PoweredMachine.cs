@@ -55,12 +55,10 @@ namespace _Scripts.Systems.Machines
 
         protected virtual void OnPoweredOn()
         {
-            Debug.Log($"[PoweredMachine] {gameObject.name} powered ON");
         }
 
         protected virtual void OnPoweredOff()
         {
-            Debug.Log($"[PoweredMachine] {gameObject.name} powered OFF");
         }
     }
 }

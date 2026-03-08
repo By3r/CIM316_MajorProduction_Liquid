@@ -81,28 +81,6 @@ namespace _Scripts.ProceduralGeneration.Editor
             EditorGUILayout.PropertyField(_doorTypeProp, new GUIContent("Door Type", 
                 "The tier/type of this door for procedural generation. Must match ConnectionSocket types."));
             
-            var doorType = (Door.DoorType)_doorTypeProp.enumValueIndex;
-            
-            EditorGUI.indentLevel++;
-            switch (doorType)
-            {
-                case Door.DoorType.Standard:
-                    EditorGUILayout.HelpBox("Standard doors are for basic corridors and small rooms. Most common type.", MessageType.Info);
-                    break;
-                case Door.DoorType.Large:
-                    EditorGUILayout.HelpBox("Large doors are for wide openings, big rooms, or hubs.", MessageType.Info);
-                    break;
-                case Door.DoorType.Airlock:
-                    EditorGUILayout.HelpBox("Airlock doors are for sector transitions with special atmospheric sealing.", MessageType.Info);
-                    break;
-                case Door.DoorType.Emergency:
-                    EditorGUILayout.HelpBox("Emergency doors are red-lit emergency exits.", MessageType.Info);
-                    break;
-                case Door.DoorType.Maintenance:
-                    EditorGUILayout.HelpBox("Maintenance doors are for crawl spaces and service tunnels (smaller).", MessageType.Info);
-                    break;
-            }
-            EditorGUI.indentLevel--;
         }
 
         private void DrawAnimationType()
@@ -117,7 +95,6 @@ namespace _Scripts.ProceduralGeneration.Editor
             
             if (animationType == Door.DoorAnimationType.Slide)
             {
-                EditorGUILayout.HelpBox("Door will slide linearly in the specified direction.", MessageType.Info);
                 EditorGUILayout.PropertyField(_slideDirectionProp, new GUIContent("Slide Direction", "Local direction to slide (will be normalized)"));
                 EditorGUILayout.PropertyField(_slideDistanceProp, new GUIContent("Slide Distance", "How far to slide (in units)"));
                 
@@ -128,7 +105,6 @@ namespace _Scripts.ProceduralGeneration.Editor
             }
             else if (animationType == Door.DoorAnimationType.Rotation)
             {
-                EditorGUILayout.HelpBox("Door will rotate around a fixed axis.", MessageType.Info);
                 EditorGUILayout.PropertyField(_rotationAxisProp, new GUIContent("Rotation Axis", "Local axis to rotate around (will be normalized)"));
                 EditorGUILayout.PropertyField(_rotationAngleProp, new GUIContent("Rotation Angle", "Degrees to rotate when opening"));
                 
@@ -139,7 +115,6 @@ namespace _Scripts.ProceduralGeneration.Editor
             }
             else if (animationType == Door.DoorAnimationType.SmartRotation)
             {
-                EditorGUILayout.HelpBox("Door will automatically rotate away from or toward the player based on approach direction.", MessageType.Info);
                 EditorGUILayout.PropertyField(_rotationAxisProp, new GUIContent("Rotation Axis", "Local axis to rotate around (will be normalized)"));
                 EditorGUILayout.PropertyField(_frontRotationAngleProp, new GUIContent("Front Rotation", "Degrees when player approaches from front (positive)"));
                 EditorGUILayout.PropertyField(_backRotationAngleProp, new GUIContent("Back Rotation", "Degrees when player approaches from back (negative)"));
@@ -198,9 +173,6 @@ namespace _Scripts.ProceduralGeneration.Editor
             
             EditorGUILayout.PropertyField(_allowManualCloseProp, new GUIContent("Allow Manual Close", "Can the player manually close an open door?"));
             
-            EditorGUILayout.Space(3);
-            EditorGUILayout.HelpBox("Doors in Liquid are always openable - no keys or button activators required.", MessageType.Info);
-            EditorGUILayout.HelpBox("Interaction is handled by InteractionController via InputManager.", MessageType.Info);
         }
 
         private void DrawThreatSystemSettings()
@@ -215,27 +187,15 @@ namespace _Scripts.ProceduralGeneration.Editor
                 EditorGUILayout.HelpBox("Noise generated should not be negative!", MessageType.Warning);
             }
             
-            EditorGUI.indentLevel++;
-            EditorGUILayout.LabelField("Noise Guidelines:", EditorStyles.miniBoldLabel);
-            EditorGUILayout.LabelField("• Small/Quiet: 1-3");
-            EditorGUILayout.LabelField("• Standard: 5-7");
-            EditorGUILayout.LabelField("• Large/Loud: 10-15");
-            EditorGUILayout.LabelField("• Airlock/Emergency: 15-20");
-            EditorGUI.indentLevel--;
         }
 
         private void DrawAudioSettings()
         {
-            EditorGUILayout.LabelField("Audio Settings (Optional)", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Audio Settings", EditorStyles.boldLabel);
             
             EditorGUILayout.PropertyField(_openSoundProp, new GUIContent("Open Sound", "Sound when door opens"));
             EditorGUILayout.PropertyField(_closeSoundProp, new GUIContent("Close Sound", "Sound when door closes"));
             
-            EditorGUILayout.Space(3);
-            if (_openSoundProp.objectReferenceValue == null)
-            {
-                EditorGUILayout.HelpBox("Consider adding an open sound for better audio feedback.", MessageType.Info);
-            }
         }
 
         private void DrawRuntimeInfo(Door door)
@@ -264,8 +224,6 @@ namespace _Scripts.ProceduralGeneration.Editor
                 door.ForceClose();
             }
             
-            EditorGUILayout.Space(3);
-            EditorGUILayout.HelpBox("Use the buttons above to test door states instantly without animation.", MessageType.Info);
         }
     }
 }

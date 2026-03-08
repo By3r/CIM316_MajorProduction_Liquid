@@ -15,10 +15,10 @@ MonoBehaviour:
   itemId: SchItem_ARContainerBlueprint
   displayName: AR Container Schematic
   itemType: 1
-  icon: {fileID: 0}
-  worldPrefab: {fileID: 0}
+  icon: {fileID: 21300000, guid: 26d62966e4d0f99419a6197a3e737424, type: 3}
+  worldPrefab: {fileID: 3704157322415199936, guid: 7e8e2c826c47bc54faa4417b9e4ab8f3, type: 3}
   description: Schematics containing information on how to craft containers for aneutronic
     rock.
-  isStackable: 1
-  maxStackSize: 6
+  isStackable: 0
+  maxStackSize: 2
   schematicToUnlock: {fileID: 11400000, guid: de66610f90a171642923f584d374ca7c, type: 2}

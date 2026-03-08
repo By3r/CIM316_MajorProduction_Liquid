@@ -128,7 +128,6 @@ namespace _Scripts.Systems.Inventory
 
                         if (_showDebugLogs)
                         {
-                            Debug.Log($"[PlayerInventory] Stacked {toAdd} {itemData.displayName} in slot {i}");
                         }
 
                         if (quantity <= 0) return true;
@@ -150,7 +149,6 @@ namespace _Scripts.Systems.Inventory
 
                     if (_showDebugLogs)
                     {
-                        Debug.Log($"[PlayerInventory] Added {toAdd} {itemData.displayName} to slot {i}");
                     }
 
                     if (quantity <= 0 || !itemData.isStackable) return true;
@@ -159,7 +157,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs && quantity > 0)
             {
-                Debug.Log($"[PlayerInventory] Inventory full. Could not add {quantity} {itemData.displayName}");
             }
 
             return quantity <= 0;
@@ -188,7 +185,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[PlayerInventory] Removed {quantity} {removedItem.displayName} from slot {slotIndex}");
             }
 
             return removedItem;
@@ -229,6 +225,48 @@ namespace _Scripts.Systems.Inventory
             return remainingQuantity <= 0;
         }
 
+        /// <summary>
+        /// Removes up to <paramref name="quantity"/> units of the specified item across all slots.
+        /// Returns the total quantity actually removed.
+        /// </summary>
+        public int RemoveItem(InventoryItemData itemData, int quantity)
+        {
+            if (itemData == null || quantity <= 0) return 0;
+
+            int remaining = quantity;
+            for (int i = 0; i < _slotCount && remaining > 0; i++)
+            {
+                if (_slots[i].ItemData != itemData) continue;
+
+                int toRemove = Mathf.Min(remaining, _slots[i].Quantity);
+                _slots[i].Quantity -= toRemove;
+                remaining -= toRemove;
+
+                if (_slots[i].Quantity <= 0)
+                    _slots[i].Clear();
+
+                OnSlotChanged?.Invoke(i, _slots[i]);
+            }
+
+            return quantity - remaining;
+        }
+
+        /// <summary>
+        /// Returns total quantity of the specified item across all inventory slots.
+        /// </summary>
+        public int CountItem(InventoryItemData itemData)
+        {
+            if (itemData == null) return 0;
+
+            int total = 0;
+            for (int i = 0; i < _slotCount; i++)
+            {
+                if (_slots[i].ItemData == itemData)
+                    total += _slots[i].Quantity;
+            }
+            return total;
+        }
+
         #endregion
 
         #region AR Grams
@@ -250,7 +288,6 @@ namespace _Scripts.Systems.Inventory
 
                 if (_showDebugLogs)
                 {
-                    Debug.Log($"[PlayerInventory] Deposited {added}g AR. Total: {_arGrams}/{_arGramsCap}g");
                 }
             }
 
@@ -271,7 +308,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[PlayerInventory] Removed {amount}g AR. Total: {_arGrams}/{_arGramsCap}g");
             }
 
             return true;
@@ -286,7 +322,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[PlayerInventory] Upgraded AR cap to {_arGramsCap}g");
             }
         }
 
@@ -317,7 +352,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
             {
-                Debug.Log("[PlayerInventory] Created inventory save data snapshot.");
             }
 
             return data;
@@ -333,7 +367,6 @@ namespace _Scripts.Systems.Inventory
             {
                 if (_showDebugLogs)
                 {
-                    Debug.Log("[PlayerInventory] No save data to restore.");
                 }
                 return;
             }
@@ -342,7 +375,6 @@ namespace _Scripts.Systems.Inventory
             _arGrams = data.arGrams;
             OnARGramsChanged?.Invoke(_arGrams);
 
-            // Restore slots
             int slotsToRestore = Mathf.Min(data.slots.Length, _slotCount);
             for (int i = 0; i < _slotCount; i++)
             {
@@ -367,7 +399,6 @@ namespace _Scripts.Systems.Inventory
 
             if (_showDebugLogs)
             {
-                Debug.Log("[PlayerInventory] Restored inventory from save data.");
             }
         }
 

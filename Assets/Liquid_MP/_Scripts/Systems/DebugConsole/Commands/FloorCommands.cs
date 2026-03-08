@@ -1,6 +1,8 @@
 using System.Text;
+using UnityEngine;
 using _Scripts.Core.Managers;
 using _Scripts.Systems.Inventory;
+using _Scripts.Systems.ProceduralGeneration;
 
 namespace _Scripts.Systems.DebugConsole.Commands
 {
@@ -81,9 +83,27 @@ namespace _Scripts.Systems.DebugConsole.Commands
             if (!FloorStateManager.Instance.IsInitialized)
                 return "<color=red>FloorStateManager is not initialized.</color>";
 
+            var fm = FloorStateManager.Instance;
+            var floorState = fm.GetCurrentFloorState();
+
             var sb = new StringBuilder();
             sb.AppendLine("=== Floor Info ===");
-            sb.AppendLine(FloorStateManager.Instance.GetSessionStats());
+            sb.AppendLine(fm.GetSessionStats());
+            int baseSeed = fm.GetFloorSeed(fm.CurrentFloorNumber);
+
+            // Use the live working seed from FloorGenerator if available,
+            // since floorState.generationSeed only gets updated when leaving the floor.
+            var floorGen = Object.FindObjectOfType<FloorGenerator>();
+            int workingSeed = (floorGen != null && floorGen.CurrentSeed != 0)
+                ? floorGen.CurrentSeed
+                : floorState.generationSeed;
+            int retries = workingSeed - baseSeed;
+
+            sb.AppendLine($"Base Seed: {baseSeed}");
+            sb.AppendLine($"Working Seed: {workingSeed}");
+            sb.AppendLine($"Retries: {retries}");
+            sb.AppendLine($"Visited: {floorState.isVisited}");
+            sb.AppendLine($"Has Cached Layout: {floorState.HasCachedLayout}");
 
             return sb.ToString();
         }

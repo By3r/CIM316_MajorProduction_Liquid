@@ -72,29 +72,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
             EditorGUILayout.PropertyField(_socketTypeProp, new GUIContent("Socket Type",
                 "The door tier this socket accepts. Must match Door.DoorType."));
 
-            var socketType = (Door.DoorType)_socketTypeProp.enumValueIndex;
-
-            EditorGUI.indentLevel++;
-            switch (socketType)
-            {
-                case Door.DoorType.Standard:
-                    EditorGUILayout.HelpBox("Standard sockets connect basic corridors and small rooms.", MessageType.Info);
-                    break;
-                case Door.DoorType.Large:
-                    EditorGUILayout.HelpBox("Large sockets are for wide openings and hub rooms.", MessageType.Info);
-                    break;
-                case Door.DoorType.Airlock:
-                    EditorGUILayout.HelpBox("Airlock sockets are for sector transitions.", MessageType.Info);
-                    break;
-                case Door.DoorType.Emergency:
-                    EditorGUILayout.HelpBox("Emergency sockets are for emergency exits.", MessageType.Info);
-                    break;
-                case Door.DoorType.Maintenance:
-                    EditorGUILayout.HelpBox("Maintenance sockets are for service tunnels.", MessageType.Info);
-                    break;
-            }
-            EditorGUI.indentLevel--;
-
             EditorGUILayout.Space(3);
             GUI.enabled = false;
             EditorGUILayout.PropertyField(_isConnectedProp, new GUIContent("Is Connected",
@@ -113,12 +90,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
             if (angle > 0.1f)
             {
                 EditorGUI.indentLevel++;
-                EditorGUILayout.HelpBox(
-                    $"Forward direction rotated {angle:F1} degrees from transform.forward.\n" +
-                    "Grey arrow in Scene = raw transform.forward\n" +
-                    "Blue arrow in Scene = adjusted forward (what generation uses)",
-                    MessageType.Info);
-
                 if (GUILayout.Button("Reset to 0"))
                 {
                     _forwardAngleOffsetProp.floatValue = 0f;
@@ -148,20 +119,12 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
 
             if (!socket.HasBounds)
             {
-                EditorGUILayout.HelpBox(
-                    "Socket bounds not calculated! The connection point defaults to the transform pivot.\n" +
-                    "Click 'Calculate Socket Bounds' to find the geometric center of this door frame.",
-                    MessageType.Warning);
+                EditorGUILayout.HelpBox("Socket bounds not calculated!", MessageType.Warning);
             }
             else
             {
                 EditorGUILayout.PropertyField(_boundsCenterProp, new GUIContent("Bounds Center (Local)"));
                 EditorGUILayout.PropertyField(_boundsSizeProp, new GUIContent("Bounds Size"));
-
-                EditorGUILayout.HelpBox(
-                    "Rooms connect at the geometric center of this door frame (orange wireframe in Scene).\n" +
-                    "This fixes alignment for meshes with off-center pivots.",
-                    MessageType.Info);
             }
 
             EditorGUILayout.Space(3);
@@ -180,7 +143,7 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
         {
             EditorGUILayout.LabelField("Door Spawn Settings", EditorStyles.boldLabel);
 
-            EditorGUILayout.PropertyField(_doorPrefabProp, new GUIContent("Door Prefab (Optional)",
+            EditorGUILayout.PropertyField(_doorPrefabProp, new GUIContent("Door Prefab",
                 "Prefab to instantiate when connected. Leave empty to use from DoorPrefabDatabase."));
 
             EditorGUILayout.Space(3);
@@ -191,22 +154,10 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
             var socket = (ConnectionSocket)target;
             if (socket.DoorSpawnPointTransform == null)
             {
-                EditorGUILayout.HelpBox(
-                    "No DoorSpawnPoint assigned — door will spawn at this socket's position.\n" +
-                    "Create an empty child GameObject and assign it here for precise placement.",
-                    MessageType.Info);
-
                 if (GUILayout.Button("Create DoorSpawnPoint Child"))
                 {
                     CreateDoorSpawnPoint(socket);
                 }
-            }
-            else
-            {
-                EditorGUILayout.HelpBox(
-                    $"Door spawns at '{socket.DoorSpawnPointTransform.name}' position/rotation.\n" +
-                    "Magenta sphere in Scene view shows the spawn location.",
-                    MessageType.Info);
             }
 
             EditorGUILayout.Space(3);
@@ -227,19 +178,11 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
                         var socketType = (Door.DoorType)_socketTypeProp.enumValueIndex;
                         if (doorComponent.Type != socketType)
                         {
-                            EditorGUILayout.HelpBox($"Warning: Door type mismatch!\nSocket: {socketType}, Door: {doorComponent.Type}",
+                            EditorGUILayout.HelpBox($"Door type mismatch! Socket: {socketType}, Door: {doorComponent.Type}",
                                 MessageType.Warning);
-                        }
-                        else
-                        {
-                            EditorGUILayout.HelpBox($"Door type matches socket: {socketType}", MessageType.Info);
                         }
                     }
                 }
-            }
-            else
-            {
-                EditorGUILayout.HelpBox("No prefab assigned - will use DoorPrefabDatabase at runtime.", MessageType.Info);
             }
         }
 
@@ -255,53 +198,13 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
             EditorGUILayout.PropertyField(_blockadePrefabsProp, new GUIContent("Blockade Prefabs",
                 "List of prefabs to randomly spawn if socket is unconnected. Add multiple for variety!"), true);
 
-            // Validation and help
             int blockadeCount = _blockadePrefabsProp.arraySize;
             bool spawnEnabled = _spawnBlockadeIfUnconnectedProp.boolValue;
 
-            EditorGUILayout.Space(3);
-
             if (spawnEnabled && blockadeCount == 0)
             {
-                EditorGUILayout.HelpBox(
-                    "Blockade spawning is enabled but no prefabs assigned!\n" +
-                    "Click '+' below to add blockade prefabs.",
-                    MessageType.Warning);
+                EditorGUILayout.HelpBox("Blockade spawning enabled but no prefabs assigned!", MessageType.Warning);
             }
-            else if (spawnEnabled && blockadeCount > 0)
-            {
-                EditorGUILayout.HelpBox(
-                    $"{blockadeCount} blockade prefab{(blockadeCount > 1 ? "s" : "")} configured.\n" +
-                    $"If this socket is unconnected after generation, one will be randomly selected and spawned.",
-                    MessageType.Info);
-            }
-            else if (!spawnEnabled && blockadeCount > 0)
-            {
-                EditorGUILayout.HelpBox(
-                    "Blockade spawning is disabled.\n" +
-                    "Enable 'Spawn Blockade If Unconnected' to use the assigned prefabs.",
-                    MessageType.Info);
-            }
-            else
-            {
-                EditorGUILayout.HelpBox(
-                    "Blockade spawning is disabled and no prefabs assigned.\n" +
-                    "This socket will remain empty if unconnected.",
-                    MessageType.Info);
-            }
-
-            EditorGUILayout.Space(3);
-
-            EditorGUILayout.BeginHorizontal();
-            if (GUILayout.Button("Add Blockade Slot"))
-            {
-                _blockadePrefabsProp.arraySize++;
-            }
-            if (blockadeCount > 0 && GUILayout.Button("Remove Last Slot"))
-            {
-                _blockadePrefabsProp.arraySize--;
-            }
-            EditorGUILayout.EndHorizontal();
         }
 
         private void DrawVisualizationSettings()
@@ -417,7 +320,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Editor
 
             Selection.activeGameObject = spawnPoint;
 
-            Debug.Log($"[ConnectionSocket] Created DoorSpawnPoint child on '{socket.gameObject.name}'. Move it to the desired door position.");
         }
 
         // Scene view handles

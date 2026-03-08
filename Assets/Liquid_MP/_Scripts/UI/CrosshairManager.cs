@@ -25,7 +25,7 @@ namespace _Scripts.UI
         [Tooltip("The UI Image component that displays the crosshair.")]
         [SerializeField] private Image _crosshairImage;
 
-        [Tooltip("Canvas group for fading crosshair in/out (optional).")]
+        [Tooltip("Canvas group for fading crosshair in/out.")]
         [SerializeField] private CanvasGroup _crosshairCanvasGroup;
 
         [Tooltip("Hide the normal crosshair when not looking at interactables? (for immersion)")]

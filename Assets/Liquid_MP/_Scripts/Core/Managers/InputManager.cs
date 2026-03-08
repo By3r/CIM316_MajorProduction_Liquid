@@ -181,9 +181,17 @@ namespace _Scripts.Core.Managers
             }
         }
 
+        /// <summary>
+        /// True when player gameplay input is active. Standalone InputActions
+        /// outside the Player action map should check this before acting.
+        /// </summary>
+        public bool IsPlayerInputEnabled { get; private set; } = true;
+
         public void EnablePlayerInput(bool enabled)
         {
             if (!_isInitialized) return;
+
+            IsPlayerInputEnabled = enabled;
 
             if (enabled) _playerActionMap?.Enable();
             else _playerActionMap?.Disable();

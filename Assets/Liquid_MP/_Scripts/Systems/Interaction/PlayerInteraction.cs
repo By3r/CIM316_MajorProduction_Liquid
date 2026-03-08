@@ -92,7 +92,6 @@ namespace _Scripts.Systems.Interaction
                 found = FindByOverlap();
             }
 
-            // Update highlight
             if (_currentTarget != found)
             {
                 if (_currentTarget != null)

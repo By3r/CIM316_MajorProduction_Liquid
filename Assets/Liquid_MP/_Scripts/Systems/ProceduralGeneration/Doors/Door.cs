@@ -4,19 +4,11 @@ using UnityEngine;
 
 namespace _Scripts.Systems.ProceduralGeneration.Doors
 {
-    /// <summary>
-    /// Door component for procedurally generated rooms in Liquid.
-    /// Supports multiple animation types and door tiers for the procedural generation system.
-    /// Doors are always openable - no keys or button activators required.
-    /// </summary>
     [RequireComponent(typeof(AudioSource))]
     public class Door : MonoBehaviour
     {
         #region Enums
         
-        /// <summary>
-        /// Defines how the door should animate when opening/closing.
-        /// </summary>
         public enum DoorAnimationType
         {
             Slide,
@@ -24,10 +16,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             SmartRotation
         }
 
-        /// <summary>
-        /// Defines the door tier/type for procedural generation compatibility.
-        /// Used by the ConnectionSocket system to ensure compatible room connections.
-        /// </summary>
         public enum DoorType
         {
             Standard,
@@ -41,63 +29,22 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
         #region Serialized Fields
 
-        [Header("-- Door Type Configuration --")]
-        [Tooltip("The tier/type of this door. Must match the ConnectionSocket type for procedural generation.")]
         [SerializeField] private DoorType _doorType = DoorType.Standard;
-
-        [Header("-- Door Animation Type --")]
-        [Tooltip("How should this door open?")]
         [SerializeField] private DoorAnimationType _animationType = DoorAnimationType.Slide;
-
-        [Header("-- Slide Animation Settings --")]
-        [Tooltip("Which direction should the door slide when opening?")]
         [SerializeField] private Vector3 _slideDirection = Vector3.up;
-
-        [Tooltip("How far should the door slide (in units)?")]
         [SerializeField] private float _slideDistance = 3f;
-
-        [Header("-- Rotation Animation Settings --")]
-        [Tooltip("Which axis should the door rotate around?")]
         [SerializeField] private Vector3 _rotationAxis = Vector3.up;
-
-        [Tooltip("How many degrees should the door rotate when opening?")]
         [SerializeField] private float _rotationAngle = 90f;
-
-        [Header("-- Smart Rotation Settings --")]
-        [Tooltip("For Smart Rotation: How much to rotate when opening to the front (positive angle).")]
         [SerializeField] private float _frontRotationAngle = 90f;
-
-        [Tooltip("For Smart Rotation: How much to rotate when opening to the back (negative angle).")]
         [SerializeField] private float _backRotationAngle = -90f;
-
-        [Header("-- Animation Timing --")]
-        [Tooltip("How long the opening animation takes (in seconds).")]
         [SerializeField] private float _openingDuration = 1f;
-
-        [Tooltip("How long the closing animation takes (in seconds).")]
         [SerializeField] private float _closingDuration = 1f;
-
-        [Tooltip("Should the door automatically close after opening?")]
         [SerializeField] private bool _autoClose;
-
-        [Tooltip("How long to wait before auto-closing (if enabled).")]
         [SerializeField] private float _autoCloseDelay = 3f;
-
-        [Tooltip("Can the player manually close an open door?")]
         [SerializeField] private bool _allowManualClose = true;
-
-        [Header("-- Audio (Optional) --")]
-        [Tooltip("Sound when door opens.")]
         [SerializeField] private AudioClip _openSound;
-
-        [Tooltip("Sound when door closes.")]
         [SerializeField] private AudioClip _closeSound;
-
-        [Header("-- Threat System Integration --")]
-        [Tooltip("How much noise does opening this door generate? (Added to threat level)")]
         [SerializeField] private float _noiseGenerated = 5f;
-
-        [Header("-- Gizmos --")]
         [SerializeField] private bool _showGizmos = false;
 
         #endregion
@@ -119,29 +66,14 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
         #region Public Properties
 
-        /// <summary>
-        /// Gets whether the door is currently open.
-        /// </summary>
         public bool IsOpen => _isOpen;
 
-        /// <summary>
-        /// Gets whether the door is currently animating.
-        /// </summary>
         public bool IsAnimating => _isAnimating;
 
-        /// <summary>
-        /// Gets whether the player can manually close this door.
-        /// </summary>
         public bool AllowManualClose => _allowManualClose;
 
-        /// <summary>
-        /// Gets the door type/tier for procedural generation compatibility.
-        /// </summary>
         public DoorType Type => _doorType;
 
-        /// <summary>
-        /// Gets the animation type of this door.
-        /// </summary>
         public DoorAnimationType AnimationType => _animationType;
 
         #endregion
@@ -277,10 +209,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
         #region Public Methods
 
-        /// <summary>
-        /// Attempts to interact with the door (open if closed, close if open and allowed).
-        /// Returns true if the action was successful.
-        /// </summary>
         public bool Interact()
         {
             if (_isAnimating)
@@ -302,9 +230,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             }
         }
 
-        /// <summary>
-        /// Opens the door. Always succeeds unless already open or animating.
-        /// </summary>
         public void OpenDoor()
         {
             if (_isOpen || _isAnimating)
@@ -336,9 +261,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             }
         }
 
-        /// <summary>
-        /// Closes the door if manual closing is allowed.
-        /// </summary>
         public void CloseDoor()
         {
             if (!_isOpen || _isAnimating)
@@ -346,7 +268,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
             if (!_allowManualClose)
             {
-                Debug.Log($"[Door] Cannot close door '{gameObject.name}' - manual closing is disabled.");
                 return;
             }
 
@@ -369,10 +290,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             }
         }
 
-        /// <summary>
-        /// Forces the door to open immediately without animation.
-        /// Useful for procedural generation or special events.
-        /// </summary>
         public void ForceOpen()
         {
             if (_animationCoroutine != null)
@@ -386,9 +303,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
             transform.rotation = _openRotation;
         }
 
-        /// <summary>
-        /// Forces the door to close immediately without animation.
-        /// </summary>
         public void ForceClose()
         {
             if (_animationCoroutine != null)
@@ -523,9 +437,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Doors
 
     #region Event Data Classes
 
-    /// <summary>
-    /// Data structure for noise generation events.
-    /// </summary>
     public class NoiseEventData
     {
         public Vector3 Position;

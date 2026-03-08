@@ -85,8 +85,15 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-849508001-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-538913668-0
         - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-801192885-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-862918048246601887-7083002585389322191
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-957499652979615255-7083002585389322191
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1898024859-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1861208315-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1978549177-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-27317789-0
+        - globalObjectIdString: GlobalObjectId_V1-2-79c8f7b34fac32649ab8df8b05dadd3b-1031815055-0
         values:
-        - colorIndex: 6
+        - colorIndex: 7
           iconNameOrGuid: Canvas Icon
           isIconRecursive: 0
           isColorRecursive: 0
@@ -334,6 +341,34 @@ MonoBehaviour:
           iconNameOrGuid: AudioLowPassFilter Icon
           isIconRecursive: 0
           isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Folder Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: Canvas Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: BigIcons.ExclamationMark
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
     - goDatas_byGlobalId:
         keys:
         - globalObjectIdString: GlobalObjectId_V1-1-4c6321b3a9c95334d90ffcab10a45d03-4903016399100092177-0
@@ -438,3 +473,4 @@ MonoBehaviour:
   bookmarkedScenePaths:
   - Assets/Liquid_MP/_Scenes/Dev_Scenes/Dev_Procedural_Generation.unity
   - Assets/ImportedPackages/SciFiFacilitySector43/Scenes/SampleScene.unity
+  - Assets/RVFX/MuzzleFlashesImpacts/URP/Demo_URP.unity

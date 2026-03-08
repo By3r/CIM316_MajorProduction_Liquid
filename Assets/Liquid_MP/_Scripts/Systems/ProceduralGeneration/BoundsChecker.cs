@@ -143,6 +143,12 @@ namespace _Scripts.Systems.ProceduralGeneration
         }
 
         /// <summary>
+        /// Resets the internal registration flag WITHOUT unregistering from the registry.
+        /// Use after OccupiedSpaceRegistry.ClearRegistry() so this room can re-register.
+        /// </summary>
+        public void ResetRegistrationFlag() => _isRegistered = false;
+
+        /// <summary>
         /// Checks if this room is currently registered with the registry.
         /// </summary>
         public bool IsRegistered => _isRegistered;
@@ -242,8 +248,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             _boundsCenter = encapsulating.center;
             _boundsSize = encapsulating.size;
 
-            Debug.Log($"[BoundsChecker] Recalculated encapsulating bounds from {_subBounds.Count} sub-bounds: " +
-                      $"Center={_boundsCenter}, Size={_boundsSize}");
         }
 
         /// <summary>
@@ -342,8 +346,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                 _subBounds.Clear();
                 _boundsCenter = localBounds.center;
                 _boundsSize = localBounds.size;
-                Debug.Log($"[BoundsChecker] Room '{gameObject.name}' is rectangular ({occupiedCount}/{totalCells} cells). " +
-                          "No sub-bounds needed. Updated encapsulating bounds.");
                 return;
             }
 
@@ -416,7 +418,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                 _subBounds.Clear();
                 _boundsCenter = localBounds.center;
                 _boundsSize = localBounds.size;
-                Debug.Log($"[BoundsChecker] Room '{gameObject.name}' produced only 1 sub-bound — using simple rectangular bounds.");
                 return;
             }
 
@@ -427,9 +428,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             // Recalculate encapsulating bounds from sub-bounds
             RecalculateEncapsulatingBounds();
 
-            Debug.Log($"[BoundsChecker] Auto-detected {_subBounds.Count} sub-bounds for '{gameObject.name}' " +
-                      $"(grid: {gridX}x{gridZ}, resolution: {gridResolution}m, " +
-                      $"occupied: {occupiedCount}/{totalCells} cells)");
         }
 
         /// <summary>
@@ -574,7 +572,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             _boundsCenter = localBounds.center;
             _boundsSize = localBounds.size;
 
-            Debug.Log($"[BoundsChecker] Calculated bounds for '{gameObject.name}': Center={_boundsCenter}, Size={_boundsSize}");
 
             if (_isRegistered && OccupiedSpaceRegistry.Instance != null)
             {
@@ -582,7 +579,6 @@ namespace _Scripts.Systems.ProceduralGeneration
                 if (occupiedSpace != null)
                 {
                     occupiedSpace.UpdateBounds();
-                    Debug.Log($"[BoundsChecker] Updated PADDED bounds in registry for '{gameObject.name}'");
                 }
             }
         }
@@ -595,7 +591,6 @@ namespace _Scripts.Systems.ProceduralGeneration
             _cachedSockets.Clear();
             _cachedSockets.AddRange(GetComponentsInChildren<ConnectionSocket>());
 
-            Debug.Log($"[BoundsChecker] Cached {_cachedSockets.Count} ConnectionSockets on '{gameObject.name}'");
         }
 
         // AdjustSocketPositions, FindClosestBoundsFace, and ClearBeforePositions

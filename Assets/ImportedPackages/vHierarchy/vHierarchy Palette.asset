@@ -94,6 +94,7 @@ MonoBehaviour:
     customIcons:
     - P4_BlueRightParenthesis
     - P4_RedLeftParenthesis
+    - BigIcons.ExclamationMark
     enabled: 1
   - builtinIcons: []
     customIcons: []

@@ -181,10 +181,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
 
             _spawnPointId = string.Join("/", pathParts);
 
-            if (_showDebugLogs)
-            {
-                Debug.Log($"[EnemySpawnPoint] Generated ID: {_spawnPointId}");
-            }
         }
 
         #endregion
@@ -201,8 +197,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
             // Vents don't spawn during initial generation — they're for runtime/threat spawns
             if (_isVent)
             {
-                if (_showDebugLogs)
-                    Debug.Log($"[EnemySpawnPoint] '{gameObject.name}' is a vent — skipping initial spawn");
                 return;
             }
 
@@ -267,8 +261,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
                 // Auto-find player target for the spawned enemy
                 AssignPlayerTarget(_spawnedEnemy);
 
-                if (_showDebugLogs)
-                    Debug.Log($"[EnemySpawnPoint] Spawned '{_spawnedEnemy.name}' at '{gameObject.name}' (cached: {hasCachedResult})");
             }
 
             return _spawnedEnemy;
@@ -281,8 +273,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
         {
             if (string.IsNullOrEmpty(prefabName))
             {
-                if (_showDebugLogs)
-                    Debug.Log($"[EnemySpawnPoint] Cached result: nothing spawned at '{_spawnPointId}'");
                 return null;
             }
 
@@ -324,8 +314,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
             {
                 floorState.spawnPointResults[cacheKey] = spawnedPrefabName;
 
-                if (_showDebugLogs)
-                    Debug.Log($"[EnemySpawnPoint] Cached spawn result for '{_spawnPointId}': '{spawnedPrefabName}'");
             }
 
             return spawned;
@@ -505,8 +493,6 @@ namespace _Scripts.Systems.ProceduralGeneration.Enemies
                 else
                     obj.transform.position = snappedPos;
 
-                if (_showDebugLogs)
-                    Debug.Log($"[EnemySpawnPoint] Snapped '{obj.name}' to ground at {groundHit.point}");
             }
         }
 

@@ -42,13 +42,6 @@ namespace _Scripts.Systems.Inventory
 
         #endregion
 
-        #region Serialized Fields
-
-        [Header("Debug")]
-        [SerializeField] private bool _showDebugLogs;
-
-        #endregion
-
         #region Private Fields
 
         private const int SlotCount = 3;
@@ -56,7 +49,6 @@ namespace _Scripts.Systems.Inventory
         private EquipmentSlot[] _slots;
         private int _activeWeaponSlot; // 0 = primary, 1 = secondary
 
-        // Cached references
         private TacticalShooterPlayer _tacticalPlayer;
         private WeaponHitDetector _hitDetector;
         private MovementController _movementController;
@@ -67,11 +59,13 @@ namespace _Scripts.Systems.Inventory
         private InputAction _scrollWeapon;
         private InputAction _quickDrawSecondary;
 
-        // Switching state
         private bool _isSwitching;
 
         // Holster state — weapon is equipped but not drawn
         private bool _isHolstered;
+
+        // Terminal interaction mode — blocks all weapon actions
+        private bool _isInTerminalMode;
 
         #endregion
 
@@ -92,6 +86,9 @@ namespace _Scripts.Systems.Inventory
 
         /// <summary>Whether the active weapon is holstered (equipped but not drawn).</summary>
         public bool IsHolstered => _isHolstered;
+
+        /// <summary>Whether the player is in terminal interaction mode (weapons blocked).</summary>
+        public bool IsInTerminalMode => _isInTerminalMode;
 
         #endregion
 
@@ -220,8 +217,6 @@ namespace _Scripts.Systems.Inventory
                 // Check if inventory has room before we swap
                 if (!PlayerInventory.Instance.HasRoomFor(oldItem))
                 {
-                    if (_showDebugLogs)
-                        Debug.Log("[PlayerEquipment] Cannot equip — inventory full, no room for existing item.");
                     return false;
                 }
 
@@ -237,9 +232,6 @@ namespace _Scripts.Systems.Inventory
 
             // Instantiate the runtime equipment
             InstantiateEquipment(targetSlot);
-
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Equipped '{itemData.displayName}' to {targetSlot}");
 
             OnEquipmentChanged?.Invoke(targetSlot, slot);
 
@@ -265,9 +257,6 @@ namespace _Scripts.Systems.Inventory
 
             DestroyEquipment(slotType);
             slot.Clear();
-
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Unequipped '{removedItem.displayName}' from {slotType}");
 
             OnEquipmentChanged?.Invoke(slotType, slot);
 
@@ -375,6 +364,7 @@ namespace _Scripts.Systems.Inventory
         /// </summary>
         public void SwitchActiveWeapon(int slotIndex)
         {
+            if (_isInTerminalMode) return;
             if (slotIndex < 0 || slotIndex > 1) return;
             if (_slots[slotIndex].IsEmpty) return;
             if (_isSwitching) return;
@@ -434,6 +424,7 @@ namespace _Scripts.Systems.Inventory
         /// </summary>
         public void OnQuickDrawSecondary()
         {
+            if (_isInTerminalMode) return;
             if (_tacticalPlayer == null) return;
             if (_isSwitching) return;
             if (_isHolstered) return; // Can't quick draw while holstered
@@ -455,8 +446,6 @@ namespace _Scripts.Systems.Inventory
 
             _tacticalPlayer.QuickDrawByReference(secondaryWeapon);
 
-            if (_showDebugLogs)
-                Debug.Log("[PlayerEquipment] Quick draw secondary weapon toggled.");
         }
 
         /// <summary>
@@ -494,8 +483,6 @@ namespace _Scripts.Systems.Inventory
 
             OnActiveWeaponSlotChanged?.Invoke(_activeWeaponSlot);
 
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Drew weapon from slot {slotIndex}.");
         }
 
         private IEnumerator HolsterCoroutine()
@@ -510,8 +497,46 @@ namespace _Scripts.Systems.Inventory
             _isHolstered = true;
             _isSwitching = false;
 
-            if (_showDebugLogs)
-                Debug.Log("[PlayerEquipment] Weapon holstered — entered unarmed state.");
+        }
+
+        #endregion
+
+        #region Terminal Mode
+
+        /// <summary>
+        /// Enters terminal interaction mode — holsters the active weapon (if drawn),
+        /// blocks all weapon input (fire, aim, reload, switch, etc.).
+        /// Called by TerminalScreenInteraction when the player looks at the screen.
+        /// </summary>
+        public void EnterTerminalMode()
+        {
+            if (_isInTerminalMode) return;
+
+            _isInTerminalMode = true;
+
+            // Block weapon input on TacticalShooterPlayer
+            if (_tacticalPlayer != null)
+                _tacticalPlayer.BlockWeaponInput = true;
+
+            // Holster weapon if currently drawn
+            if (!_isHolstered && HasWeaponEquipped)
+                HolsterWeapon();
+        }
+
+        /// <summary>
+        /// Exits terminal interaction mode — unblocks weapon input so the player
+        /// can draw their weapon manually (1/2/scroll). Does NOT auto-draw to
+        /// avoid animation spam when the crosshair drifts off screen edges.
+        /// </summary>
+        public void ExitTerminalMode()
+        {
+            if (!_isInTerminalMode) return;
+
+            _isInTerminalMode = false;
+
+            // Unblock weapon input — player draws manually when ready
+            if (_tacticalPlayer != null)
+                _tacticalPlayer.BlockWeaponInput = false;
         }
 
         #endregion
@@ -570,8 +595,6 @@ namespace _Scripts.Systems.Inventory
                 }
             }
 
-            if (_showDebugLogs)
-                Debug.Log("[PlayerEquipment] Restored equipment from save data.");
         }
 
         #endregion
@@ -610,8 +633,6 @@ namespace _Scripts.Systems.Inventory
 
             slot.RuntimeInstance = weapon.GetWeaponRoot().gameObject;
 
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Instantiated weapon '{weaponData.displayName}'");
         }
 
         private void InstantiateSuitAddon(EquipmentSlot slot)
@@ -632,8 +653,6 @@ namespace _Scripts.Systems.Inventory
 
             // TODO: Apply noise multiplier when NoiseManager supports it
 
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Activated suit addon '{addonData.displayName}'");
         }
 
         private void DestroyEquipment(EquipmentSlotType slotType)
@@ -717,8 +736,6 @@ namespace _Scripts.Systems.Inventory
 
             OnActiveWeaponSlotChanged?.Invoke(_activeWeaponSlot);
 
-            if (_showDebugLogs)
-                Debug.Log($"[PlayerEquipment] Switched to weapon slot {targetSlot}");
         }
 
         private void ActivateWeaponSlot(int slotIndex)

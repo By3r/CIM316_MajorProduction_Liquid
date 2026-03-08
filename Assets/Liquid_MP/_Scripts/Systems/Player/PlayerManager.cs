@@ -1,4 +1,5 @@
 using _Scripts.Core.Managers;
+using _Scripts.Systems.Inventory;
 using _Scripts.Systems.ProceduralGeneration;
 using KINEMATION.TacticalShooterPack.Scripts.Player;
 using UnityEngine;
@@ -181,11 +182,36 @@ namespace _Scripts.Systems.Player
         {
             MovePlayerToSafeRoom();
             UnfreezePlayer();
+
+            // Fade the screen back in — triggered here (not in Elevator.Start())
+            // because PlayerManager persists across floor gen while Elevator gets destroyed.
+            if (ScreenFade.Instance.CurrentAlpha > 0f)
+            {
+                ScreenFade.Instance.FadeIn(0.5f);
+            }
+
+            // Restore inventory after floor generation
+            var fm = FloorStateManager.Instance;
+            if (fm != null && PlayerInventory.Instance != null)
+            {
+                InventorySaveData savedInventory = fm.GetSavedInventory();
+                if (savedInventory != null)
+                    PlayerInventory.Instance.RestoreFromSaveData(savedInventory);
+            }
+
+            // Restore equipment after floor generation
+            if (fm != null && PlayerEquipment.Instance != null)
+            {
+                EquipmentSaveData savedEquipment = fm.GetSavedEquipment();
+                if (savedEquipment != null)
+                    PlayerEquipment.Instance.RestoreFromSaveData(savedEquipment);
+            }
         }
 
         /// <summary>
-        /// Teleports the player to the geometric center of the safe elevator room after floor generation.
-        /// Uses BoundsChecker to get the actual world-space center of the room (not the prefab pivot).
+        /// Restores the player to their saved position after floor generation.
+        /// Falls back to the geometric center of the safe elevator room if no
+        /// position was saved (first spawn / no previous transition).
         /// </summary>
         private void MovePlayerToSafeRoom()
         {
@@ -203,36 +229,44 @@ namespace _Scripts.Systems.Player
                 }
             }
 
-            GameObject safeRoom = GameObject.Find("SafeElevatorRoom");
-            if (safeRoom == null)
-            {
-                Debug.LogWarning("[PlayerManager] Could not find SafeElevatorRoom. Player not moved.");
-                return;
-            }
-
-            // Use BoundsChecker to get the actual geometric center of the room,
-            // since the prefab pivot/origin is often at a corner or edge, not the center.
-            var boundsChecker = safeRoom.GetComponent<BoundsChecker>();
-            Vector3 roomCenter;
-            if (boundsChecker != null)
-            {
-                Bounds worldBounds = boundsChecker.GetBounds();
-                roomCenter = worldBounds.center;
-            }
-            else
-            {
-                Debug.LogWarning("[PlayerManager] SafeElevatorRoom has no BoundsChecker — falling back to transform.position.");
-                roomCenter = safeRoom.transform.position;
-            }
-
-            Vector3 targetPos = new Vector3(roomCenter.x, roomCenter.y + 1f, roomCenter.z);
-
             // Disable CharacterController to allow direct position change
             var cc = _currentPlayer.GetComponent<CharacterController>();
             bool ccWasEnabled = cc != null && cc.enabled;
             if (cc != null) cc.enabled = false;
 
-            _currentPlayer.transform.position = targetPos;
+            // Try to restore saved position from before the floor transition
+            var fm = FloorStateManager.Instance;
+            if (fm != null && fm.TryGetSavedPlayerPosition(out Vector3 savedPos, out Vector3 savedRot))
+            {
+                _currentPlayer.transform.position = savedPos;
+                _currentPlayer.transform.rotation = Quaternion.Euler(savedRot);
+                fm.ClearSavedPlayerPosition();
+            }
+            else
+            {
+                // Fallback: center the player in the safe room (first spawn)
+                GameObject safeRoom = GameObject.Find("SafeElevatorRoom");
+                if (safeRoom == null)
+                {
+                    Debug.LogWarning("[PlayerManager] Could not find SafeElevatorRoom. Player not moved.");
+                    if (cc != null && ccWasEnabled) cc.enabled = true;
+                    return;
+                }
+
+                var boundsChecker = safeRoom.GetComponent<BoundsChecker>();
+                Vector3 roomCenter;
+                if (boundsChecker != null)
+                {
+                    Bounds worldBounds = boundsChecker.GetBounds();
+                    roomCenter = worldBounds.center;
+                }
+                else
+                {
+                    roomCenter = safeRoom.transform.position;
+                }
+
+                _currentPlayer.transform.position = new Vector3(roomCenter.x, roomCenter.y + 1f, roomCenter.z);
+            }
 
             if (cc != null && ccWasEnabled) cc.enabled = true;
         }

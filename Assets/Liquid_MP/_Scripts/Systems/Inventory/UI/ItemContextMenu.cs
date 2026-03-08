@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -6,40 +6,33 @@ using TMPro;
 namespace _Scripts.Systems.Inventory.UI
 {
     /// <summary>
-    /// Windows-style right-click context menu for inventory items.
-    /// Shows options like Drop and Examine.
+    /// Dynamic right-click context menu for inventory items.
+    /// Buttons are spawned at runtime from a prefab based on the action list
+    /// provided by InventoryUI (which decides actions per item type).
     /// </summary>
     public class ItemContextMenu : MonoBehaviour
     {
-        #region Events
-
-        public event Action<int> OnDropRequested;
-        public event Action<int> OnExamineRequested;
-        public event Action<int> OnEquipRequested;
-
-        #endregion
-
         #region Serialized Fields
 
         [Header("UI References")]
         [SerializeField] private RectTransform _menuPanel;
-        [SerializeField] private Button _dropButton;
-        [SerializeField] private Button _examineButton;
-        [SerializeField] private Button _equipButton;
         [SerializeField] private CanvasGroup _canvasGroup;
 
-        [Header("Settings")]
-        [SerializeField] private float _fadeSpeed = 10f;
-        [SerializeField] private Vector2 _menuOffset = new Vector2(5f, -5f);
+        [Header("Dynamic Buttons")]
+        [Tooltip("Prefab with a Button + TMP child. Spawned once per action.")]
+        [SerializeField] private GameObject _buttonPrefab;
+        [Tooltip("Parent transform with a VerticalLayoutGroup for spawned buttons.")]
+        [SerializeField] private Transform _buttonContainer;
 
         #endregion
 
         #region Private Fields
 
         private int _currentSlotIndex = -1;
-        private bool _isOpen = false;
+        private bool _isOpen;
         private Canvas _parentCanvas;
         private RectTransform _canvasRectTransform;
+        private readonly List<GameObject> _spawnedButtons = new List<GameObject>();
 
         #endregion
 
@@ -68,47 +61,27 @@ namespace _Scripts.Systems.Inventory.UI
                 }
             }
 
-            SetupButtons();
             Hide();
         }
 
         private void Update()
         {
+            if (!_isOpen) return;
+
             // Close menu when clicking outside
-            if (_isOpen && Input.GetMouseButtonDown(0))
+            if (Input.GetMouseButtonDown(0))
             {
-                if (!RectTransformUtility.RectangleContainsScreenPoint(_menuPanel, Input.mousePosition, _parentCanvas.worldCamera))
+                if (!RectTransformUtility.RectangleContainsScreenPoint(
+                        _menuPanel, Input.mousePosition, _parentCanvas.worldCamera))
                 {
                     Hide();
                 }
             }
 
             // Close menu on escape
-            if (_isOpen && Input.GetKeyDown(KeyCode.Escape))
+            if (Input.GetKeyDown(KeyCode.Escape))
             {
                 Hide();
-            }
-        }
-
-        #endregion
-
-        #region Setup
-
-        private void SetupButtons()
-        {
-            if (_dropButton != null)
-            {
-                _dropButton.onClick.AddListener(OnDropClicked);
-            }
-
-            if (_examineButton != null)
-            {
-                _examineButton.onClick.AddListener(OnExamineClicked);
-            }
-
-            if (_equipButton != null)
-            {
-                _equipButton.onClick.AddListener(OnEquipClicked);
             }
         }
 
@@ -117,25 +90,28 @@ namespace _Scripts.Systems.Inventory.UI
         #region Public Methods
 
         /// <summary>
-        /// Shows the context menu at the specified screen position for the given slot.
+        /// Shows the context menu with the given actions at the specified screen position.
+        /// Each action becomes a button in the menu.
         /// </summary>
-        /// <param name="slotIndex">The inventory slot index this menu acts on.</param>
-        /// <param name="screenPosition">Screen-space position to place the menu.</param>
-        /// <param name="showEquip">If true, the Equip button is visible (for weapons/suit addons).</param>
-        public void Show(int slotIndex, Vector2 screenPosition, bool showEquip = false)
+        public void Show(int slotIndex, Vector2 screenPosition, List<ContextMenuAction> actions)
         {
             _currentSlotIndex = slotIndex;
 
-            // Show/hide the equip button based on item type
-            if (_equipButton != null)
-            {
-                _equipButton.gameObject.SetActive(showEquip);
-            }
+            // Activate before spawning so layout can calculate
+            _menuPanel.gameObject.SetActive(true);
 
-            // Position the menu at click location
+            ClearButtons();
+            SpawnButtons(actions);
+
+            // Force layout rebuild so ContentSizeFitter updates the panel size
+            // before we read it for clamping
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_menuPanel);
+
+            // Pivot top-left so the menu opens downward-right from the cursor (Windows-style)
+            _menuPanel.pivot = new Vector2(0f, 1f);
+
             PositionMenu(screenPosition);
 
-            _menuPanel.gameObject.SetActive(true);
             _isOpen = true;
 
             if (_canvasGroup != null)
@@ -147,7 +123,7 @@ namespace _Scripts.Systems.Inventory.UI
         }
 
         /// <summary>
-        /// Hides the context menu.
+        /// Hides the context menu and clears spawned buttons.
         /// </summary>
         public void Hide()
         {
@@ -162,72 +138,89 @@ namespace _Scripts.Systems.Inventory.UI
             }
 
             _menuPanel.gameObject.SetActive(false);
+            ClearButtons();
         }
 
         #endregion
 
         #region Private Methods
 
+        private void SpawnButtons(List<ContextMenuAction> actions)
+        {
+            if (_buttonPrefab == null || _buttonContainer == null || actions == null) return;
+
+            foreach (var action in actions)
+            {
+                GameObject go = Instantiate(_buttonPrefab, _buttonContainer);
+                go.SetActive(true);
+
+                // Set label text
+                var label = go.GetComponentInChildren<TextMeshProUGUI>();
+                if (label != null)
+                    label.text = action.Label;
+
+                // Wire click → callback + hide
+                var button = go.GetComponent<Button>();
+                if (button != null)
+                {
+                    var callback = action.Callback;
+                    int slot = _currentSlotIndex;
+                    button.onClick.AddListener(() =>
+                    {
+                        callback?.Invoke(slot);
+                        Hide();
+                    });
+                }
+
+                _spawnedButtons.Add(go);
+            }
+        }
+
+        private void ClearButtons()
+        {
+            foreach (var go in _spawnedButtons)
+            {
+                if (go != null) Destroy(go);
+            }
+            _spawnedButtons.Clear();
+        }
+
         private void PositionMenu(Vector2 screenPosition)
         {
             if (_menuPanel == null || _parentCanvas == null) return;
 
-            Vector2 localPoint;
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 _canvasRectTransform,
                 screenPosition,
                 _parentCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : _parentCanvas.worldCamera,
-                out localPoint
+                out Vector2 localPoint
             );
 
-            // Apply offset
-            localPoint += _menuOffset;
+            // With pivot (0, 1) the menu extends right (+x) and down (-y) from localPoint.
+            // Clamp so it stays within the canvas.
+            Vector2 menuSize = _menuPanel.rect.size;
+            Vector2 canvasSize = _canvasRectTransform.rect.size;
 
-            // Clamp to stay within canvas bounds
-            Vector2 menuSize = _menuPanel.sizeDelta;
-            Vector2 canvasSize = _canvasRectTransform.sizeDelta;
+            float halfW = canvasSize.x * 0.5f;
+            float halfH = canvasSize.y * 0.5f;
 
-            float halfCanvasWidth = canvasSize.x * 0.5f;
-            float halfCanvasHeight = canvasSize.y * 0.5f;
+            // Right edge: anchor.x + width must stay within +halfW
+            if (localPoint.x + menuSize.x > halfW)
+                localPoint.x = halfW - menuSize.x;
 
-            // Prevent menu from going off screen
-            if (localPoint.x + menuSize.x > halfCanvasWidth)
-            {
-                localPoint.x = halfCanvasWidth - menuSize.x;
-            }
-            if (localPoint.y - menuSize.y < -halfCanvasHeight)
-            {
-                localPoint.y = -halfCanvasHeight + menuSize.y;
-            }
+            // Left edge: anchor.x must stay within -halfW
+            if (localPoint.x < -halfW)
+                localPoint.x = -halfW;
+
+            // Top edge: anchor.y must stay within +halfH
+            if (localPoint.y > halfH)
+                localPoint.y = halfH;
+
+            // Bottom edge: anchor.y - height must stay within -halfH
+            if (localPoint.y - menuSize.y < -halfH)
+                localPoint.y = -halfH + menuSize.y;
 
             _menuPanel.anchoredPosition = localPoint;
-        }
-
-        private void OnDropClicked()
-        {
-            if (_currentSlotIndex >= 0)
-            {
-                OnDropRequested?.Invoke(_currentSlotIndex);
-            }
-            Hide();
-        }
-
-        private void OnExamineClicked()
-        {
-            if (_currentSlotIndex >= 0)
-            {
-                OnExamineRequested?.Invoke(_currentSlotIndex);
-            }
-            Hide();
-        }
-
-        private void OnEquipClicked()
-        {
-            if (_currentSlotIndex >= 0)
-            {
-                OnEquipRequested?.Invoke(_currentSlotIndex);
-            }
-            Hide();
         }
 
         #endregion

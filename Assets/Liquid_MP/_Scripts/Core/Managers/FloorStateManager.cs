@@ -136,10 +136,11 @@ namespace _Scripts.Core.Managers
         // Equipment persistence: player equipment snapshot between floor transitions
         private EquipmentSaveData _savedEquipment;
 
-        // PowerCellSlot state: persists across floor transitions so the power cell
-        // isn't lost when revisiting already-visited floors
-        private bool _powerCellSlotPowered;
-        private string _powerCellSlotItemId;
+        // Player position snapshot: saves the player's world position + rotation
+        // during floor transition so they don't get teleported to room center.
+        private Vector3 _transitionPlayerPosition;
+        private Vector3 _transitionPlayerRotation;
+        private bool _hasTransitionPlayerPosition;
 
         #endregion
 
@@ -211,7 +212,6 @@ namespace _Scripts.Core.Managers
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorStateManager] Initialized with world seed: {_worldSeed}");
             }
         }
 
@@ -268,7 +268,6 @@ namespace _Scripts.Core.Managers
             
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorStateManager] Generated seed {floorSeed} for floor {floorNumber}");
             }
 
             return floorSeed;
@@ -312,7 +311,6 @@ namespace _Scripts.Core.Managers
 
                 if (_showDebugLogs)
                 {
-                    Debug.Log($"[FloorStateManager] Created new floor state for floor {floorNumber} with seed {newState.generationSeed}");
                 }
             }
 
@@ -353,7 +351,6 @@ namespace _Scripts.Core.Managers
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorStateManager] Marked floor {_currentFloorNumber} as visited");
             }
         }
 
@@ -370,7 +367,6 @@ namespace _Scripts.Core.Managers
 
             if (_showDebugLogs)
             {
-                Debug.Log($"[FloorStateManager] Saved generation seed {workingSeed} for floor {_currentFloorNumber}");
             }
         }
 
@@ -392,7 +388,6 @@ namespace _Scripts.Core.Managers
 
             if (_showDebugLogs)
             {
-                Debug.Log("[FloorStateManager] Saved player inventory snapshot.");
             }
         }
 
@@ -413,7 +408,6 @@ namespace _Scripts.Core.Managers
 
             if (_showDebugLogs)
             {
-                Debug.Log("[FloorStateManager] Saved player equipment snapshot.");
             }
         }
 
@@ -426,36 +420,54 @@ namespace _Scripts.Core.Managers
         }
 
         /// <summary>
-        /// Saves the PowerCellSlot state so it persists across floor transitions.
+        /// Saves the player's world position and rotation before a floor transition.
+        /// PlayerManager restores this after generation instead of centering the player.
         /// </summary>
-        public void SavePowerCellSlotState(bool isPowered, string itemId)
+        public void SavePlayerPosition(Vector3 position, Vector3 rotationEuler)
         {
-            _powerCellSlotPowered = isPowered;
-            _powerCellSlotItemId = itemId;
+            _transitionPlayerPosition = position;
+            _transitionPlayerRotation = rotationEuler;
+            _hasTransitionPlayerPosition = true;
         }
 
         /// <summary>
-        /// Whether the PowerCellSlot had a power cell inserted before transition.
+        /// Tries to get the saved player position from the last floor transition.
+        /// Returns false if no position was saved (first spawn).
         /// </summary>
-        public bool PowerCellSlotWasPowered => _powerCellSlotPowered;
+        public bool TryGetSavedPlayerPosition(out Vector3 position, out Vector3 rotationEuler)
+        {
+            if (_hasTransitionPlayerPosition)
+            {
+                position = _transitionPlayerPosition;
+                rotationEuler = _transitionPlayerRotation;
+                return true;
+            }
+
+            position = Vector3.zero;
+            rotationEuler = Vector3.zero;
+            return false;
+        }
 
         /// <summary>
-        /// The itemId of the power cell that was in the slot, or null/empty if none.
+        /// Clears the saved transition position after it has been consumed.
         /// </summary>
-        public string PowerCellSlotItemId => _powerCellSlotItemId;
+        public void ClearSavedPlayerPosition()
+        {
+            _hasTransitionPlayerPosition = false;
+        }
 
         /// <summary>
-        /// Checks if a world position is inside the safe room (EntryRoom).
-        /// Uses the EntryRoom's BoundsChecker to determine if the position is within the room bounds.
+        /// Checks if a world position is inside the safe room (SafeElevatorRoom).
+        /// Uses the room's BoundsChecker to determine if the position is within bounds.
         /// Falls back to GameState.SafeRoom check, then to Elevator proximity.
         /// </summary>
         public static bool IsPositionInSafeRoom(Vector3 worldPosition)
         {
-            // Method 1: Check if position is inside EntryRoom bounds
-            GameObject entryRoom = GameObject.Find("EntryRoom");
-            if (entryRoom != null)
+            // Method 1: Check if position is inside SafeElevatorRoom bounds
+            GameObject safeRoom = GameObject.Find("SafeElevatorRoom");
+            if (safeRoom != null)
             {
-                BoundsChecker boundsChecker = entryRoom.GetComponent<BoundsChecker>();
+                BoundsChecker boundsChecker = safeRoom.GetComponent<BoundsChecker>();
                 if (boundsChecker != null)
                 {
                     Bounds roomBounds = boundsChecker.GetBounds();
@@ -505,7 +517,6 @@ namespace _Scripts.Core.Managers
 
                 if (_showDebugLogs)
                 {
-                    Debug.Log($"[FloorStateManager] Saved game state to {savePath}");
                 }
             }
             catch (Exception e)
@@ -528,7 +539,6 @@ namespace _Scripts.Core.Managers
                 {
                     if (_showDebugLogs)
                     {
-                        Debug.Log($"[FloorStateManager] No save file found at {savePath}");
                     }
                     return false;
                 }
@@ -556,7 +566,6 @@ namespace _Scripts.Core.Managers
 
                 if (_showDebugLogs)
                 {
-                    Debug.Log($"[FloorStateManager] Loaded game state from {savePath}. World seed: {_worldSeed}, Current floor: {_currentFloorNumber}");
                 }
 
                 return true;
@@ -591,7 +600,6 @@ namespace _Scripts.Core.Managers
                     File.Delete(savePath);
                     if (_showDebugLogs)
                     {
-                        Debug.Log($"[FloorStateManager] Deleted save file at {savePath}");
                     }
                 }
             }

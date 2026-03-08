@@ -15,8 +15,8 @@ MonoBehaviour:
   itemId: Item_CircuitBoard
   displayName: Circuit Board
   itemType: 0
-  icon: {fileID: 0}
-  worldPrefab: {fileID: 0}
+  icon: {fileID: 21300000, guid: 3205a5adc25d81346ad6f8496ddeed13, type: 3}
+  worldPrefab: {fileID: 4024299948544845184, guid: b36f7958af69c404d83f6e545e3c49ac, type: 3}
   description: Used for crafting or selling. No use on its own.
   isStackable: 1
-  maxStackSize: 10
+  maxStackSize: 4

@@ -292,10 +292,6 @@ namespace _Scripts.Editor.Tools
                     bonePathMap[bone] = path;
                 }
 
-                Debug.Log($"[Retargeter] Mapped {bonePathMap.Count} bones. Paths:");
-                foreach (var kvp in bonePathMap)
-                    Debug.Log($"  {kvp.Key} -> {kvp.Value}");
-
                 // Set up HumanPose handlers
                 var srcPoseHandler = new HumanPoseHandler(srcAnimator.avatar, srcInstance.transform);
                 var tgtPoseHandler = new HumanPoseHandler(tgtAnimator.avatar, tgtInstance.transform);
@@ -447,12 +443,10 @@ namespace _Scripts.Editor.Tools
             if (existing != null)
             {
                 EditorUtility.CopySerialized(outputClip, existing);
-                Debug.Log($"[Retargeter] Updated: {outputPath}");
             }
             else
             {
                 AssetDatabase.CreateAsset(outputClip, outputPath);
-                Debug.Log($"[Retargeter] Created: {outputPath}");
             }
         }
 

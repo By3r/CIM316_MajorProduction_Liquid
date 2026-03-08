@@ -49,10 +49,6 @@ namespace _Scripts.ProceduralGeneration.Editor
         private void DrawDatabaseHeader()
         {
             EditorGUILayout.LabelField("Room Prefab Database", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(
-                "Manages all room prefabs for procedural generation.\n" +
-                "Add room prefabs below, then click 'Refresh All Rooms' to update socket info.",
-                MessageType.Info);
         }
 
         private void DrawQuickActions(RoomPrefabDatabase database)
@@ -61,7 +57,6 @@ namespace _Scripts.ProceduralGeneration.Editor
 
             EditorGUILayout.BeginHorizontal();
 
-            // Refresh button
             GUI.backgroundColor = Color.cyan;
             if (GUILayout.Button("Refresh All Rooms", GUILayout.Height(30)))
             {
@@ -70,7 +65,6 @@ namespace _Scripts.ProceduralGeneration.Editor
             }
             GUI.backgroundColor = Color.white;
 
-            // Add room button
             GUI.backgroundColor = Color.green;
             if (GUILayout.Button("+ Add Room Entry", GUILayout.Height(30)))
             {
@@ -83,10 +77,9 @@ namespace _Scripts.ProceduralGeneration.Editor
 
             EditorGUILayout.Space(3);
 
-            // Validation status
             if (database.IsValid())
             {
-                EditorGUILayout.HelpBox("Database is valid and ready for generation! :)", MessageType.Info);
+                EditorGUILayout.HelpBox("Database valid.", MessageType.Info);
             }
             else
             {
@@ -96,7 +89,7 @@ namespace _Scripts.ProceduralGeneration.Editor
                 if (!database.HasAllSpecialRooms())
                     issues += "• Missing Safe Elevator Room\n";
 
-                EditorGUILayout.HelpBox($"DATABASE HAS ISSUES:\n{issues}", MessageType.Warning);
+                EditorGUILayout.HelpBox(issues.TrimEnd(), MessageType.Warning);
             }
         }
 
@@ -104,13 +97,7 @@ namespace _Scripts.ProceduralGeneration.Editor
         {
             EditorGUILayout.LabelField("Special Rooms", EditorStyles.boldLabel);
 
-            EditorGUILayout.HelpBox(
-                "The safe elevator room is spawned as the starting room for floor generation.\n" +
-                "Exit rooms are picked from the normal room list below.",
-                MessageType.Info);
-
-            EditorGUILayout.PropertyField(_safeElevatorProp, new GUIContent("Safe Elevator Room",
-                "Starting room for floor generation"));
+            EditorGUILayout.PropertyField(_safeElevatorProp, new GUIContent("Safe Elevator Room"));
         }
 
         private void DrawStatistics(RoomPrefabDatabase database)
@@ -178,7 +165,7 @@ namespace _Scripts.ProceduralGeneration.Editor
 
             if (_roomsProp.arraySize == 0)
             {
-                EditorGUILayout.HelpBox("No rooms in database. Click 'Add Room Entry' to start.", MessageType.Info);
+                EditorGUILayout.HelpBox("No rooms in database.", MessageType.Info);
                 return;
             }
 
@@ -211,15 +198,12 @@ namespace _Scripts.ProceduralGeneration.Editor
             SerializedProperty spawnWeightProp = entryProp.FindPropertyRelative("spawnWeight");
             SerializedProperty isEnabledProp = entryProp.FindPropertyRelative("isEnabled");
 
-            // Header bar
             EditorGUILayout.BeginVertical(EditorStyles.helpBox);
 
             EditorGUILayout.BeginHorizontal();
 
-            // Enable toggle
             isEnabledProp.boolValue = EditorGUILayout.Toggle(isEnabledProp.boolValue, GUILayout.Width(20));
 
-            // Room name or index
             string label = string.IsNullOrEmpty(displayNameProp.stringValue)
                 ? $"Room {index}"
                 : displayNameProp.stringValue;
@@ -228,7 +212,6 @@ namespace _Scripts.ProceduralGeneration.Editor
 
             GUILayout.FlexibleSpace();
 
-            // Remove button
             GUI.backgroundColor = Color.red;
             if (GUILayout.Button("✕", GUILayout.Width(25), GUILayout.Height(18)))
             {
@@ -245,12 +228,11 @@ namespace _Scripts.ProceduralGeneration.Editor
 
             EditorGUILayout.EndHorizontal();
 
-            // Room details
             EditorGUI.indentLevel++;
 
             EditorGUILayout.PropertyField(prefabProp, new GUIContent("Prefab"));
             EditorGUILayout.PropertyField(displayNameProp, new GUIContent("Display Name"));
-            EditorGUILayout.PropertyField(roomIDProp, new GUIContent("Room ID (Optional)"));
+            EditorGUILayout.PropertyField(roomIDProp, new GUIContent("Room ID"));
 
             EditorGUILayout.BeginHorizontal();
             EditorGUILayout.PropertyField(categoryProp, new GUIContent("Category"));
@@ -259,7 +241,6 @@ namespace _Scripts.ProceduralGeneration.Editor
 
             EditorGUILayout.PropertyField(spawnWeightProp, new GUIContent("Spawn Weight"));
 
-            // Socket info (read-only)
             EditorGUILayout.Space(3);
             GUI.enabled = false;
             EditorGUILayout.IntField("Socket Count", socketCountProp.intValue);

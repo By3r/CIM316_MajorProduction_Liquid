@@ -67,7 +67,6 @@ namespace _Scripts.Systems.Inventory
         {
             var floorManager = FloorStateManager.Instance;
 
-            // Current state
             _floorManagerInitialized = floorManager != null && floorManager.IsInitialized;
             _currentFloor = floorManager != null ? floorManager.CurrentFloorNumber : -1;
             _gameState = GameManager.Instance != null
@@ -84,7 +83,6 @@ namespace _Scripts.Systems.Inventory
 
             if (!_floorManagerInitialized) return;
 
-            // Saved inventory
             var savedInv = floorManager.GetSavedInventory();
             _hasSavedInventory = savedInv != null;
             _savedInventorySlots.Clear();
@@ -200,27 +198,12 @@ namespace _Scripts.Systems.Inventory
         {
             RefreshTrackerData();
 
-            Debug.Log("=== ITEM PERSISTENCE STATE ===");
-            Debug.Log($"Floor Manager Initialized: {_floorManagerInitialized}");
-            Debug.Log($"Current Floor: {_currentFloor}");
-            Debug.Log($"Game State: {_gameState}");
-            Debug.Log($"Has Saved Inventory: {_hasSavedInventory} (AR: {_savedARGrams}g)");
 
-            foreach (var s in _savedInventorySlots) Debug.Log(s);
 
-            Debug.Log($"--- Safe Room Items ({_safeRoomItemCount}) ---");
-            foreach (var s in _safeRoomItemDisplay) Debug.Log($"  {s}");
 
-            Debug.Log($"--- Current Floor Dropped Items ({_currentFloorDroppedCount}) ---");
-            foreach (var s in _currentFloorDroppedDisplay) Debug.Log($"  {s}");
 
-            Debug.Log($"--- All Floor Summary ---");
-            foreach (var s in _allFloorDroppedSummary) Debug.Log(s);
 
-            Debug.Log($"--- Scene Pickups ({_scenePickupCount} total, {_sceneDroppedPickupCount} dropped) ---");
-            foreach (var s in _scenePickupDisplay) Debug.Log($"  {s}");
 
-            Debug.Log("=== END ITEM PERSISTENCE STATE ===");
         }
     }
 }

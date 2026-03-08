@@ -3714,12 +3714,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Inventory.UI.ItemContextMenu
   _menuPanel: {fileID: 1873159846715917617}
-  _dropButton: {fileID: 5999739363359064286}
-  _examineButton: {fileID: 4513064776579239253}
-  _equipButton: {fileID: 6759181659525874142}
   _canvasGroup: {fileID: 3607812033815069072}
-  _fadeSpeed: 10
-  _menuOffset: {x: 50, y: -50}
+  _buttonPrefab: {fileID: 0}
+  _buttonContainer: {fileID: 0}
 --- !u!114 &8650775507732205505
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6559,8 +6556,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 6319432017643812301}
   m_HandleRect: {fileID: 1438475827493056611}
   m_Direction: 2
-  m_Value: 0
-  m_Size: 1
+  m_Value: 0.0000010899112
+  m_Size: 0
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:
@@ -10849,7 +10846,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.00000678735}
+  m_AnchoredPosition: {x: 0, y: 28.00003}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &6192174752595185560
@@ -11139,7 +11136,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.00000678735}
+  m_AnchoredPosition: {x: 0, y: 28.00003}
   m_SizeDelta: {x: 0, y: 300}
   m_Pivot: {x: 0, y: 1}
 --- !u!114 &1840766261773326172
@@ -14396,8 +14393,8 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 8759005114873813660}
   m_HandleRect: {fileID: 3022507776104772886}
   m_Direction: 2
-  m_Value: 0
-  m_Size: 1
+  m_Value: 0.0000010899112
+  m_Size: 0
   m_NumberOfSteps: 0
   m_OnValueChanged:
     m_PersistentCalls:

@@ -45,7 +45,6 @@ namespace _Scripts.Systems.DebugConsole
             ScanForAttributeCommands();
             _isInitialized = true;
 
-            Debug.Log($"[DebugCommandRegistry] Initialized with {_commands.Count} commands.");
         }
 
         #endregion

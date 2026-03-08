@@ -126,7 +126,6 @@ namespace _Scripts.Systems.Player
                     go.transform.SetParent(transform);
                     go.transform.localPosition = new Vector3(0f, -_characterController.height / 2f + _characterController.center.y, 0f);
                     _groundCheck = go.transform;
-                    Debug.Log($"[MovementController] Created GroundCheck at local Y={go.transform.localPosition.y:F2}");
                 }
             }
 
@@ -134,7 +133,6 @@ namespace _Scripts.Systems.Player
             if (_groundMask == 0)
             {
                 _groundMask = ~LayerMask.GetMask("Ignore Raycast");
-                Debug.Log("[MovementController] Ground mask was empty — set to ~IgnoreRaycast.");
             }
         }
 
@@ -219,7 +217,6 @@ namespace _Scripts.Systems.Player
             {
                 _velocity.y = Mathf.Sqrt(_jumpForce * -2f * _gravity);
                 _isJumping = true;
-                Debug.Log("[MovementController] ForceJump executed by NeutronicBoots.");
 
                 EmitJumpNoise();
             }
