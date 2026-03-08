@@ -376,12 +376,8 @@ public class LurkerEnemy : EnemyBase
 
     protected override void ReturnToPool()
     {
-        float cooldown = deathCooldown;
-        if (LastPerceivedLoudness < lowNoiseShortenThreshold)
-            cooldown *= Mathf.Max(0.01f, noiseCooldownMultiplier);
-
-        // TODO: return to spawn pool with cooldown instead of destroying
-        Destroy(gameObject, cooldown);
+        SpawnPoolManager.Instance?.NotifyLurkerDied(LastPerceivedLoudness);
+        gameObject.SetActive(false);
     }
 
     protected override string GetGizmoLabelText() => $"{name}\n{CurrentState}\n{currentGoalName}\n{currentActionName}";

@@ -343,6 +343,11 @@ public class CrawlerEnemy : EnemyBase
         }
     }
 
+    protected override void ReturnToPool()
+    {
+        SpawnPoolManager.Instance?.NotifyCrawlerDied(this);
+    }
+
     protected override void OnPathBlocked()
     {
         base.OnPathBlocked();

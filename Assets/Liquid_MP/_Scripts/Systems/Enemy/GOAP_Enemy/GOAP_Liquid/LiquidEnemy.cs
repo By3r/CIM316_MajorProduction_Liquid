@@ -18,9 +18,11 @@ public class LiquidEnemy : EnemyBase
     public const string WS_LUNGE_BLOCKED = "lungeBlocked";
     public const string WS_SHOULD_LEAVE = "shouldLeave";
     public const string WS_LEFT = "left";
+
     #endregion
 
-    #region Inspector.
+    #region Inspector
+
     [Header("Lunge Movement")]
     [Tooltip("Speed of each lunge in units/s.")]
     [SerializeField] private float lungeSpeed = 9f;
@@ -65,6 +67,7 @@ public class LiquidEnemy : EnemyBase
 
     #endregion
 
+    #region Runtime.
     private LungeAxis _currentAxis;
     private int _currentAxisSign;
     private bool _isLunging;
@@ -79,8 +82,9 @@ public class LiquidEnemy : EnemyBase
     private float _silenceStartTime = float.MaxValue;
 
     private enum LungeAxis { North, South, East, West }
+    #endregion
 
-    #region Public accessors.
+    #region Public accessors
     public bool HasPlayer => playerTarget != null;
     public float KillRange => killRange;
     public bool ShouldLeave => _shouldLeave;
@@ -155,7 +159,7 @@ public class LiquidEnemy : EnemyBase
 
     protected override void OnDamaged(float amount)
     {
-        // Liquid cannot be damaged. soo TakeDamage is ignored.
+        // Liquid cannot be damaged. TakeDamage is ignored.
         currentHealth = maxHealth;
     }
 
@@ -196,6 +200,7 @@ public class LiquidEnemy : EnemyBase
     #region Lunge physics.
     /// <summary>
     /// Selects the cardinal lunge axis that points closest to the player.
+    /// Never diagonal.
     /// </summary>
     public void ChooseLungeAxis()
     {
@@ -251,7 +256,7 @@ public class LiquidEnemy : EnemyBase
         // Move.
         characterController.Move(direction * (lungeSpeed * Time.deltaTime));
 
-        // Orient to lunge direction. (Liquid slides, no smoothing needed)
+        // Orient to lunge direction.
         if (direction.sqrMagnitude > 0.001f)
             transform.forward = direction;
 
@@ -311,7 +316,6 @@ public class LiquidEnemy : EnemyBase
         if (_lastNoiseLoudness >= moderateNoiseLoudness) return 1.2f;
         return 0.4f;
     }
-
     #endregion
 
     #region Debug.

@@ -469,6 +469,36 @@ public class SuffocatorEnemy : EnemyBase
     }
     #endregion
 
+    #region Pool wiring.
+
+    private SuffocatorPond _ownedByPond;
+
+    /// <summary>Called by SpawnPoolManager after spawning to wire up the pond.</summary>
+    public void SetPond(Transform pond)
+    {
+        pondTransform = pond;
+        _ownedByPond = pond != null ? pond.GetComponent<SuffocatorPond>() : null;
+    }
+
+    /// <summary>Called by SpawnPoolManager to wire up the extraction site.</summary>
+    public void SetExtractionSite(Transform site)
+    {
+        extractionSite = site;
+    }
+
+    /// <summary>Returns true if this Suffocator belongs to the given pond.</summary>
+    public bool OwnedByPond(SuffocatorPond pond) => _ownedByPond == pond;
+
+    /// <summary>Returns the pond this Suffocator belongs to.</summary>
+    public SuffocatorPond OwnedPond => _ownedByPond;
+
+    protected override void ReturnToPool()
+    {
+        SpawnPoolManager.Instance?.NotifySuffocatorDied(this, _ownedByPond);
+    }
+
+    #endregion
+
     #region Group helpers.
     private bool CanMergeWithPeer()
     {
