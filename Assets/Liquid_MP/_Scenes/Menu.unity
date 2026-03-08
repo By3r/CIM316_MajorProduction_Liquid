@@ -1179,6 +1179,7 @@ GameObject:
   m_Component:
   - component: {fileID: 170103365}
   - component: {fileID: 170103368}
+  - component: {fileID: 170103369}
   - component: {fileID: 170103367}
   - component: {fileID: 170103366}
   m_Layer: 5
@@ -1290,6 +1291,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 170103364}
   m_CullTransparentMesh: 1
+--- !u!114 &170103369
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 170103364}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db32214340c1ee047bd567c66bd8a8df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SettingsTabPointerHelper
 --- !u!1 &218275494
 GameObject:
   m_ObjectHideFlags: 0
@@ -7371,6 +7384,7 @@ GameObject:
   m_Component:
   - component: {fileID: 856858425}
   - component: {fileID: 856858428}
+  - component: {fileID: 856858429}
   - component: {fileID: 856858427}
   - component: {fileID: 856858426}
   m_Layer: 5
@@ -7482,6 +7496,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 856858424}
   m_CullTransparentMesh: 1
+--- !u!114 &856858429
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 856858424}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db32214340c1ee047bd567c66bd8a8df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SettingsTabPointerHelper
 --- !u!1 &860844646
 GameObject:
   m_ObjectHideFlags: 0
@@ -14545,6 +14571,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1782732106}
   - component: {fileID: 1782732109}
+  - component: {fileID: 1782732110}
   - component: {fileID: 1782732108}
   - component: {fileID: 1782732107}
   m_Layer: 5
@@ -14656,6 +14683,18 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1782732105}
   m_CullTransparentMesh: 1
+--- !u!114 &1782732110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1782732105}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db32214340c1ee047bd567c66bd8a8df, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SettingsTabPointerHelper
 --- !u!4 &1784648416 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: b6193050328b003478278d466c931821, type: 3}
