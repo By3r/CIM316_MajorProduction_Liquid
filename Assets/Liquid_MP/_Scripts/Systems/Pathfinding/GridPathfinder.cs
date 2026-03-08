@@ -120,7 +120,7 @@ public class GridPathfinder : MonoBehaviour
 
     /// <summary>Grid dimensions info for diagnostics.</summary>
     public string GridStatsString => _grid == null ? "Grid not built" : $"Grid: {_gridSizeX}x{_gridSizeY}x{_gridSizeZ} = {_gridSizeX * _gridSizeY * _gridSizeZ} nodes | Walkable: {_lastWalkableCount} | Unwalkable: {_lastUnwalkableCount}";
-       
+
     /// <summary>Whether the grid has been built.</summary>
     public bool IsGridBuilt => _grid != null;
 
@@ -342,6 +342,8 @@ public class GridPathfinder : MonoBehaviour
         if (!node.walkable)
             return false;
 
+        // Layer filter: if a layer mask is specified, reject nodes whose surface
+        // layer isn't in the mask (e.g. floor-only enemies ignore wall nodes).
         if (allowedLayers.value != 0)
         {
             if (node.surfaceLayer < 0)
@@ -350,11 +352,6 @@ public class GridPathfinder : MonoBehaviour
             int mask = 1 << node.surfaceLayer;
             if ((allowedLayers.value & mask) == 0)
                 return false;
-        }
-
-        if (allowedSurface != SurfaceType.Unknown && allowedSurface != SurfaceType.Floor && allowedSurface != SurfaceType.Wall && allowedSurface != SurfaceType.Ceiling)
-        {
-            return true;
         }
 
         if (allowedSurface != SurfaceType.Unknown)
@@ -509,6 +506,114 @@ public class GridPathfinder : MonoBehaviour
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// Finds the closest reachable node toward targetPos when a full path fails.
+    ///
+    /// Runs A* normally but instead of returning null on failure, it walks the
+    /// closed set to find the visited node closest (by straight-line distance)
+    /// to the target, then retraces to it.
+    ///
+    /// GOAP actions should use TryGoTo() on EnemyBase which calls this
+    /// automatically.
+    /// </summary>
+    public List<Vector3> FindPartialPath(Vector3 startPos, Vector3 targetPos, LayerMask allowedLayers)
+    {
+        return FindPartialPath(startPos, targetPos, allowedLayers, SurfaceType.Unknown);
+    }
+
+    public List<Vector3> FindPartialPath(Vector3 startPos, Vector3 targetPos, LayerMask allowedLayers, SurfaceType allowedSurface)
+    {
+        if (_grid == null) return null;
+
+        Node startNode = NodeFromWorldPoint(startPos);
+        Node targetNode = NodeFromWorldPoint(targetPos);
+
+        Node snappedStart = FindClosestWalkable(startNode, allowedLayers, allowedSurface);
+        Node snappedTarget = FindClosestWalkable(targetNode, allowedLayers, allowedSurface);
+
+        if (snappedStart == null) return null;
+
+        // If the target itself is reachable, just return the full path.
+        if (snappedTarget != null)
+        {
+            List<Vector3> fullPath = FindPath(startPos, targetPos, allowedLayers, allowedSurface);
+            if (fullPath != null && fullPath.Count > 0) return fullPath;
+        }
+
+        _searchId++;
+        if (_searchId == int.MaxValue) _searchId = 1;
+
+        var open = new MinHeap(128);
+        var closed = new HashSet<Node>();
+
+        PrepareNodeForSearch(snappedStart);
+        snappedStart.gCost = 0;
+        snappedStart.hCost = snappedTarget != null ? GetDistance(snappedStart, snappedTarget) : 0;
+        snappedStart.parent = null;
+
+        open.Push(snappedStart);
+
+        // Track best partial: the explored node closest to the target by world distance.
+        Node bestPartial = snappedStart;
+        float bestPartialDist = snappedTarget != null ? (snappedStart.worldPosition - snappedTarget.worldPosition).sqrMagnitude : float.MaxValue;
+
+        while (open.Count > 0)
+        {
+            Node current = open.Pop();
+            closed.Add(current);
+
+            if (snappedTarget != null)
+            {
+                float dist = (current.worldPosition - snappedTarget.worldPosition).sqrMagnitude;
+                if (dist < bestPartialDist)
+                {
+                    bestPartialDist = dist;
+                    bestPartial = current;
+                }
+            }
+
+            for (int dx = -1; dx <= 1; dx++)
+                for (int dy = -1; dy <= 1; dy++)
+                    for (int dz = -1; dz <= 1; dz++)
+                    {
+                        if (dx == 0 && dy == 0 && dz == 0) continue;
+
+                        int nx = current.gridX + dx;
+                        int ny = current.gridY + dy;
+                        int nz = current.gridZ + dz;
+
+                        if (nx < 0 || nx >= _gridSizeX ||
+                            ny < 0 || ny >= _gridSizeY ||
+                            nz < 0 || nz >= _gridSizeZ)
+                            continue;
+
+                        Node neighbour = _grid[nx, ny, nz];
+
+                        if (closed.Contains(neighbour)) continue;
+                        if (!IsNodeWalkableForFilter(neighbour, allowedLayers, allowedSurface)) continue;
+                        if (preventCornerCutting && IsCuttingCorner(current, dx, dy, dz, allowedLayers, allowedSurface)) continue;
+
+                        PrepareNodeForSearch(neighbour);
+
+                        int stepCost = GetStepCost(dx, dy, dz);
+                        int newCost = current.gCost + stepCost;
+
+                        if (newCost < neighbour.gCost)
+                        {
+                            neighbour.gCost = newCost;
+                            neighbour.hCost = snappedTarget != null ? GetDistance(neighbour, snappedTarget) : 0;
+                            neighbour.parent = current;
+                            open.PushOrUpdate(neighbour);
+                        }
+                    }
+        }
+
+        if (bestPartial == null || bestPartial == snappedStart)
+            return null;
+
+        return RetracePath(snappedStart, bestPartial);
     }
 
     private void PrepareNodeForSearch(Node node)
