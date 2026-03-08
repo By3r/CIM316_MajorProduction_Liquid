@@ -10,20 +10,35 @@ using UnityEngine.UI;
 // This script is responsible for managing the settings panel and the UI appearance and other settings logic that other scripts might benefit from.
 public class SettingsManager : MonoBehaviour
 {
+    [System.Serializable]
+    private class SettingsTabVisuals
+    {
+        [Header("Tab")]
+        public Button Button;
+        public GameObject Panel;
+
+        [Header("Visual States")]
+        public GameObject HighlightObject;
+        public GameObject PressedObjectA;
+        public GameObject PressedObjectB;
+    }
+
+    private enum SettingsCategory
+    {
+        Controls,
+        Graphics,
+        Audio
+    }
+
     [Header("References")]
     [SerializeField] private MainMenuManager mainMenuManager;
     [SerializeField] private MonoBehaviour[] scriptsToDisableWhileOpen;
     [SerializeField] private AudioMixer audioMixer;
 
-    [Header("Category Panels")]
-    [SerializeField] private GameObject controlsPanel;
-    [SerializeField] private GameObject graphicsPanel;
-    [SerializeField] private GameObject audioPanel;
-
-    [Header("Category Buttons")]
-    [SerializeField] private Button controlsCategoryButton;
-    [SerializeField] private Button graphicsCategoryButton;
-    [SerializeField] private Button audioCategoryButton;
+    [Header("Category Tabs")]
+    [SerializeField] private SettingsTabVisuals controlsTab;
+    [SerializeField] private SettingsTabVisuals graphicsTab;
+    [SerializeField] private SettingsTabVisuals audioTab;
 
     [Header("Controls")]
     [SerializeField] private Slider sensitivitySlider;
@@ -50,11 +65,13 @@ public class SettingsManager : MonoBehaviour
 
     private GameSettingsData temporarySettings;
     private Resolution[] availableResolutions;
+    private SettingsCategory currentCategory = SettingsCategory.Controls;
 
     private void Awake()
     {
         SetupListeners();
         CacheResolutions();
+        ForceTabVisualRefresh();
     }
 
     private void Start()
@@ -79,19 +96,20 @@ public class SettingsManager : MonoBehaviour
         SetScriptsEnabled(false);
         PopulateGraphicsDropdowns();
         UpdateUIFromSettings();
+
         ShowControlsCategory();
 
-        if (controlsCategoryButton != null)
+        if (controlsTab.Button != null)
         {
-            EventSystem.current?.SetSelectedGameObject(controlsCategoryButton.gameObject);
+            EventSystem.current?.SetSelectedGameObject(controlsTab.Button.gameObject);
         }
     }
 
     private void SetupListeners()
     {
-        if (controlsCategoryButton != null) controlsCategoryButton.onClick.AddListener(ShowControlsCategory);
-        if (graphicsCategoryButton != null) graphicsCategoryButton.onClick.AddListener(ShowGraphicsCategory);
-        if (audioCategoryButton != null) audioCategoryButton.onClick.AddListener(ShowAudioCategory);
+        if (controlsTab.Button != null) controlsTab.Button.onClick.AddListener(ShowControlsCategory);
+        if (graphicsTab.Button != null) graphicsTab.Button.onClick.AddListener(ShowGraphicsCategory);
+        if (audioTab.Button != null) audioTab.Button.onClick.AddListener(ShowAudioCategory);
 
         if (sensitivitySlider != null) sensitivitySlider.onValueChanged.AddListener(OnSensitivityChanged);
         if (invertYToggle != null) invertYToggle.onValueChanged.AddListener(OnInvertYChanged);
@@ -190,24 +208,55 @@ public class SettingsManager : MonoBehaviour
 
     private void ShowControlsCategory()
     {
-        SetCategoryVisibility(true, false, false);
+        currentCategory = SettingsCategory.Controls;
+        SetCategoryVisibility(SettingsCategory.Controls);
     }
 
     private void ShowGraphicsCategory()
     {
-        SetCategoryVisibility(false, true, false);
+        currentCategory = SettingsCategory.Graphics;
+        SetCategoryVisibility(SettingsCategory.Graphics);
     }
 
     private void ShowAudioCategory()
     {
-        SetCategoryVisibility(false, false, true);
+        currentCategory = SettingsCategory.Audio;
+        SetCategoryVisibility(SettingsCategory.Audio);
     }
 
-    private void SetCategoryVisibility(bool showControls, bool showGraphics, bool showAudio)
+    private void SetCategoryVisibility(SettingsCategory activeCategory)
     {
-        if (controlsPanel != null) controlsPanel.SetActive(showControls);
-        if (graphicsPanel != null) graphicsPanel.SetActive(showGraphics);
-        if (audioPanel != null) audioPanel.SetActive(showAudio);
+        SetTabState(controlsTab, activeCategory == SettingsCategory.Controls);
+        SetTabState(graphicsTab, activeCategory == SettingsCategory.Graphics);
+        SetTabState(audioTab, activeCategory == SettingsCategory.Audio);
+    }
+
+    private void SetTabState(SettingsTabVisuals tab, bool isActive)
+    {
+        if (tab.Panel != null)
+        {
+            tab.Panel.SetActive(isActive);
+        }
+
+        if (tab.HighlightObject != null)
+        {
+            tab.HighlightObject.SetActive(isActive);
+        }
+
+        if (tab.PressedObjectA != null)
+        {
+            tab.PressedObjectA.SetActive(isActive);
+        }
+
+        if (tab.PressedObjectB != null)
+        {
+            tab.PressedObjectB.SetActive(isActive);
+        }
+    }
+
+    private void ForceTabVisualRefresh()
+    {
+        SetCategoryVisibility(currentCategory);
     }
 
     private void OnSensitivityChanged(float value)

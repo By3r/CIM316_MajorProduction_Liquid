@@ -25,23 +25,23 @@ Material:
     m_TexEnvs: []
     m_Ints: []
     m_Floats:
-    - _Alpha: 0.045
-    - _AlphaFresnelBoost: 0.4
-    - _EmissionIntensity: 0.73
-    - _FlickerIntensity: 0.234
-    - _FlickerSpeed: 1.5
-    - _FresnelIntensity: 2
-    - _FresnelPower: 4.19
-    - _IridescenceScale: 2.53
-    - _IridescenceShift: 0.5
-    - _IridescenceSpeed: 0.16
-    - _ScanlineCount: 14
-    - _ScanlineIntensity: 0.8
-    - _ScanlineSpeed: 3.22
-    - _ScanlineWidth: 0.4
+    - _Alpha: 0
+    - _AlphaFresnelBoost: 0.5
+    - _EmissionIntensity: 1
+    - _FlickerIntensity: 0.199
+    - _FlickerSpeed: 0.58
+    - _FresnelIntensity: 1.65
+    - _FresnelPower: 2.57
+    - _IridescenceScale: 1.74
+    - _IridescenceShift: 0.066
+    - _IridescenceSpeed: 0.09
+    - _ScanlineCount: 24
+    - _ScanlineIntensity: 1.746
+    - _ScanlineSpeed: 1.65
+    - _ScanlineWidth: 0.453
     m_Colors:
     - _ColorA: {r: 0.9019608, g: 0, b: 0.2155001, a: 1}
     - _ColorB: {r: 0.95487785, g: 0.19999999, b: 1, a: 1}
-    - _ColorC: {r: 0.09803921, g: 1, b: 0.8650221, a: 1}
+    - _ColorC: {r: 1, g: 0.8703051, b: 0.09803921, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
