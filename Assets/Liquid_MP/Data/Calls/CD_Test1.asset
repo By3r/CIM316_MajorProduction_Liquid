@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 287509975e820b742878a3a87513a212, type: 3}
+  m_Name: CD_Test1
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Coms.CallDataSO
+  callerName: Northbridge
+  hologramPrefab: {fileID: 7541926534061095664, guid: 4c9d0dfaa0152444d88a2629aecaa826, type: 3}
+  ringtone: {fileID: 0}
+  gracePeriod: 5
+  lines:
+  - speakerName: ????
+    text: Hello
+    voiceClip: {fileID: 0}
+    fallbackDuration: 3
+  - speakerName: Northbridge
+    text: This is northbridge
+    voiceClip: {fileID: 0}
+    fallbackDuration: 3
+  - speakerName: Northbridge
+    text: Ok bye
+    voiceClip: {fileID: 0}
+    fallbackDuration: 3

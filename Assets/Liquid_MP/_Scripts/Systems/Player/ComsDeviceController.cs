@@ -1,3 +1,4 @@
+using _Scripts.Systems.Coms;
 using _Scripts.Systems.Inventory.ItemTypes;
 using KINEMATION.TacticalShooterPack.Scripts.Animation;
 using KINEMATION.TacticalShooterPack.Scripts.Player;
@@ -7,7 +8,8 @@ namespace _Scripts.Systems.Player
 {
     /// <summary>
     /// Manages the COMS device lifecycle: equip/unequip, activate/deactivate,
-    /// and left-hand IK blending. Lives on the Player GameObject.
+    /// left-hand IK blending, and call display (hologram, screen text, SFX).
+    /// Lives on the Player GameObject.
     /// PlayerEquipment calls EquipDevice/UnequipDevice when the COMS slot changes.
     /// PlayerEquipment calls ToggleComs when key 3 is pressed.
     ///
@@ -15,6 +17,13 @@ namespace _Scripts.Systems.Player
     /// computed inside the animation job from the head bone (after spine rotation) +
     /// head-relative offsets. This matches how weapons work: everything in one animation
     /// pass, zero C# relay lag. The device follows wherever IK puts the hand.
+    ///
+    /// CALL FLOW: ComsCallManager fires events → this controller reacts:
+    /// - Ringing: plays ring tone on AudioSource
+    /// - Answered: stops ring, plays answer SFX, spawns hologram, shows caller text
+    /// - Dialogue line changed: updates screen text, plays voice clip
+    /// - Call ended: plays hangup SFX, destroys hologram, resets screen to "NO SIGNAL"
+    /// - Auto-answer: pulling out COMS while ringing auto-answers the call.
     /// </summary>
     public class ComsDeviceController : MonoBehaviour
     {
@@ -32,6 +41,16 @@ namespace _Scripts.Systems.Player
         [Tooltip("Left hand rotation relative to the head bone.")]
         [SerializeField] private Vector3 _handRotationOffset = Vector3.zero;
 
+        [Header("Call SFX")]
+        [Tooltip("Default ringtone. Used if CallDataSO.ringtone is null.")]
+        [SerializeField] private AudioClip _defaultRingtone;
+
+        [Tooltip("Sound played when answering a call.")]
+        [SerializeField] private AudioClip _answerSfx;
+
+        [Tooltip("Sound played when a call ends.")]
+        [SerializeField] private AudioClip _hangUpSfx;
+
         #endregion
 
         #region Private Fields
@@ -44,6 +63,11 @@ namespace _Scripts.Systems.Player
         private bool _isEquipped;
         private bool _isActive;
         private float _comsLeftHandWeight;
+
+        // Call display
+        private AudioSource _audioSource;
+        private AudioSource _voiceSource; // Separate source for voice lines (so SFX don't cut voice)
+        private GameObject _activeHologram;
 
         #endregion
 
@@ -63,6 +87,22 @@ namespace _Scripts.Systems.Player
         {
             _tacticalPlayer = GetComponent<TacticalShooterPlayer>();
             _tacProceduralAnimation = GetComponent<TacticalProceduralAnimation>();
+
+            // Ensure we have AudioSources for SFX and voice
+            _audioSource = GetComponent<AudioSource>();
+            if (_audioSource == null)
+                _audioSource = gameObject.AddComponent<AudioSource>();
+
+            // Create a second AudioSource for voice clips so they don't interrupt SFX
+            _voiceSource = gameObject.AddComponent<AudioSource>();
+            _voiceSource.playOnAwake = false;
+            _voiceSource.spatialBlend = 0f; // 2D — voice comes from "the device" which is in the player's hand
+        }
+
+        private void OnEnable()
+        {
+            if (ComsCallManager.Instance != null)
+                SubscribeToCallEvents();
         }
 
         private void Start()
@@ -71,6 +111,15 @@ namespace _Scripts.Systems.Player
             {
                 _leftHandBone = _tacProceduralAnimation.bones.leftHand;
             }
+
+            // Subscribe again in Start in case manager wasn't ready in OnEnable
+            if (ComsCallManager.Instance != null)
+                SubscribeToCallEvents();
+        }
+
+        private void OnDisable()
+        {
+            UnsubscribeFromCallEvents();
         }
 
         private void Update()
@@ -170,6 +219,9 @@ namespace _Scripts.Systems.Player
                 }
             }
 
+            // Clean up any active call display
+            DestroyHologram();
+
             if (_comsInstance != null)
             {
                 Destroy(_comsInstance.gameObject);
@@ -195,7 +247,7 @@ namespace _Scripts.Systems.Player
 
         #endregion
 
-        #region Private Methods
+        #region Private Methods — Activation
 
         private void Activate()
         {
@@ -207,6 +259,16 @@ namespace _Scripts.Systems.Player
             // (no weapon drawn) which normally hides the first-person arms.
             if (_tacticalPlayer != null)
                 _tacticalPlayer.SetCharacterRenderersVisible(true);
+
+            // Set initial screen text
+            _comsInstance.SetScreenText(null); // "NO SIGNAL"
+
+            // Auto-answer: if there's an incoming call ringing, answer it now.
+            if (ComsCallManager.Instance != null &&
+                ComsCallManager.Instance.CurrentState == ComsCallState.Ringing)
+            {
+                ComsCallManager.Instance.AnswerCall();
+            }
         }
 
         private void Deactivate()
@@ -214,6 +276,159 @@ namespace _Scripts.Systems.Player
             _isActive = false;
             // _comsLeftHandWeight will blend down in Update()
             // Model hides when blend reaches 0
+
+            // Stop any playing ring/voice audio
+            StopRingtone();
+            _voiceSource.Stop();
+        }
+
+        #endregion
+
+        #region Call Event Handlers
+
+        private bool _isSubscribed;
+
+        private void SubscribeToCallEvents()
+        {
+            if (_isSubscribed) return;
+
+            var mgr = ComsCallManager.Instance;
+            if (mgr == null) return;
+
+            mgr.OnCallRinging += HandleCallRinging;
+            mgr.OnCallAnswered += HandleCallAnswered;
+            mgr.OnDialogueLineChanged += HandleDialogueLineChanged;
+            mgr.OnCallEnded += HandleCallEnded;
+            _isSubscribed = true;
+        }
+
+        private void UnsubscribeFromCallEvents()
+        {
+            if (!_isSubscribed) return;
+
+            var mgr = ComsCallManager.Instance;
+            if (mgr == null) return;
+
+            mgr.OnCallRinging -= HandleCallRinging;
+            mgr.OnCallAnswered -= HandleCallAnswered;
+            mgr.OnDialogueLineChanged -= HandleDialogueLineChanged;
+            mgr.OnCallEnded -= HandleCallEnded;
+            _isSubscribed = false;
+        }
+
+        private void HandleCallRinging(CallDataSO callData)
+        {
+            // Play ringtone (use call-specific or default)
+            AudioClip ring = callData.ringtone != null ? callData.ringtone : _defaultRingtone;
+            if (ring != null)
+            {
+                _audioSource.clip = ring;
+                _audioSource.loop = true;
+                _audioSource.Play();
+            }
+
+            // If COMS is already out, auto-answer immediately
+            if (_isActive && _comsInstance != null)
+            {
+                ComsCallManager.Instance.AnswerCall();
+            }
+        }
+
+        private void HandleCallAnswered()
+        {
+            // Stop ringtone
+            StopRingtone();
+
+            // Play answer SFX
+            if (_answerSfx != null)
+                _audioSource.PlayOneShot(_answerSfx);
+
+            // Spawn hologram
+            var callData = ComsCallManager.Instance.CurrentCall;
+            if (callData != null && callData.hologramPrefab != null && _comsInstance != null)
+            {
+                SpawnHologram(callData.hologramPrefab);
+            }
+
+            // Update screen text with caller name
+            if (_comsInstance != null && callData != null)
+            {
+                _comsInstance.SetScreenText($"INCOMING: {callData.callerName}");
+            }
+        }
+
+        private void HandleDialogueLineChanged(DialogueLine line, int index)
+        {
+            // Update screen text with dialogue
+            if (_comsInstance != null)
+            {
+                string displayText = !string.IsNullOrEmpty(line.speakerName)
+                    ? $"{line.speakerName}:\n{line.text}"
+                    : line.text;
+
+                _comsInstance.SetScreenText(displayText);
+            }
+
+            // Play voice clip
+            if (line.voiceClip != null)
+            {
+                _voiceSource.clip = line.voiceClip;
+                _voiceSource.Play();
+            }
+        }
+
+        private void HandleCallEnded()
+        {
+            // Stop any audio
+            StopRingtone();
+            _voiceSource.Stop();
+
+            // Play hangup SFX
+            if (_hangUpSfx != null)
+                _audioSource.PlayOneShot(_hangUpSfx);
+
+            // Destroy hologram
+            DestroyHologram();
+
+            // Reset screen text
+            if (_comsInstance != null)
+            {
+                _comsInstance.SetScreenText(null); // "NO SIGNAL"
+            }
+        }
+
+        #endregion
+
+        #region Private Helpers — Hologram & Audio
+
+        private void SpawnHologram(GameObject hologramPrefab)
+        {
+            DestroyHologram();
+
+            if (_comsInstance == null || _comsInstance.HologramMount == null) return;
+
+            _activeHologram = Instantiate(hologramPrefab, _comsInstance.HologramMount);
+            _activeHologram.transform.localPosition = Vector3.zero;
+            _activeHologram.transform.localRotation = Quaternion.identity;
+        }
+
+        private void DestroyHologram()
+        {
+            if (_activeHologram != null)
+            {
+                Destroy(_activeHologram);
+                _activeHologram = null;
+            }
+        }
+
+        private void StopRingtone()
+        {
+            if (_audioSource.isPlaying && _audioSource.loop)
+            {
+                _audioSource.Stop();
+                _audioSource.loop = false;
+                _audioSource.clip = null;
+            }
         }
 
         #endregion

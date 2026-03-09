@@ -555,6 +555,24 @@ MonoBehaviour:
   _leftHandBlendSpeed: 6
   _handPositionOffset: {x: 0.29, y: -0.35, z: -0.32}
   _handRotationOffset: {x: 0, y: 0, z: 90}
+  _defaultRingtone: {fileID: 0}
+  _answerSfx: {fileID: 0}
+  _hangUpSfx: {fileID: 0}
+--- !u!114 &17299995
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 17299979}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: df15e825172311a4da7f975ad019479c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Coms.ComsCallManager
+  _callRegistry:
+  - {fileID: 11400000, guid: 3540d9852550ced43b8130da5adfe6da, type: 2}
+  _noiseEmitInterval: 2
 --- !u!1 &27317789
 GameObject:
   m_ObjectHideFlags: 0
@@ -10282,6 +10300,7 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   showDebugLogs: 1
+  zoneTracker: {fileID: 0}
 --- !u!224 &1588292500 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3394127391126205747, guid: 461f97804c1242840a763777080c467d, type: 3}
@@ -13911,6 +13930,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 7911476115181372285, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
       insertIndex: -1
       addedObject: {fileID: 17299994}
+    - targetCorrespondingSourceObject: {fileID: 7911476115181372285, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 17299995}
     - targetCorrespondingSourceObject: {fileID: 3638438782455014724, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1910722712307635679}
