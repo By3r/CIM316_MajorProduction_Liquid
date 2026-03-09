@@ -4,7 +4,7 @@ using _Scripts.Systems.Player;
 using Liquid.Audio;
 using UnityEngine;
 
-namespace _Scripts.Systems.Coms
+namespace Liquid_MP._Scripts.Systems.Coms
 {
     /// <summary>
     /// Call states for the COMS device.
@@ -49,11 +49,12 @@ namespace _Scripts.Systems.Coms
         [Header("Debug")]
         [Tooltip("All available call data assets for debug console discovery. " +
                  "Populate manually or use Resources.LoadAll at runtime.")]
-        [SerializeField] private CallDataSO[] _callRegistry;
+        [SerializeField]
+        private CallDataSO[] _callRegistry;
 
         [Header("Noise")]
-        [Tooltip("How often (seconds) the device emits noise while ringing after the grace period.")]
-        [SerializeField] private float _noiseEmitInterval = 2f;
+        [Tooltip("How often (seconds) the device emits noise while ringing after the grace period.")] [SerializeField]
+        private float _noiseEmitInterval = 2f;
 
         #endregion
 

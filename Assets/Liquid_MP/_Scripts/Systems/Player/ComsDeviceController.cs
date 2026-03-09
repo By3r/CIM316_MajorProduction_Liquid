@@ -1,7 +1,7 @@
-using _Scripts.Systems.Coms;
 using _Scripts.Systems.Inventory.ItemTypes;
 using KINEMATION.TacticalShooterPack.Scripts.Animation;
 using KINEMATION.TacticalShooterPack.Scripts.Player;
+using Liquid_MP._Scripts.Systems.Coms;
 using UnityEngine;
 
 namespace _Scripts.Systems.Player

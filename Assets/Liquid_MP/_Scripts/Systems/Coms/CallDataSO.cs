@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace _Scripts.Systems.Coms
+namespace Liquid_MP._Scripts.Systems.Coms
 {
     /// <summary>
     /// A single line of dialogue during a COMS call.
@@ -12,8 +12,7 @@ namespace _Scripts.Systems.Coms
         [Tooltip("Who is speaking this line (e.g., 'The Lieutenant').")]
         public string speakerName;
 
-        [TextArea(1, 4)]
-        [Tooltip("Subtitle text displayed on the COMS device screen.")]
+        [TextArea(1, 4)] [Tooltip("Subtitle text displayed on the COMS device screen.")]
         public string text;
 
         [Tooltip("Voice audio for this line. Duration determines how long the line stays on screen.")]

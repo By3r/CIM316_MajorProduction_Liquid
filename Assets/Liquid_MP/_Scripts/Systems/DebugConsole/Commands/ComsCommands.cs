@@ -1,9 +1,10 @@
 using System.Text;
-using _Scripts.Systems.Coms;
+using _Scripts.Systems.DebugConsole;
 using _Scripts.Systems.Player;
+using Liquid_MP._Scripts.Systems.Coms;
 using UnityEngine;
 
-namespace _Scripts.Systems.DebugConsole.Commands
+namespace Liquid_MP._Scripts.Systems.DebugConsole.Commands
 {
     /// <summary>
     /// Debug console commands for the COMS device and call system.
@@ -52,7 +53,8 @@ namespace _Scripts.Systems.DebugConsole.Commands
                 }
                 else
                 {
-                    sb.AppendLine("  Registry: <color=yellow>empty (assign CallDataSO assets to ComsCallManager)</color>");
+                    sb.AppendLine(
+                        "  Registry: <color=yellow>empty (assign CallDataSO assets to ComsCallManager)</color>");
                 }
             }
 
@@ -68,7 +70,8 @@ namespace _Scripts.Systems.DebugConsole.Commands
                 return "<color=red>ComsCallManager not found in scene.</color>";
 
             if (mgr.CallRegistry == null || mgr.CallRegistry.Length == 0)
-                return "<color=yellow>No calls in registry. Assign CallDataSO assets to ComsCallManager._callRegistry.</color>";
+                return
+                    "<color=yellow>No calls in registry. Assign CallDataSO assets to ComsCallManager._callRegistry.</color>";
 
             // "coms call list" — show available calls
             if (args.Length == 0 || (args.Length == 1 && args[0].ToLower() == "list"))
@@ -81,6 +84,7 @@ namespace _Scripts.Systems.DebugConsole.Commands
                     if (call == null) continue;
                     sb.AppendLine($"  [{i}] {call.callerName} — {call.lines?.Length ?? 0} line(s) — \"{call.name}\"");
                 }
+
                 sb.AppendLine("\nUsage: coms call <index> or coms call <name>");
                 return sb.ToString();
             }
