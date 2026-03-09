@@ -4,9 +4,6 @@ using UnityEngine;
 
 namespace _Scripts.Tutorial
 {
-    /// <summary>
-    /// A single line of tutorial narration.
-    /// </summary>
     [Serializable]
     public sealed class NarrativeBeat
     {
@@ -17,15 +14,21 @@ namespace _Scripts.Tutorial
         [Tooltip("The text to display.")]
         public string text;
 
-        [Tooltip("0 = wait for player input (Space / Enter). " +
-                 ">0 = auto-advance after this many seconds.")]
+        [Tooltip("0 = wait for player input (Space / Enter). >0 = auto-advance after this many seconds.")]
         [Min(0f)]
         public float autoAdvanceDelay = 0f;
 
         [Tooltip("Play this audio clip when this beat is shown. Leave null to skip.")]
         public AudioClip voiceClip;
+
+        [Tooltip("If true, the Lieutenant hologram stays visible even when this beat's speaker is not Lieutenant. " +
+                 "Use this for Player or Narrator lines that happen while Northbridge is still on screen.")]
+        public bool keepHologramActive = false;
     }
 
+    /// <summary>
+    /// An ordered sequence of NarrativeBeat entries that TutorialPresenter plays through.
+    /// </summary>
     [CreateAssetMenu(menuName = "Liquid/Tutorial/Narrative Sequence", fileName = "Narrative_")]
     public sealed class TutorialNarrativeAsset : ScriptableObject
     {

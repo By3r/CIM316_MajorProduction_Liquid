@@ -10,8 +10,12 @@ namespace _Scripts.Tutorial
     /// </summary>
     public sealed class TutorialPresenter : MonoBehaviour
     {
-        #region Events.
-        public event Action<string, string, TutorialSpeakerKind> OnBeatPresented;
+        #region Events
+
+        /// <summary>
+        /// Fired each time a beat becomes active.
+        /// </summary>
+        public event Action<string, NarrativeBeat> OnBeatPresented;
 
         /// <summary>Fired when the last beat has been advanced past.</summary>
         public event Action OnSequenceEnded;
@@ -35,10 +39,11 @@ namespace _Scripts.Tutorial
 
         #endregion
 
-        #region Public Functions.
+        #region Public API
+
         /// <summary>
         /// Starts playing the given narrative asset.
-        /// Reads the player name from saveSlotIndex — pass -1 to use the fallback "Agent".
+        /// Pass saveSlotIndex = -1 to use the "Agent" fallback name.
         /// </summary>
         public void Begin(TutorialNarrativeAsset asset, int saveSlotIndex = -1)
         {
@@ -59,25 +64,21 @@ namespace _Scripts.Tutorial
         }
 
         /// <summary>
-        /// Advances to the next beat. Call this on player input (Space / Enter).
-        /// Does nothing if the current beat is auto-advancing or the sequence has ended.
+        /// Advances to the next beat on player input.
+        /// If an auto-advance coroutine is pending it is cancelled and the beat
+        /// advances immediately instead.
         /// </summary>
         public void Advance()
         {
             if (!_isRunning) return;
 
-            // If an auto-advance is pending, cancel it and advance immediately.
-            if (_autoAdvanceRoutine != null)
-            {
-                StopAutoAdvance();
-            }
-
+            StopAutoAdvance();
             MoveToNextBeat();
         }
 
         /// <summary>
         /// Skips to the end of the sequence immediately and fires OnSequenceEnded.
-        /// Used by the debug L key shortcut in TutorialManager.
+        /// Called by the debug L key in TutorialManager.
         /// </summary>
         public void ForceComplete()
         {
@@ -89,7 +90,8 @@ namespace _Scripts.Tutorial
 
         #endregion
 
-        #region Internals.
+        #region Internals
+
         private void PresentCurrentBeat()
         {
             if (_beatIndex >= _asset.Count)
@@ -101,9 +103,8 @@ namespace _Scripts.Tutorial
             NarrativeBeat beat = _asset.Beats[_beatIndex];
             string speakerName = ResolveSpeakerName(beat.speaker);
 
-            OnBeatPresented?.Invoke(speakerName, beat.text, beat.speaker);
+            OnBeatPresented?.Invoke(speakerName, beat);
 
-            // Auto-advance if delay is set.
             if (beat.autoAdvanceDelay > 0f)
                 _autoAdvanceRoutine = StartCoroutine(AutoAdvanceAfter(beat.autoAdvanceDelay));
         }
@@ -165,6 +166,7 @@ namespace _Scripts.Tutorial
 
             return save.PlayerName;
         }
+
         #endregion
     }
 }

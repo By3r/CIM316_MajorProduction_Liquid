@@ -30,8 +30,7 @@ namespace _Scripts.Tutorial
     /// </summary>
     public sealed class TutorialManager : MonoBehaviour
     {
-        #region Variables
-
+        #region Variables.
         [Header("Presenter / UI")]
         [SerializeField] private TutorialPresenter presenter;
         [SerializeField] private TutorialUI tutorialUI;

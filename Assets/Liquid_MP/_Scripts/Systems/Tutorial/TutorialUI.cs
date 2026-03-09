@@ -5,6 +5,7 @@ namespace _Scripts.Tutorial
 {
     /// <summary>
     /// Drives all tutorial UI in response to TutorialPresenter events.
+    /// Contains zero game logic — it only shows and hides things.
     /// </summary>
     public sealed class TutorialUI : MonoBehaviour
     {
@@ -19,13 +20,14 @@ namespace _Scripts.Tutorial
         [SerializeField] private TextMeshProUGUI dialogueText;
 
         [Header("Lieutenant Hologram")]
-        [Tooltip("Root GameObject of the Lieutenant hologram. Enabled only during Lieutenant beats.")]
+        [Tooltip("Root GameObject of the Lieutenant hologram, positioned left of screen.")]
         [SerializeField] private GameObject lieutenantRoot;
 
         [Header("Advance Prompt")]
-        [Tooltip("'Press Space to continue' hint. Hidden when a beat auto-advances.")]
+        [Tooltip("'Press Space to continue' hint.")]
         [SerializeField] private GameObject advancePrompt;
 
+        private bool _hologramPinnedActive;
         #endregion
 
         private void Awake()
@@ -57,13 +59,13 @@ namespace _Scripts.Tutorial
             }
         }
 
-        #region Handlers
 
-        private void HandleBeatPresented(string speakerName, string text, TutorialSpeakerKind kind)
+        #region Handlers.
+        private void HandleBeatPresented(string speakerName, NarrativeBeat beat)
         {
             SetSpeechVisible(true);
 
-            bool showName = kind != TutorialSpeakerKind.Narrator;
+            bool showName = beat.speaker != TutorialSpeakerKind.Narrator;
             if (speakerNameText != null)
             {
                 speakerNameText.gameObject.SetActive(showName);
@@ -71,25 +73,24 @@ namespace _Scripts.Tutorial
             }
 
             if (dialogueText != null)
-                dialogueText.text = text;
+                dialogueText.text = beat.text;
 
-            SetLieutenantVisible(kind == TutorialSpeakerKind.Lieutenant);
-
-            bool isAutoAdvance = false;
-            if (presenter != null)
-            {
-                int idx = presenter.CurrentBeatIndex;
-                isAutoAdvance = false; 
-            }
+            bool showHologram = beat.speaker == TutorialSpeakerKind.Lieutenant || beat.keepHologramActive;
+            _hologramPinnedActive = beat.keepHologramActive;
+            SetLieutenantVisible(showHologram);
 
             if (advancePrompt != null)
-                advancePrompt.SetActive(showName || kind == TutorialSpeakerKind.Narrator);
+                advancePrompt.SetActive(beat.autoAdvanceDelay <= 0f);
         }
 
         private void HandleSequenceEnded()
         {
             SetSpeechVisible(false);
-            SetLieutenantVisible(false);
+
+            if (!_hologramPinnedActive)
+                SetLieutenantVisible(false);
+
+            _hologramPinnedActive = false;
         }
 
         #endregion
@@ -104,6 +105,12 @@ namespace _Scripts.Tutorial
         private void SetLieutenantVisible(bool show)
         {
             if (lieutenantRoot != null) lieutenantRoot.SetActive(show);
+        }
+
+        public void SetLieutenantVisiblePublic(bool show)
+        {
+            _hologramPinnedActive = show;
+            SetLieutenantVisible(show);
         }
 
         public void SetAdvancePromptVisible(bool show)
