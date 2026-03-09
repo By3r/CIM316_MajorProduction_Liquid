@@ -1,5 +1,6 @@
 using _Scripts.Core.Managers;
 using _Scripts.Core.Persistence;
+using _Scripts.Tutorial;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -8,6 +9,7 @@ namespace _Scripts.Core.SceneFlow
     /// <summary>
     /// Global singleton responsible for scene transitions.
     /// ++ Decides whether a loaded save should go to the Tutorial or Game scene.
+    /// ++ Sets ActiveSaveSlotBridge.ActiveSlot so the tutorial knows which save to read.
     /// </summary>
     public class SceneTransitionManager : MonoBehaviour
     {
@@ -45,6 +47,7 @@ namespace _Scripts.Core.SceneFlow
                 GameManager.Instance.SetGameState(GameState.Loading);
             }
 
+            ActiveSaveSlotBridge.Clear();
             SceneManager.LoadScene(menuSceneName);
 
             if (GameManager.Instance != null)
@@ -64,6 +67,9 @@ namespace _Scripts.Core.SceneFlow
 
             GameSaveData data = new GameSaveData(playerName, false, StoryStage.Tutorial);
             SaveSystem.SaveGame(data, slotIndex);
+
+            ActiveSaveSlotBridge.Set(slotIndex);
+
             LoadTutorialScene();
         }
 
@@ -89,6 +95,8 @@ namespace _Scripts.Core.SceneFlow
                 Debug.LogWarning($"Continue requested but slot {slotIndex} could not be loaded.");
                 return;
             }
+
+            ActiveSaveSlotBridge.Set(slotIndex);
 
             if (data.HasCompletedTutorial)
             {

@@ -467,8 +467,6 @@ public class SpawnPoolManager : MonoBehaviour
         return result;
     }
 
-    #endregion
-
     #region Spawn point selection
 
     private List<SpawnPoint> GetAvailablePoints(EnemyType type, int maxCount)
