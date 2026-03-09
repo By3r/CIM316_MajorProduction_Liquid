@@ -859,17 +859,18 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
 
         #region Liquid: COMS Device Left-Hand IK
 
-        private Vector3 _comsLeftHandTargetPos;
-        private Quaternion _comsLeftHandTargetRot = Quaternion.identity;
+        private Vector3 _comsHandOffsetPos;
+        private Quaternion _comsHandOffsetRot = Quaternion.identity;
 
         /// <summary>
-        /// Sets the world-space position and rotation for the COMS left-hand IK target.
-        /// Called every frame by ComsDeviceController when COMS is active.
+        /// Sets the head-relative position and rotation offsets for the COMS left-hand IK target.
+        /// These offsets are applied to the head bone (after spine rotation) inside the animation
+        /// job to compute the world-space IK target — zero lag because everything is in one pass.
         /// </summary>
-        public void SetComsLeftHandTarget(Vector3 worldPos, Quaternion worldRot)
+        public void SetComsHandOffset(Vector3 offsetPos, Quaternion offsetRot)
         {
-            _comsLeftHandTargetPos = worldPos;
-            _comsLeftHandTargetRot = worldRot;
+            _comsHandOffsetPos = offsetPos;
+            _comsHandOffsetRot = offsetRot;
         }
 
         /// <summary>
@@ -881,7 +882,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             if (_tacProceduralAnimation != null)
             {
                 _tacProceduralAnimation.SetComsLeftHand(weight,
-                    _comsLeftHandTargetPos, _comsLeftHandTargetRot);
+                    _comsHandOffsetPos, _comsHandOffsetRot);
             }
         }
 

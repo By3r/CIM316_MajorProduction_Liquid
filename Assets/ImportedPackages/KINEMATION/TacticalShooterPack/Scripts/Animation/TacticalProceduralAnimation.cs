@@ -73,10 +73,10 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
         private float _armedWeight = 1f;
         private const float ArmedTransitionSpeed = 6f;
 
-        // Liquid: COMS device left-hand IK override.
+        // Liquid: COMS device left-hand IK override (head-relative offsets).
         private float _comsLeftHandWeight;
-        private Vector3 _comsLeftHandTargetPos;
-        private Quaternion _comsLeftHandTargetRot = Quaternion.identity;
+        private Vector3 _comsHandOffsetPos;
+        private Quaternion _comsHandOffsetRot = Quaternion.identity;
 
         public void UpdateRightHandPose(KTransform rightHandPose)
         {
@@ -114,12 +114,13 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
 
         /// <summary>
         /// Sets the COMS device left-hand IK data. Called by TacticalShooterPlayer.
+        /// Offsets are head-bone-relative — the animation job computes the world-space IK target.
         /// </summary>
-        public void SetComsLeftHand(float weight, Vector3 targetPos, Quaternion targetRot)
+        public void SetComsLeftHand(float weight, Vector3 offsetPos, Quaternion offsetRot)
         {
             _comsLeftHandWeight = weight;
-            _comsLeftHandTargetPos = targetPos;
-            _comsLeftHandTargetRot = targetRot;
+            _comsHandOffsetPos = offsetPos;
+            _comsHandOffsetRot = offsetRot;
         }
 
         public void UpdateAnimationSettings(WeaponAnimationData newSettings)
@@ -188,10 +189,10 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
             _armedWeight = Mathf.MoveTowards(_armedWeight, targetArmedWeight, Time.deltaTime * ArmedTransitionSpeed);
             _job.armedWeight = _armedWeight;
 
-            // COMS device left-hand IK override
+            // COMS device left-hand IK override (head-relative offsets)
             _job.comsLeftHandWeight = _comsLeftHandWeight;
-            _job.comsLeftHandTargetPos = _comsLeftHandTargetPos;
-            _job.comsLeftHandTargetRot = _comsLeftHandTargetRot;
+            _job.comsHandOffsetPos = _comsHandOffsetPos;
+            _job.comsHandOffsetRot = _comsHandOffsetRot;
 
             _job.UpdateJob(_playable);
             _playable.SetJobData(_job);

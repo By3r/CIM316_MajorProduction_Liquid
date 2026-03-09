@@ -553,8 +553,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Player.ComsDeviceController
   _leftHandBlendSpeed: 6
-  _comsPositionOffset: {x: -0.24, y: -0.2, z: 0.3}
-  _comsRotationOffset: {x: 0, y: 0, z: 0}
+  _handPositionOffset: {x: 0.29, y: -0.35, z: -0.32}
+  _handRotationOffset: {x: 0, y: 0, z: 90}
 --- !u!1 &27317789
 GameObject:
   m_ObjectHideFlags: 0

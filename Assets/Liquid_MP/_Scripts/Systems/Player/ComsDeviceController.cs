@@ -10,21 +10,27 @@ namespace _Scripts.Systems.Player
     /// and left-hand IK blending. Lives on the Player GameObject.
     /// PlayerEquipment calls EquipDevice/UnequipDevice when the COMS slot changes.
     /// PlayerEquipment calls ToggleComs when key 3 is pressed.
+    ///
+    /// KEY DESIGN: The COMS device is parented to the left hand bone. IK target is
+    /// computed inside the animation job from the head bone (after spine rotation) +
+    /// head-relative offsets. This matches how weapons work: everything in one animation
+    /// pass, zero C# relay lag. The device follows wherever IK puts the hand.
     /// </summary>
     public class ComsDeviceController : MonoBehaviour
     {
         #region Serialized Fields
 
         [Header("Animation")]
-        [Tooltip("Speed for blending the left-hand IK weight (matches armedWeight speed).")]
-        [SerializeField] private float _leftHandBlendSpeed = 6f;
+        [Tooltip("Speed for blending the left-hand IK weight.")]
+        [SerializeField] private float _leftHandBlendSpeed = 25f;
 
-        [Header("COMS Position (camera-relative offset)")]
-        [Tooltip("Local position offset from the camera bone. Negative X = left, negative Y = down, positive Z = forward.")]
-        [SerializeField] private Vector3 _comsPositionOffset = new Vector3(-0.15f, -0.2f, 0.25f);
+        [Header("Left Hand IK Target (head-bone-relative)")]
+        [Tooltip("Where the left hand should be relative to the head bone (after spine rotation). " +
+                 "Negative X = left, negative Y = down, positive Z = forward.")]
+        [SerializeField] private Vector3 _handPositionOffset = new Vector3(-0.15f, -0.2f, 0.25f);
 
-        [Tooltip("Local rotation offset from the camera bone.")]
-        [SerializeField] private Vector3 _comsRotationOffset = Vector3.zero;
+        [Tooltip("Left hand rotation relative to the head bone.")]
+        [SerializeField] private Vector3 _handRotationOffset = Vector3.zero;
 
         #endregion
 
@@ -32,7 +38,7 @@ namespace _Scripts.Systems.Player
 
         private TacticalShooterPlayer _tacticalPlayer;
         private TacticalProceduralAnimation _tacProceduralAnimation;
-        private Transform _cameraBone;
+        private Transform _leftHandBone;
 
         private ComsDevice _comsInstance;
         private bool _isEquipped;
@@ -61,10 +67,10 @@ namespace _Scripts.Systems.Player
 
         private void Start()
         {
-            // Parent COMS to the camera bone so it follows the player's look direction.
-            // (bones.leftHand is body-space and doesn't rotate with the camera.)
             if (_tacProceduralAnimation != null)
-                _cameraBone = _tacProceduralAnimation.bones.camera;
+            {
+                _leftHandBone = _tacProceduralAnimation.bones.leftHand;
+            }
         }
 
         private void Update()
@@ -76,14 +82,14 @@ namespace _Scripts.Systems.Player
             _comsLeftHandWeight = Mathf.MoveTowards(_comsLeftHandWeight, target,
                 Time.deltaTime * _leftHandBlendSpeed);
 
-            // Pass IK data to animation system
+            // Pass head-relative offsets and weight to the animation system.
+            // The animation job computes the world-space IK target from the head bone
+            // (after spine rotation) + these offsets — all in one animation pass, zero lag.
             if (_tacticalPlayer != null && _comsLeftHandWeight > 0.001f)
             {
-                Transform ikTarget = _comsInstance.LeftHandIkTarget;
-                if (ikTarget != null)
-                {
-                    _tacticalPlayer.SetComsLeftHandTarget(ikTarget.position, ikTarget.rotation);
-                }
+                _tacticalPlayer.SetComsHandOffset(
+                    _handPositionOffset,
+                    Quaternion.Euler(_handRotationOffset));
                 _tacticalPlayer.SetComsLeftHandWeight(_comsLeftHandWeight);
             }
             else if (_tacticalPlayer != null)
@@ -109,7 +115,7 @@ namespace _Scripts.Systems.Player
 
         /// <summary>
         /// Called by PlayerEquipment when a COMS device is equipped to slot 3.
-        /// Instantiates the runtime prefab, parents to camera bone, hides it.
+        /// Instantiates the runtime prefab, parents to the left hand bone, hides it.
         /// </summary>
         public void EquipDevice(ComsDeviceItemData data)
         {
@@ -123,11 +129,11 @@ namespace _Scripts.Systems.Player
             if (_comsInstance != null)
                 UnequipDevice();
 
-            // Parent to camera bone so the device follows the player's view direction
-            Transform parent = _cameraBone != null ? _cameraBone : transform;
+            // Parent to left hand bone — the device follows wherever IK puts the hand.
+            Transform parent = _leftHandBone != null ? _leftHandBone : transform;
             GameObject instance = Instantiate(data.comsBehaviourPrefab, parent);
-            instance.transform.localPosition = _comsPositionOffset;
-            instance.transform.localRotation = Quaternion.Euler(_comsRotationOffset);
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
 
             _comsInstance = instance.GetComponent<ComsDevice>();
             if (_comsInstance == null)
