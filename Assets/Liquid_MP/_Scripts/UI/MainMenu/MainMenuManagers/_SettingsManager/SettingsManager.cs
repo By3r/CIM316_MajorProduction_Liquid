@@ -137,6 +137,40 @@ public class SettingsManager : MonoBehaviour
         if (applyButton != null) applyButton.onClick.AddListener(OnApplyPressed);
         if (resetButton != null) resetButton.onClick.AddListener(OnResetPressed);
         if (backButton != null) backButton.onClick.AddListener(OnBackPressed);
+
+        if (controlsTab.Button != null)
+        {
+            controlsTab.Button.onClick.AddListener(ShowControlsCategory);
+            AddTabPointerHelper(controlsTab.Button);
+        }
+
+        if (graphicsTab.Button != null)
+        {
+            graphicsTab.Button.onClick.AddListener(ShowGraphicsCategory);
+            AddTabPointerHelper(graphicsTab.Button);
+        }
+
+        if (audioTab.Button != null)
+        {
+            audioTab.Button.onClick.AddListener(ShowAudioCategory);
+            AddTabPointerHelper(audioTab.Button);
+        }
+    }
+    private void AddTabPointerHelper(Button button)
+    {
+        if (button == null)
+        {
+            return;
+        }
+
+        SettingsTabPointerHelper helper = button.GetComponent<SettingsTabPointerHelper>();
+
+        if (helper == null)
+        {
+            helper = button.gameObject.AddComponent<SettingsTabPointerHelper>();
+        }
+
+        helper.Initialize(this, button);
     }
 
     private void CacheResolutions()
@@ -253,6 +287,16 @@ public class SettingsManager : MonoBehaviour
         RefreshSingleTabVisualState(controlsTab, SettingsCategory.Controls);
         RefreshSingleTabVisualState(graphicsTab, SettingsCategory.Graphics);
         RefreshSingleTabVisualState(audioTab, SettingsCategory.Audio);
+    }
+
+    public void NotifyTabPointerEntered(Button button)
+    {
+        if (button == null || !button.gameObject.activeInHierarchy)
+        {
+            return;
+        }
+
+        EventSystem.current?.SetSelectedGameObject(button.gameObject);
     }
 
     private void RefreshSingleTabVisualState(SettingsTabVisuals tab, SettingsCategory tabCategory)

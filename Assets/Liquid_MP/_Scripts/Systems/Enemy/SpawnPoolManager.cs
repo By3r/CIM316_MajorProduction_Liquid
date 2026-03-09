@@ -315,7 +315,6 @@ public class SpawnPoolManager : MonoBehaviour
 
     #endregion
 
-    #region Suffocator + Pond.
     private void SpawnAllPonds()
     {
         List<SpawnPoint> pondPoints = GetPondPoints();
@@ -546,5 +545,51 @@ public class SpawnPoolManager : MonoBehaviour
             (list[i], list[j]) = (list[j], list[i]);
         }
     }
+
+    #endregion
+
+    #region Floor transition
+
+    /// <summary>
+    /// Disables all active pool-managed enemies and cancels pending respawns.
+    /// Ponds are destroyed permanently (their spawn points are blocked).
+    /// All pools are left intact and ready for InitialiseScene on the new floor.
+    /// </summary>
+    public void NotifyFloorTransition()
+    {
+        for (int i = 0; i < _crawlerPool.Count; i++)
+        {
+            if (_crawlerPool[i] != null && _crawlerPool[i].gameObject.activeSelf)
+                _crawlerPool[i].gameObject.SetActive(false);
+        }
+
+        if (_liquidInstance != null && _liquidInstance.gameObject.activeSelf)
+            _liquidInstance.gameObject.SetActive(false);
+
+        if (_lurkerInstance != null && _lurkerInstance.gameObject.activeSelf)
+            _lurkerInstance.gameObject.SetActive(false);
+
+        for (int i = 0; i < _suffocatorPool.Count; i++)
+        {
+            if (_suffocatorPool[i] != null && _suffocatorPool[i].gameObject.activeSelf)
+                _suffocatorPool[i].gameObject.SetActive(false);
+        }
+
+        for (int i = _ponds.Count - 1; i >= 0; i--)
+        {
+            if (_ponds[i] != null)
+                _ponds[i].DestroyPond();
+        }
+        _ponds.Clear();
+
+        _pendingRespawns.Clear();
+
+        _crawlerWipeInProgress = false;
+        _crawlerWipeCooldownEnd = -1f;
+
+        _lurkerDead = false;
+        _lurkerAvailableAt = 0f;
+    }
+
     #endregion
 }
