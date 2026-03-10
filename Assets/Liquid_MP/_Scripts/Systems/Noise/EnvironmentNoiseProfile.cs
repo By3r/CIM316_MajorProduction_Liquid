@@ -10,7 +10,7 @@ public enum NoiseCategory
     Other
 }
 
-[CreateAssetMenu(fileName = "EnvNoiseProfile", menuName = "Audio/Environment Noise Profile")]
+[CreateAssetMenu(menuName = "Liquid/Audio/Environment Noise Profile")]
 
 public class EnvironmentNoiseProfile : ScriptableObject
 {

@@ -3,7 +3,7 @@ using UnityEngine;
 namespace Liquid.Audio
 {
     [DisallowMultipleComponent]
-    public sealed class NoiseHearingProfile : MonoBehaviour
+    public sealed class EnemyNoiseHearingProfile : MonoBehaviour
     {
         [Header("Sensitivity")]
         [Tooltip("Overall hearing multiplier. >1 hears better, <1 hears worse.")]

@@ -2,9 +2,10 @@ namespace Liquid.Audio
 {
     public enum NoiseLevel
     {
-        Low = 0,
-        Medium = 1,
-        High = 2,
-        Maximum = 3
+        None = 0,
+        Low = 1,
+        Medium = 2,
+        High = 3,
+        Extreme = 4
     }
 }
