@@ -767,7 +767,7 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
         /// <summary>Whether the player is currently in unarmed state (no weapon drawn).</summary>
         public bool IsUnarmed => _weaponSettings == null;
 
-        private void SetCharacterRenderersVisible(bool visible)
+        public void SetCharacterRenderersVisible(bool visible)
         {
             if (_characterRenderers == null) return;
             foreach (var r in _characterRenderers)
@@ -853,6 +853,37 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Player
             var active = GetActiveWeapon();
             if (active == null) return 0f;
             return active.Holster(true);
+        }
+
+        #endregion
+
+        #region Liquid: COMS Device Left-Hand IK
+
+        private Vector3 _comsHandOffsetPos;
+        private Quaternion _comsHandOffsetRot = Quaternion.identity;
+
+        /// <summary>
+        /// Sets the head-relative position and rotation offsets for the COMS left-hand IK target.
+        /// These offsets are applied to the head bone (after spine rotation) inside the animation
+        /// job to compute the world-space IK target — zero lag because everything is in one pass.
+        /// </summary>
+        public void SetComsHandOffset(Vector3 offsetPos, Quaternion offsetRot)
+        {
+            _comsHandOffsetPos = offsetPos;
+            _comsHandOffsetRot = offsetRot;
+        }
+
+        /// <summary>
+        /// Sets the COMS left-hand IK blend weight (0 = off, 1 = fully on COMS grip).
+        /// When > 0, the left hand IK is driven by the COMS target instead of weapon grip.
+        /// </summary>
+        public void SetComsLeftHandWeight(float weight)
+        {
+            if (_tacProceduralAnimation != null)
+            {
+                _tacProceduralAnimation.SetComsLeftHand(weight,
+                    _comsHandOffsetPos, _comsHandOffsetRot);
+            }
         }
 
         #endregion

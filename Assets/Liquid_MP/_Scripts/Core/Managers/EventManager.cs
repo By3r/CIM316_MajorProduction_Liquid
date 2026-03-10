@@ -164,5 +164,14 @@ namespace _Scripts.Core.Managers
         
         /// <summary>Fired when the game state changes (Gameplay, Paused, MainMenu, etc.).</summary>
         public const string OnGameStateChanged = "OnGameStateChanged";
+
+        /// <summary>Fired when an incoming COMS call starts ringing.</summary>
+        public const string OnComsCallRinging = "OnComsCallRinging";
+
+        /// <summary>Fired when a COMS call is answered.</summary>
+        public const string OnComsCallAnswered = "OnComsCallAnswered";
+
+        /// <summary>Fired when a COMS call ends.</summary>
+        public const string OnComsCallEnded = "OnComsCallEnded";
     }
 }

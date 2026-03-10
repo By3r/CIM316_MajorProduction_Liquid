@@ -74,6 +74,12 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
         /// </summary>
         public float armedWeight;
 
+        // Liquid: COMS device left-hand IK override.
+        // Offsets are relative to the head bone (post-spine-rotation), computed in-job.
+        public float comsLeftHandWeight;
+        public Vector3 comsHandOffsetPos;
+        public Quaternion comsHandOffsetRot;
+
         public KTransform _ikMotion;
         public NativeArray<SpineBoneAtom> lookUpBones;
         public NativeArray<SpineBoneAtom> lookRightBones;
@@ -298,53 +304,87 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
             _leftHandIk.ProcessTwoBoneIK(stream);
         }
 
-        private void ProcessAimOffset(AnimationStream stream)
+        /// <summary>
+        /// Liquid: Rotates spine bones based on lookInput (lean, yaw, pitch).
+        /// Extracted from ProcessAimOffset so it can be called independently
+        /// when the COMS device is active without a weapon.
+        /// </summary>
+        private void ProcessSpineRotation(AnimationStream stream)
         {
-            KTransform ikHandGunRoot = KAnimationMath.GetTransform(stream, _ikHandGunRootHandle);
-            KTransform head = KAnimationMath.GetTransform(stream, _headHandle);
-            ikHandGunRoot = head.GetRelativeTransform(ikHandGunRoot, false);
-            
+            // Lean (Z axis)
             float fraction = lookInput.z / 90f;
             bool sign = fraction > 0f;
-            
+
             foreach (var bone in lookRightBones)
             {
                 float angle = sign ? bone.clampedAngle.x : bone.clampedAngle.y;
-                
                 bone.handle.SetRotation(stream, KAnimationMath.RotateInSpace(_rootHandle.GetRotation(stream),
                     bone.handle.GetRotation(stream), Quaternion.Euler(0f, 0f, angle * fraction), 1f));
             }
-            
+
+            // Yaw (X axis)
             fraction = lookInput.x / 90f;
             sign = fraction > 0f;
-            
+
             foreach (var bone in lookRightBones)
             {
                 float angle = sign ? bone.clampedAngle.x : bone.clampedAngle.y;
-                
                 bone.handle.SetRotation(stream, KAnimationMath.RotateInSpace(_rootHandle.GetRotation(stream),
                     bone.handle.GetRotation(stream), Quaternion.Euler(0f, angle * fraction, 0f), 1f));
             }
-            
+
+            // Pitch (Y axis)
             fraction = lookInput.y / 90f;
             sign = fraction > 0f;
-            
+
             Quaternion space = Quaternion.Euler(0f, lookInput.x, 0f);
-            
+
             foreach (var bone in lookUpBones)
             {
                 float angle = sign ? bone.clampedAngle.x : bone.clampedAngle.y;
-                
                 Quaternion rootRotation = _rootHandle.GetRotation(stream) * space;
                 bone.handle.SetRotation(stream, KAnimationMath.RotateInSpace(rootRotation,
                     bone.handle.GetRotation(stream), Quaternion.Euler(angle * fraction, 0f, 0f), 1f));
             }
-            
+        }
+
+        private void ProcessAimOffset(AnimationStream stream)
+        {
+            // Save gun root relative to head BEFORE spine rotation.
+            KTransform ikHandGunRoot = KAnimationMath.GetTransform(stream, _ikHandGunRootHandle);
+            KTransform head = KAnimationMath.GetTransform(stream, _headHandle);
+            ikHandGunRoot = head.GetRelativeTransform(ikHandGunRoot, false);
+
+            // Rotate spine bones (lean, yaw, pitch).
+            ProcessSpineRotation(stream);
+
+            // Restore gun root relative to the NEW head position (post-rotation).
             head = KAnimationMath.GetTransform(stream, _headHandle);
             ikHandGunRoot = head.GetWorldTransform(ikHandGunRoot, false);
-            
+
             _ikHandGunRootHandle.SetPosition(stream, ikHandGunRoot.position);
             _ikHandGunRootHandle.SetRotation(stream, ikHandGunRoot.rotation);
+        }
+
+        /// <summary>
+        /// Liquid: Solves left-hand IK for the COMS device. Must be called AFTER
+        /// ProcessSpineRotation (or ProcessAimOffset which calls it internally)
+        /// so the head bone reflects the camera look direction.
+        /// Computes IK target from head bone + head-relative offsets.
+        /// </summary>
+        private void ProcessComsIk(AnimationStream stream)
+        {
+            KTransform head = KAnimationMath.GetTransform(stream, _headHandle);
+
+            KTransform target = new KTransform()
+            {
+                position = head.position + head.rotation * comsHandOffsetPos,
+                rotation = head.rotation * comsHandOffsetRot,
+                scale = Vector3.one
+            };
+
+            _leftHandIk.twoBoneIkData.target = target;
+            _leftHandIk.ProcessTwoBoneIK(stream);
         }
 
         private void ProcessAds(AnimationStream stream)
@@ -488,11 +528,15 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
         
         public void ProcessAnimation(AnimationStream stream)
         {
-            // Scale hand IK weights by armed state
+            // Scale hand IK weights by armed state.
             _rightHandIk.SetWeights(armedWeight, 0f);
-            _leftHandIk.SetWeights(armedWeight, 0f);
 
-            // Only process weapon IK/offsets/sway when armed and weapon settings are available
+            // Left hand: use COMS weight if higher than armed weight so IK stays
+            // active even when unarmed (COMS device in left hand).
+            float leftHandWeight = Mathf.Max(armedWeight, comsLeftHandWeight);
+            _leftHandIk.SetWeights(leftHandWeight, 0f);
+
+            // Only process weapon IK/offsets/sway when armed and weapon settings are available.
             if (_weaponSettings != null && armedWeight > 0.01f)
             {
                 ProcessWeaponIk(stream);
@@ -502,10 +546,21 @@ namespace KINEMATION.TacticalShooterPack.Scripts.Animation
                 ProcessSway(stream);
                 ProcessAimOffset(stream);
                 ProcessInverseKinematics(stream);
+
+                // Liquid: Dual-wield — weapon in right hand, COMS in left hand.
+                // Override left-hand IK with COMS target after weapon IK has solved.
+                if (comsLeftHandWeight > 0.01f)
+                {
+                    ProcessComsIk(stream);
+                }
             }
-            // When unarmed: skip ALL processing so the animation job doesn't touch any bones.
-            // The camera still handles look via fpsCamera.lookInput (independent of spine IK).
-            // The body still rotates for yaw via transform.rotation in UpdateLookInput().
+            else if (comsLeftHandWeight > 0.01f)
+            {
+                // Liquid: Unarmed with COMS — spine rotation needed for head
+                // to track camera look direction, then solve left-hand IK.
+                ProcessSpineRotation(stream);
+                ProcessComsIk(stream);
+            }
         }
 
         public void ProcessRootMotion(AnimationStream stream)

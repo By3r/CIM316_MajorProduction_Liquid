@@ -315,6 +315,8 @@ public class SpawnPoolManager : MonoBehaviour
 
     #endregion
 
+    #region Suffocator.
+
     private void SpawnAllPonds()
     {
         List<SpawnPoint> pondPoints = GetPondPoints();

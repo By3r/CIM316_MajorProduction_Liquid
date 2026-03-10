@@ -339,7 +339,7 @@ namespace _Scripts.Systems.Inventory.UI
             if (itemData is SchematicItemData)
                 actions.Add(new ContextMenuAction { Label = "UPLOAD", Callback = HandleUploadSchematic });
 
-            if (itemData is WeaponItemData || itemData is SuitAddonItemData)
+            if (itemData is WeaponItemData || itemData is SuitAddonItemData || itemData is ComsDeviceItemData)
                 actions.Add(new ContextMenuAction { Label = "EQUIP", Callback = HandleEquipRequested });
 
             // Universal actions
@@ -438,6 +438,9 @@ namespace _Scripts.Systems.Inventory.UI
         {
             if (itemData is SuitAddonItemData)
                 return EquipmentSlotType.SuitAddon;
+
+            if (itemData is ComsDeviceItemData)
+                return EquipmentSlotType.ComsDevice;
 
             if (itemData is WeaponItemData weaponData)
             {
