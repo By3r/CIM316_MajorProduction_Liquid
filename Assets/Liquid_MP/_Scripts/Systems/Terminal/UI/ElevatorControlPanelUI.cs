@@ -59,19 +59,19 @@ namespace _Scripts.Systems.Terminal.UI
         [SerializeField] private TextMeshProUGUI _actionWarningText;
 
         [Header("Direction Colors")]
-        [SerializeField] private Color _downColor   = new Color(1.00f, 0.69f, 0.00f, 1.00f);
-        [SerializeField] private Color _upColor     = new Color(0.10f, 0.60f, 0.31f, 1.00f);
+        [SerializeField] private Color _downColor = new Color(1.00f, 0.69f, 0.00f, 1.00f);
+        [SerializeField] private Color _upColor = new Color(0.10f, 0.60f, 0.31f, 1.00f);
         [SerializeField] private Color _breachColor = new Color(0.27f, 0.87f, 0.87f, 1.00f);
-        [SerializeField] private Color _noneColor   = new Color(0.25f, 0.19f, 0.00f, 1.00f);
+        [SerializeField] private Color _noneColor = new Color(0.25f, 0.19f, 0.00f, 1.00f);
 
         [Header("Action Button Colors")]
-        [SerializeField] private Color _travelBtnColor  = new Color(1.00f, 0.69f, 0.00f, 1.00f);
-        [SerializeField] private Color _breachBtnColor  = new Color(0.27f, 0.87f, 0.87f, 1.00f);
+        [SerializeField] private Color _travelBtnColor = new Color(1.00f, 0.69f, 0.00f, 1.00f);
+        [SerializeField] private Color _breachBtnColor = new Color(0.27f, 0.87f, 0.87f, 1.00f);
         [SerializeField] private Color _disabledBtnColor = new Color(0.25f, 0.19f, 0.00f, 1.00f);
 
         [Header("Power Cell Colors")]
         [SerializeField] private Color _cellInsertedColor = new Color(0.20f, 1.00f, 0.53f, 1.00f);
-        [SerializeField] private Color _cellMissingColor  = new Color(0.60f, 0.13f, 0.13f, 1.00f);
+        [SerializeField] private Color _cellMissingColor = new Color(0.60f, 0.13f, 0.13f, 1.00f);
 
         #endregion
 
@@ -168,6 +168,9 @@ namespace _Scripts.Systems.Terminal.UI
             }
 
             _floorButtons = new FloorButtonUI[_totalFloors];
+
+            if (_floorButtons is null && _floorGridContainer is null)
+            { return; }
 
             // Build low-to-high: floor 1 at top-left, fills left→right, top→bottom
             for (int i = 1; i <= _totalFloors; i++)
