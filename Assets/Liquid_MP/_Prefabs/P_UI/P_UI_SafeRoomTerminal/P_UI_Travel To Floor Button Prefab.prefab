@@ -288,7 +288,6 @@ GameObject:
   - component: {fileID: 4550848787222720510}
   - component: {fileID: 1023208477831432006}
   - component: {fileID: -3928060524439053250}
-  - component: {fileID: 2489637110008058815}
   m_Layer: 0
   m_Name: P_UI_Travel To Floor Button Prefab
   m_TagString: Untagged
@@ -450,15 +449,3 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &2489637110008058815
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4858462559889013825}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6e4dad9f8f0b773418e973af25dc7893, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.UI.CursorHoverHandler
