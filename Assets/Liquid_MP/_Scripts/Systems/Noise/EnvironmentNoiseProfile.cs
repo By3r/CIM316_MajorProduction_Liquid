@@ -1,51 +1,60 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-public enum NoiseCategory
+namespace Liquid.Audio
 {
-    Footsteps,
-    Sprint,
-    Jump,
-    Gunshot,
-    ObjectImpact,
-    Other
-}
-
-[CreateAssetMenu(menuName = "Liquid/Audio/Environment Noise Profile")]
-
-public class EnvironmentNoiseProfile : ScriptableObject
-{
-    #region Variables
-    [Header("Meta")]
-    [SerializeField] private string environmentName = "Constructed Mine";
-
-    [Header("Global behaviour")]
-    [Tooltip("Multiplier for ALL noise radii in this environment. < 1 = muffled, > 1 = carries far.")]
-    [SerializeField] private float globalRadiusMultiplier = 1f;
-
-    [Tooltip("Background noise level. Higher means small noises are harder to pick up.")]
-    [Range(0f, 1f)]
-    [SerializeField] private float ambientNoiseLevel = 0f;
-
-    [Header("Per-category radius multipliers")]
-    [SerializeField] private float footstepsRadiusMultiplier = 1f;
-    [SerializeField] private float sprintRadiusMultiplier = 1.2f;
-    [SerializeField] private float jumpRadiusMultiplier = 1.1f;
-    [SerializeField] private float gunshotRadiusMultiplier = 2.5f;
-    [SerializeField] private float objectImpactRadiusMultiplier = 1.5f;
-    #endregion
-    public float GlobalRadiusMultiplier => globalRadiusMultiplier;
-    public float AmbientNoiseLevel => ambientNoiseLevel;
-
-    public float GetRadiusMultiplier(NoiseCategory category)
+    [CreateAssetMenu(menuName = "Liquid/Audio/Environment Noise Profile")]
+    public class EnvironmentNoiseProfile : ScriptableObject
     {
-        switch (category)
+        [Header("Meta")]
+        [SerializeField] private string _environmentName = "New Environment";
+
+        [Header("Global")]
+        [Tooltip("Applied on top of all per-category multipliers. 0 = completely silent environment.")]
+        [SerializeField, Min(0f)] private float _globalMultiplier = 1f;
+
+        [Header("Ambient Noise")]
+        [Tooltip("Background ambient noise 0..1. High ambient reduces enemy hearing gain.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float _ambientNoiseLevel = 0f;
+
+        [Header("Per-Category Multipliers")]
+        [Tooltip("0 = silent, 1 = unchanged, >1 = amplified")]
+        [SerializeField, Min(0f)] private float _footstepMultiplier = 1f;
+        [SerializeField, Min(0f)] private float _sprintMultiplier = 1f;
+        [SerializeField, Min(0f)] private float _jumpMultiplier = 1f;
+        [SerializeField, Min(0f)] private float _gunshotMultiplier = 1f;
+        [SerializeField, Min(0f)] private float _objectImpactMultiplier = 1f;
+        [SerializeField, Min(0f)] private float _commDeviceMultiplier = 1f;
+        [SerializeField, Min(0f)] private float _otherMultiplier = 1f;
+
+        public string EnvironmentName => _environmentName;
+        public float GlobalMultiplier => _globalMultiplier;
+
+        /// <summary>
+        /// Background ambient noise 0..1.
+        /// </summary>
+        public float AmbientNoiseLevel => _ambientNoiseLevel;
+
+        /// <summary>
+        /// Returns the final multiplier for a given category, including the global multiplier.
+        /// </summary>
+        public float GetMultiplier(NoiseCategory category)
         {
-            case NoiseCategory.Footsteps: return footstepsRadiusMultiplier;
-            case NoiseCategory.Sprint: return sprintRadiusMultiplier;
-            case NoiseCategory.Jump: return jumpRadiusMultiplier;
-            case NoiseCategory.Gunshot: return gunshotRadiusMultiplier;
-            case NoiseCategory.ObjectImpact: return objectImpactRadiusMultiplier;
-            default: return 1f;
+            return _globalMultiplier * GetCategoryMultiplier(category);
+        }
+
+        private float GetCategoryMultiplier(NoiseCategory category)
+        {
+            switch (category)
+            {
+                case NoiseCategory.Footsteps: return _footstepMultiplier;
+                case NoiseCategory.Sprint: return _sprintMultiplier;
+                case NoiseCategory.Jump: return _jumpMultiplier;
+                case NoiseCategory.Gunshot: return _gunshotMultiplier;
+                case NoiseCategory.CommDevice: return _commDeviceMultiplier;
+                case NoiseCategory.ObjectImpact: return _objectImpactMultiplier;
+                default: return _otherMultiplier;
+            }
         }
     }
 }

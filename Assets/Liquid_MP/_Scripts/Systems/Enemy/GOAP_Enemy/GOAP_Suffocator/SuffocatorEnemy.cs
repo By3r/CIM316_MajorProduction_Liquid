@@ -543,10 +543,11 @@ public class SuffocatorEnemy : EnemyBase
     {
         switch (level)
         {
+            case NoiseLevel.None: return 0f;
             case NoiseLevel.Low: return 0.18f;
             case NoiseLevel.Medium: return 0.35f;
             case NoiseLevel.High: return 0.65f;
-            case NoiseLevel.Maximum: return 1.00f;
+            case NoiseLevel.Extreme: return 1.00f;
             default: return 0.20f;
         }
     }

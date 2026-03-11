@@ -91,7 +91,7 @@ namespace _Scripts.Systems.Weapon
             else
                 FireSingleRaycast(weapon, data);
 
-            EmitGunshotNoise(weapon, data);
+            EmitGunshotNoise(weapon);
         }
 
         private void FireSingleRaycast(TacticalShooterWeapon weapon, WeaponCombatData data)
@@ -231,12 +231,12 @@ namespace _Scripts.Systems.Weapon
 
         #region Noise
 
-        private void EmitGunshotNoise(TacticalShooterWeapon weapon, WeaponCombatData data)
+        private void EmitGunshotNoise(TacticalShooterWeapon weapon)
         {
             if (NoiseManager.Instance == null) return;
 
             Vector3 noisePosition = weapon.GetMuzzlePosition();
-            NoiseManager.Instance.EmitNoise(noisePosition, data.fireNoiseLevel, NoiseCategory.Gunshot);
+            NoiseManager.Instance.EmitNoise(noisePosition, NoiseCategory.Gunshot);
         }
 
         #endregion

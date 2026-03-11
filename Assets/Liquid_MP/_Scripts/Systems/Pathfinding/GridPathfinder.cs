@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 [ExecuteAlways]
@@ -57,6 +57,9 @@ public class GridPathfinder : MonoBehaviour
     [Header("Grid Settings")]
     [SerializeField] private Vector3 gridWorldSize = new Vector3(50f, 10f, 50f);
     [SerializeField] private float nodeRadius = 0.5f;
+
+    [Tooltip("If true, RebuildToFitBounds() is ignored and the grid uses the size/position set in the Inspector.")]
+    [SerializeField] private bool useManualGridSize = false;
 
     [Tooltip("Layers that block nodes (solid obstacles).")]
     [SerializeField] private LayerMask obstacleMask;
@@ -168,6 +171,12 @@ public class GridPathfinder : MonoBehaviour
     /// </summary>
     public void RebuildToFitBounds(Bounds floorBounds, float extraPaddingXZ = 1f)
     {
+        if (useManualGridSize)
+        {
+            RebuildWithCurrentSettings();
+            return;
+        }
+
         Bounds bound = floorBounds;
         bound.Expand(new Vector3(extraPaddingXZ * 2f, 0f, extraPaddingXZ * 2f));
 
@@ -230,6 +239,7 @@ public class GridPathfinder : MonoBehaviour
                             surfaceLayer = hit.collider.gameObject.layer;
                             surfaceNormal = hit.normal;
                             surfaceType = ClassifySurface(surfaceNormal);
+                            worldPoint = hit.point + hit.normal * nodeRadius;
                         }
                         else
                         {
@@ -846,8 +856,7 @@ public class GridPathfinder : MonoBehaviour
 #endif
 
         bool useSpotlight = gizmoViewRadius > 0f;
-        float nodeDiameter = nodeRadius * 2f;
-        Vector3 cubeSize = Vector3.one * (nodeDiameter - 0.1f);
+        Vector3 cubeSize = Vector3.one * _nodeDiameter;
 
         foreach (Node node in _grid)
         {

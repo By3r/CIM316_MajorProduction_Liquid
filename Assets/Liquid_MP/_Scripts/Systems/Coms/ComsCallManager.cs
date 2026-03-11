@@ -53,7 +53,8 @@ namespace Liquid_MP._Scripts.Systems.Coms
         private CallDataSO[] _callRegistry;
 
         [Header("Noise")]
-        [Tooltip("How often (seconds) the device emits noise while ringing after the grace period.")] [SerializeField]
+        [Tooltip("How often (seconds) the device emits noise while ringing after the grace period.")]
+        [SerializeField]
         private float _noiseEmitInterval = 2f;
 
         #endregion
@@ -265,11 +266,7 @@ namespace Liquid_MP._Scripts.Systems.Coms
                 noisePosition = PlayerManager.Instance.CurrentPlayer.transform.position;
             }
 
-            NoiseManager.Instance.EmitNoise(
-                noisePosition,
-                NoiseLevel.Medium,
-                NoiseCategory.Other
-            );
+            NoiseManager.Instance.EmitNoise(noisePosition, NoiseCategory.CommDevice);
         }
 
         private void StopNoiseEmission()

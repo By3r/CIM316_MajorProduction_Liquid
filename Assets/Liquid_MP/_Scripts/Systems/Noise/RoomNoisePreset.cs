@@ -1,3 +1,4 @@
+using Liquid.Audio;
 using UnityEngine;
 
 [DisallowMultipleComponent]
@@ -60,6 +61,15 @@ public class RoomNoisePreset : MonoBehaviour
     {
         if (boundsCollider == null) return false;
         return boundsCollider.bounds.Contains(worldPosition);
+    }
+
+    /// <summary>
+    /// Applies the room's profile multiplier and room radius multiplier to a base noise value.
+    /// </summary>
+    public float ApplyMultiplier(float baseNoise, NoiseCategory category)
+    {
+        float profileMult = ActiveProfile != null ? ActiveProfile.GetMultiplier(category) : 1f;
+        return baseNoise * profileMult;
     }
 
     public float GetAmbient01()

@@ -69,8 +69,6 @@ namespace _Scripts.Systems.Player
         [SerializeField] private float _baseFootstepInterval = 0.5f;
         [Tooltip("Minimum horizontal movement speed before we start emitting footsteps.")]
         [SerializeField] private float _minSpeedForSteps = 0.1f;
-        [Tooltip("References the room the player is in (For noise multiplier purposes)")]
-        [SerializeField] private RoomNoisePreset _currentRoomNoise;
 
         #endregion
 
@@ -195,7 +193,6 @@ namespace _Scripts.Systems.Player
             {
                 _velocity.y = Mathf.Sqrt(_jumpForce * -2f * _gravity);
                 _isJumping = true;
-
                 EmitJumpNoise();
             }
 
@@ -245,7 +242,6 @@ namespace _Scripts.Systems.Player
 
             float startHeight = _characterController.height;
             Vector3 startCenter = _characterController.center;
-
             float elapsed = 0f;
 
             while (elapsed < _crouchTransitionDuration)
@@ -267,52 +263,38 @@ namespace _Scripts.Systems.Player
         /// <summary>
         /// Called by either triggers or other systems when the player enters a new room.
         /// </summary>
-        public void SetCurrentRoom(RoomNoisePreset roomNoisePreset)
-        {
-            _currentRoomNoise = roomNoisePreset;
-        }
 
         private void HandleMovementNoise(float horizontalSpeed)
         {
-            if (!_enableMovementNoise)
-            {
-                return;
-            }
-
-            if (NoiseManager.Instance == null)
-            {
-                return;
-            }
-
-            if (!_isGrounded)
+            if (!_enableMovementNoise || NoiseManager.Instance == null) return;
+            if (!_isGrounded || horizontalSpeed < _minSpeedForSteps)
             {
                 _footstepTimer = 0f;
                 return;
             }
 
-            if (horizontalSpeed < _minSpeedForSteps)
-            {
-                _footstepTimer = 0f;
-                return;
-            }
-
-            float interval = _baseFootstepInterval;
-            NoiseLevel level = NoiseLevel.Medium;
+            NoiseCategory category;
+            float interval;
 
             if (_isCrouching)
             {
-                interval *= 1.4f;
-                level = NoiseLevel.Low;
+                category = NoiseCategory.Footsteps;
+                interval = _baseFootstepInterval * 1.4f; // slower, quieter steps
             }
             else if (_isSprinting)
             {
-                interval *= 0.7f;
-                level = NoiseLevel.High;
+                category = NoiseCategory.Sprint;
+                interval = _baseFootstepInterval * 0.6f; // faster, heavier steps
             }
             else if (IsWalkingToggled)
             {
-                interval *= 1.1f;
-                level = NoiseLevel.Medium;
+                category = NoiseCategory.Footsteps;
+                interval = _baseFootstepInterval * 1.1f;
+            }
+            else
+            {
+                category = NoiseCategory.Footsteps;
+                interval = _baseFootstepInterval;
             }
 
             _footstepTimer += Time.deltaTime;
@@ -320,28 +302,26 @@ namespace _Scripts.Systems.Player
             if (_footstepTimer >= interval)
             {
                 _footstepTimer = 0f;
-
-                //NoiseManager.Instance.EmitNoise(
-                //    transform.position,
-                //    level,
-                //    NoiseCategory.Footsteps,
-                //    _currentRoomNoise);
+                NoiseManager.Instance.EmitNoise(transform.position, category);
             }
         }
 
         private void EmitJumpNoise()
         {
-            if (!_enableMovementNoise)
-            {
-                return;
-            }
+            if (!_enableMovementNoise || NoiseManager.Instance == null) return;
+            NoiseManager.Instance.EmitNoise(transform.position, NoiseCategory.Jump);
+        }
 
-            if (NoiseManager.Instance == null)
-            {
-                return;
-            }
+        public void EmitGunshotNoise()
+        {
+            if (NoiseManager.Instance == null) return;
+            NoiseManager.Instance.EmitNoise(transform.position, NoiseCategory.Gunshot);
+        }
 
-          //  NoiseManager.Instance.EmitNoise(transform.position, NoiseLevel.Medium, NoiseCategory.Jump, _currentRoomNoise);
+        public static void EmitObjectNoise(Vector3 worldPosition)
+        {
+            if (NoiseManager.Instance == null) return;
+            NoiseManager.Instance.EmitNoise(worldPosition, NoiseCategory.ObjectImpact);
         }
 
         #endregion

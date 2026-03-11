@@ -1,18 +1,31 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 namespace Liquid.Audio
 {
     public struct NoiseEvent
     {
-        public Vector3 worldPosition;
-        public float baseRadius;
-        public float finalRadius;
-        public NoiseLevel level;
-        public NoiseCategory category;
-        public EnvironmentNoiseProfile environmentProfile;
-        public float intensity01;
-        public float perceivedLoudness01;
+        public Vector3 WorldPosition;
+        public float BaseNoise;
+        public float FinalNoise;
+        public NoiseLevel Level;
+        public NoiseCategory Category;
+        public EnvironmentNoiseProfile EnvironmentProfile;
+        public RoomNoisePreset Room;
+
+        public float FinalRadius;
+
+        public float Intensity01;
+
+        public Vector3 worldPosition { get => WorldPosition; set => WorldPosition = value; }
+        public float finalNoise { get => FinalNoise; set => FinalNoise = value; }
+        public NoiseLevel level { get => Level; set => Level = value; }
+        public NoiseCategory category { get => Category; set => Category = value; }
+        public EnvironmentNoiseProfile environmentProfile { get => EnvironmentProfile; set => EnvironmentProfile = value; }
+        public float finalRadius { get => FinalRadius; set => FinalRadius = value; }
+        public float intensity01 { get => Intensity01; set => Intensity01 = value; }
+
+        public float perceivedLoudness01 { get => Intensity01; set => Intensity01 = value; }
     }
 
     public interface INoiseListener
@@ -23,42 +36,7 @@ namespace Liquid.Audio
     [DisallowMultipleComponent]
     public class NoiseManager : MonoBehaviour
     {
-        [Header("Base Radius Per Level")]
-        [SerializeField] private float lowBaseRadius = 4f;
-        [SerializeField] private float mediumBaseRadius = 8f;
-        [SerializeField] private float highBaseRadius = 12f;
-        [SerializeField] private float maximumBaseRadius = 18f;
-
-        [Header("Intensity Per Level (0..1)")]
-        [SerializeField] private float lowIntensity01 = 0.25f;
-        [SerializeField] private float mediumIntensity01 = 0.45f;
-        [SerializeField] private float highIntensity01 = 0.7f;
-        [SerializeField] private float maximumIntensity01 = 1f;
-
-        [Header("Category Radius Multipliers")]
-        [SerializeField] private float footstepsMultiplier = 1f;
-        [SerializeField] private float sprintMultiplier = 1.3f;
-        [SerializeField] private float jumpMultiplier = 1.1f;
-        [SerializeField] private float gunshotMultiplier = 2f;
-        [SerializeField] private float objectImpactMultiplier = 1.5f;
-        [SerializeField] private float otherMultiplier = 1f;
-
-        [Header("Occlusion")]
-        [SerializeField] private LayerMask occlusionMask;
-        [Range(0f, 1f)]
-        [SerializeField] private float occludedLoudnessMultiplier = 0.35f;
-
-        [Header("Distance Falloff")]
-        [SerializeField] private bool useDistanceFalloff = true;
-        [SerializeField] private AnimationCurve falloffCurve = AnimationCurve.EaseInOut(0f, 1f, 1f, 0f);
-
-        [Header("Debug")]
-        [SerializeField] private bool showDebugLogs = false;
-
         public static NoiseManager Instance { get; private set; }
-
-        private readonly List<INoiseListener> _listeners = new List<INoiseListener>();
-        private readonly List<RoomNoisePreset> _rooms = new List<RoomNoisePreset>(64);
 
         private void Awake()
         {
@@ -66,15 +44,58 @@ namespace Liquid.Audio
             Instance = this;
         }
 
-        private void Start()
+        #region Variables
+        [Header("Base Noise Values Per Action")]
+        [SerializeField] private float _footstepBase = 1.0f;
+        [SerializeField] private float _sprintBase = 2.0f;
+        [SerializeField] private float _jumpBase = 1.5f;
+        [SerializeField] private float _gunshotBase = 4.0f;
+        [SerializeField] private float _objectImpactBase = 2.5f;
+        [SerializeField] private float _commDeviceBase = 2.0f;
+        [SerializeField] private float _otherBase = 1.0f;
+
+        [Header("Detection Radius Per Level")]
+        [SerializeField] private float _noneRadius = 2f;
+        [SerializeField] private float _lowRadius = 4f;
+        [SerializeField] private float _mediumRadius = 8f;
+        [SerializeField] private float _highRadius = 14f;
+        [SerializeField] private float _extremeRadius = 22f;
+
+        [Header("Occlusion")]
+        [SerializeField] private LayerMask _occlusionMask;
+        [Range(0f, 1f)]
+        [SerializeField] private float _occludedMultiplier = 0.35f;
+
+        [Header("UI Decay")]
+        [Tooltip("How fast LastFinalNoise decays toward 0 when no noise is emitted.")]
+        [SerializeField] private float _noiseDecaySpeed = 3f;
+
+        [Header("Debug")]
+        [SerializeField] private bool _showDebugLogs = false;
+
+        public float LastFinalNoise { get; private set; }
+        public RoomNoisePreset LastRoom { get; private set; }
+        public EnvironmentNoiseProfile LastProfile { get; private set; }
+
+        private readonly List<INoiseListener> _listeners = new List<INoiseListener>(32);
+        private readonly List<RoomNoisePreset> _rooms = new List<RoomNoisePreset>(64);
+        #endregion
+
+        private void Start() => RefreshRooms();
+
+        private void Update()
         {
-            RefreshRooms();
+            LastFinalNoise = Mathf.MoveTowards(LastFinalNoise, 0f, Time.deltaTime * _noiseDecaySpeed);
         }
 
+
+        #region Room Management.
         public void RefreshRooms()
         {
             _rooms.Clear();
             _rooms.AddRange(FindObjectsByType<RoomNoisePreset>(FindObjectsInactive.Include, FindObjectsSortMode.None));
+            if (_showDebugLogs)
+                Debug.Log($"[NoiseManager] RefreshRooms: found {_rooms.Count} rooms.");
         }
 
         private RoomNoisePreset FindRoomAt(Vector3 position)
@@ -85,161 +106,143 @@ namespace Liquid.Audio
             return null;
         }
 
+        #endregion
+
+        #region Listener Registration.
         public void RegisterListener(INoiseListener listener)
         {
-            if (listener != null && !_listeners.Contains(listener)) _listeners.Add(listener);
+            if (listener != null && !_listeners.Contains(listener))
+                _listeners.Add(listener);
         }
 
         public void UnregisterListener(INoiseListener listener)
         {
-            if (listener != null) _listeners.Remove(listener);
+            if (listener != null)
+                _listeners.Remove(listener);
         }
 
-        /// <summary>
-        /// Call this from player or object scripts to emit a noise.
-        /// Automatically detects which room the noise is in.
-        /// Optionally pass an environmentProfile to override the room profile.
-        /// </summary>
-        public void EmitNoise(Vector3 position, NoiseLevel level, NoiseCategory category, EnvironmentNoiseProfile overrideProfile = null)
-        {
-            float baseRadius = GetBaseRadiusForLevel(level) * GetCategoryMultiplier(category);
-            float finalRadius = baseRadius;
-            float intensity01 = GetIntensityForLevel(level);
-            float ambient01 = 0f;
+        #endregion
 
-            // Auto-detect room if no override profile given
-            EnvironmentNoiseProfile profile = overrideProfile;
+        #region Public Functions.
+        /// <summary>Emits noise using the category's configured base value.</summary>
+        public void EmitNoise(Vector3 position, NoiseCategory category)
+        {
+            EmitNoiseInternal(position, GetBaseNoise(category), category);
+        }
+
+        /// <summary>Emits noise with a custom base value.</summary>
+        public void EmitNoise(Vector3 position, float customBaseNoise, NoiseCategory category)
+        {
+            EmitNoiseInternal(position, customBaseNoise, category);
+        }
+        #endregion
+
+        #region Internals.
+        private void EmitNoiseInternal(Vector3 position, float baseNoise, NoiseCategory category)
+        {
             RoomNoisePreset room = FindRoomAt(position);
 
-            if (profile == null && room != null)
-                profile = room.ActiveProfile;
+            float finalNoise = room != null ? room.ApplyMultiplier(baseNoise, category) : baseNoise;
 
-            if (profile != null)
+            NoiseLevel level = LevelFromFloat(finalNoise);
+            float radius = GetRadius(level) * (room != null ? room.RoomRadiusMultiplier : 1f);
+            float intensity01 = Mathf.Clamp01(finalNoise / 4f);
+
+            LastFinalNoise = Mathf.Max(LastFinalNoise, finalNoise);
+            LastRoom = room;
+            LastProfile = room?.ActiveProfile;
+
+            NoiseEvent ev = new NoiseEvent
             {
-                finalRadius *= Mathf.Max(0.01f, profile.GlobalRadiusMultiplier);
-                finalRadius *= Mathf.Max(0.01f, profile.GetRadiusMultiplier(category));
-                ambient01 = Mathf.Clamp01(profile.AmbientNoiseLevel);
-            }
-
-            // Apply per-room tuning on top
-            if (room != null)
-            {
-                finalRadius *= room.RoomRadiusMultiplier;
-                ambient01 = Mathf.Clamp01(ambient01 + room.GetAmbient01());
-            }
-
-            finalRadius = Mathf.Max(0.01f, finalRadius);
-            intensity01 = Mathf.Clamp01(intensity01);
-
-            NoiseEvent noiseEvent = new NoiseEvent
-            {
-                worldPosition = position,
-                baseRadius = baseRadius,
-                finalRadius = finalRadius,
-                level = level,
-                category = category,
-                environmentProfile = profile,
-                intensity01 = intensity01
+                WorldPosition = position,
+                BaseNoise = baseNoise,
+                FinalNoise = finalNoise,
+                Level = level,
+                Category = category,
+                EnvironmentProfile = room?.ActiveProfile,
+                Room = room,
+                FinalRadius = radius,
+                Intensity01 = intensity01,
             };
 
-            if (showDebugLogs)
-                Debug.Log($"[Noise] {level} {category} at {position} | base={baseRadius:0.0} final={finalRadius:0.0} intensity={intensity01:0.00} ambient={ambient01:0.00} room={room?.name ?? "None"} env={profile?.name ?? "None"}");
+            if (_showDebugLogs)
+                Debug.Log($"[NoiseManager] {category} | base={baseNoise:0.00} final={finalNoise:0.00} " +
+                          $"level={level} radius={radius:0.0} room={room?.name ?? "None"}");
 
-            NotifyListeners(noiseEvent, ambient01);
+            NotifyListeners(ev, radius);
         }
 
-        private void NotifyListeners(NoiseEvent noiseEvent, float ambient01)
+        private void NotifyListeners(NoiseEvent ev, float radius)
         {
-            float maxDistSqr = noiseEvent.finalRadius * noiseEvent.finalRadius;
+            float radiusSqr = radius * radius;
 
             for (int i = _listeners.Count - 1; i >= 0; i--)
             {
                 INoiseListener listener = _listeners[i];
                 if (listener == null) { _listeners.RemoveAt(i); continue; }
-                if (!(listener is Component component) || component == null) continue;
+                if (!(listener is Component c) || c == null) continue;
 
-                float distSqr = (component.transform.position - noiseEvent.worldPosition).sqrMagnitude;
-                if (distSqr > maxDistSqr) continue;
+                if ((c.transform.position - ev.WorldPosition).sqrMagnitude > radiusSqr) continue;
 
-                float dist = Mathf.Sqrt(distSqr);
-                float perceived = ComputePerceivedLoudness(noiseEvent, component.transform.position, dist, ambient01);
-
-                EnemyNoiseHearingProfile hearingProfile = component.GetComponent<EnemyNoiseHearingProfile>();
-                if (hearingProfile != null)
+                if (_occlusionMask.value != 0)
                 {
-                    perceived *= Mathf.Max(0.01f, hearingProfile.HearingSensitivity);
-                    perceived *= Mathf.Max(0.01f, hearingProfile.GetCategoryMultiplier(noiseEvent.category));
-                    if (perceived < hearingProfile.MinPerceivedLoudness) continue;
+                    Vector3 origin = ev.WorldPosition + Vector3.up * 0.5f;
+                    Vector3 target = c.transform.position + Vector3.up * 1.2f;
+                    Vector3 dir = target - origin;
+                    float len = dir.magnitude;
+                    if (len > 0.001f && Physics.Raycast(origin, dir / len, len, _occlusionMask, QueryTriggerInteraction.Ignore))
+                    {
+                        NoiseEvent occ = ev;
+                        occ.FinalNoise *= _occludedMultiplier;
+                        occ.Intensity01 = Mathf.Clamp01(occ.FinalNoise / 4f);
+                        occ.Level = LevelFromFloat(occ.FinalNoise);
+                        listener.OnNoiseHeard(occ);
+                        continue;
+                    }
                 }
-                else
-                {
-                    if (perceived < 0.08f) continue;
-                }
 
-                noiseEvent.perceivedLoudness01 = perceived;
-                listener.OnNoiseHeard(noiseEvent);
+                listener.OnNoiseHeard(ev);
             }
         }
 
-        private float ComputePerceivedLoudness(NoiseEvent noiseEvent, Vector3 listenerPos, float distance, float ambient01)
+        /// <summary>
+        /// Converts a final noise float to a NoiseLevel.
+        /// </summary>
+        public static NoiseLevel LevelFromFloat(float value)
         {
-            float loudness = noiseEvent.intensity01;
-
-            if (useDistanceFalloff)
-            {
-                float t = Mathf.Clamp01(distance / noiseEvent.finalRadius);
-                loudness *= Mathf.Clamp01(falloffCurve != null ? falloffCurve.Evaluate(t) : (1f - t));
-            }
-
-            if (occlusionMask.value != 0)
-            {
-                Vector3 origin = noiseEvent.worldPosition + Vector3.up * 0.5f;
-                Vector3 target = listenerPos + Vector3.up * 1.2f;
-                Vector3 dir = target - origin;
-                float len = dir.magnitude;
-                if (len > 0.001f && Physics.Raycast(origin, dir / len, len, occlusionMask, QueryTriggerInteraction.Ignore))
-                    loudness *= occludedLoudnessMultiplier;
-            }
-
-            loudness = Mathf.Max(0f, loudness - ambient01 * 0.6f);
-            return Mathf.Clamp01(loudness);
+            if (value <= 0f) return NoiseLevel.None;
+            if (value <= 1.0f) return NoiseLevel.Low;
+            if (value <= 2.0f) return NoiseLevel.Medium;
+            if (value <= 3.0f) return NoiseLevel.High;
+            return NoiseLevel.Extreme;
         }
 
-        private float GetBaseRadiusForLevel(NoiseLevel level)
-        {
-            switch (level)
-            {
-                case NoiseLevel.Low: return lowBaseRadius;
-                case NoiseLevel.Medium: return mediumBaseRadius;
-                case NoiseLevel.High: return highBaseRadius;
-                case NoiseLevel.Extreme: return maximumBaseRadius;
-                default: return lowBaseRadius;
-            }
-        }
-
-        private float GetIntensityForLevel(NoiseLevel level)
-        {
-            switch (level)
-            {
-                case NoiseLevel.Low: return lowIntensity01;
-                case NoiseLevel.Medium: return mediumIntensity01;
-                case NoiseLevel.High: return highIntensity01;
-                case NoiseLevel.Extreme: return maximumIntensity01;
-                default: return lowIntensity01;
-            }
-        }
-
-        private float GetCategoryMultiplier(NoiseCategory category)
+        private float GetBaseNoise(NoiseCategory category)
         {
             switch (category)
             {
-                case NoiseCategory.Footsteps: return footstepsMultiplier;
-                case NoiseCategory.Sprint: return sprintMultiplier;
-                case NoiseCategory.Jump: return jumpMultiplier;
-                case NoiseCategory.Gunshot: return gunshotMultiplier;
-                case NoiseCategory.ObjectImpact: return objectImpactMultiplier;
-                default: return otherMultiplier;
+                case NoiseCategory.Footsteps: return _footstepBase;
+                case NoiseCategory.Sprint: return _sprintBase;
+                case NoiseCategory.Jump: return _jumpBase;
+                case NoiseCategory.Gunshot: return _gunshotBase;
+                case NoiseCategory.ObjectImpact: return _objectImpactBase;
+                case NoiseCategory.CommDevice: return _commDeviceBase;
+                default: return _otherBase;
             }
         }
+
+        private float GetRadius(NoiseLevel level)
+        {
+            switch (level)
+            {
+                case NoiseLevel.None: return _noneRadius;
+                case NoiseLevel.Low: return _lowRadius;
+                case NoiseLevel.Medium: return _mediumRadius;
+                case NoiseLevel.High: return _highRadius;
+                case NoiseLevel.Extreme: return _extremeRadius;
+                default: return _noneRadius;
+            }
+        }
+        #endregion
     }
 }
