@@ -14,6 +14,64 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Tutorial.TutorialNarrativeAsset
   beats:
   - speaker: 0
-    text: 
-    autoAdvanceDelay: 0
+    text: Before the Peace, there was the Fracture. A war without winners. Nations
+      dissolving into each other like wet paper, taking everything they had built
+      with them.
+    autoAdvanceDelay: 5
     voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 0
+    text: Father Mark did not look away.
+    autoAdvanceDelay: 3
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 0
+    text: 'While others mourned, he rebuilt. What remained of Earth''s governing
+      bodies consolidated under one name: AGEU. Under one vision. Under one man.'
+    autoAdvanceDelay: 5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 0
+    text: The Fracture ended. Not with a treaty. With leadership.
+    autoAdvanceDelay: 4
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 0
+    text: But peace is expensive. A recovered Earth is hungry. And Father Mark had
+      never once failed to find an answer.
+    autoAdvanceDelay: 4.5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 0
+    text: He found many through well kept relations with other planets. Deep. Far
+      and quiet civillisations.
+    autoAdvanceDelay: 4
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 0
+    text: The facilities were built. The work began. And for the first time in living
+      memory, our Earth strived.
+    autoAdvanceDelay: 3
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 0
+    text: You are part of that work.
+    autoAdvanceDelay: 3
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 0
+    text: Darkness. Then pressure. Then the dull ache of a floor that has been your
+      bed for longer than it should have been.
+    autoAdvanceDelay: 4.5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 0
+    text: You don't know where you are. You don't know how you got here.
+    autoAdvanceDelay: 3.5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 0
+    text: Get up anyway.
+    autoAdvanceDelay: 2
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0

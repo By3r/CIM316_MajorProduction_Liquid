@@ -31800,9 +31800,39 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Tutorial.TutorialManager
   presenter: {fileID: 1297604385}
   tutorialUI: {fileID: 1297604387}
-  steps: []
-  lurkerObject: {fileID: 0}
-  nextSceneName: Game
+  steps:
+  - label: Player wakes up in the safe room.
+    narrative: {fileID: 11400000, guid: 5b2c874ab0cde3c4ea69de380ba14fb4, type: 2}
+    onStepCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: Player answers the communication device.
+    narrative: {fileID: 11400000, guid: de869e66fc4eb504981cd4833b209377, type: 2}
+    onStepCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: Noise meter UI gets enabled
+    narrative: {fileID: 0}
+    onStepCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: Player gets introduced to noise meter.
+    narrative: {fileID: 11400000, guid: 60aa19fa8bbf5834bb75612e0fb2b37b, type: 2}
+    onStepCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: Player barely escapes the fallinig rock.
+    narrative: {fileID: 11400000, guid: 677e12db9a0954e4d99d259a970a6ade, type: 2}
+    onStepCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  - label: Player meets the Lurker.
+    narrative: {fileID: 11400000, guid: 60aa19fa8bbf5834bb75612e0fb2b37b, type: 2}
+    onStepCompleted:
+      m_PersistentCalls:
+        m_Calls: []
+  lurkerObject: {fileID: 1470689456}
+  nextSceneName: UnifiedMainScene
   onTutorialEnded:
     m_PersistentCalls:
       m_Calls: []
@@ -31823,7 +31853,7 @@ MonoBehaviour:
   speechPanel: {fileID: 110719771}
   speakerNameText: {fileID: 1598262994}
   dialogueText: {fileID: 831293947}
-  lieutenantRoot: {fileID: 0}
+  lieutenantRoot: {fileID: 1759764205}
   advancePrompt: {fileID: 1034381403}
 --- !u!1 &1299012535
 GameObject:
@@ -36635,8 +36665,6 @@ MonoBehaviour:
   logStateChanges: 0
   logPlanChanges: 0
   logCooldownSeconds: 1
-  drawStateLabel: 1
-  stateLabelFontSize: 16
   sightDistance: 16
   playerInRangeDistance: 14
   closeToPlayerDistance: 4
@@ -43622,6 +43650,11 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 80}
   m_SizeDelta: {x: 600, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1759764205 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7541926534061095664, guid: 4c9d0dfaa0152444d88a2629aecaa826, type: 3}
+  m_PrefabInstance: {fileID: 9317582}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1762354259
 GameObject:
   m_ObjectHideFlags: 0

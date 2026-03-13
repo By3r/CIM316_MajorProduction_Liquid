@@ -1,0 +1,104 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc31e614b1789304f9899d89689c7c54, type: 3}
+  m_Name: Narrative_CommsCall
+  m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Tutorial.TutorialNarrativeAsset
+  beats:
+  - speaker: 2
+    text: There we go. I was beginning to worry. Can you hear me clearly?
+    autoAdvanceDelay: 2.5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 1
+    text: ...Who is this?
+    autoAdvanceDelay: 1
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 2
+    text: Someone who is very relieved right now. My name is Northbridge. Lieutenant
+      Northbridge, AGEU Operations. You're not alone down there.
+    autoAdvanceDelay: 4.5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 1
+    text: Where am I?
+    autoAdvanceDelay: 1
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 2
+    text: One of ours. An AR extraction facility; deep site, been running for a while.
+      You must have taken quite a fall to end up where you are.
+    autoAdvanceDelay: 4
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 1
+    text: I don't remember anything.
+    autoAdvanceDelay: 1
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 2
+    text: That's alright. That's completely alright. Memory can be funny after a
+      hard landing. It'll come back.
+    autoAdvanceDelay: 3
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 1
+    text: A hard landing?
+    autoAdvanceDelay: 0.5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 2
+    text: The important thing is you're up. You're moving. And I can get you out
+      of there, but I'm going to need you to trust me for a little while. Can you
+      do that?
+    autoAdvanceDelay: 5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 1
+    text: He doesn't wait for an answer.
+    autoAdvanceDelay: 2
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 2
+    text: The facility isn't empty. There are things down there that were disturbed
+      long before you arrived. Stay quiet, stay low, and follow my guidance. Find
+      the exit.
+    autoAdvanceDelay: 5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 1
+    text: What things?
+    autoAdvanceDelay: 0.5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 2
+    text: Nothing you can't handle. You were sent here because you're capable. I'd
+      stake quite a lot on that.
+    autoAdvanceDelay: 3.5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 1
+    text: You said I was sent here.
+    autoAdvanceDelay: 1.5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 2
+    text: Everyone down there was sent for a reason. Yours will make sense soon enough.
+      Right now, move.
+    autoAdvanceDelay: 3
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
+  - speaker: 2
+    text: I'll be in touch.
+    autoAdvanceDelay: 1
+    voiceClip: {fileID: 0}
+    keepHologramActive: 1
