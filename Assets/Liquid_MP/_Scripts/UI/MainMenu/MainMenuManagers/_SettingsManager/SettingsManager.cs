@@ -62,6 +62,13 @@ public class SettingsManager : MonoBehaviour
     [SerializeField] private TMP_Text musicVolumeText;
     [SerializeField] private TMP_Text sfxVolumeText;
 
+    [Header("Description")]
+    [SerializeField] private TMP_Text descriptionText;
+    private const string DefaultDescription = "No Description.";
+
+    [Header("Keybindings")]
+    [SerializeField] private KeybindManager keybindManager;
+
     [Header("Buttons")]
     [SerializeField] private Button applyButton;
     [SerializeField] private Button resetButton;
@@ -77,6 +84,12 @@ public class SettingsManager : MonoBehaviour
         SetupListeners();
         CacheResolutions();
         ForceTabVisualRefresh();
+        InitializeDescriptionItems();
+
+        if (keybindManager != null)
+        {
+            keybindManager.Initialize();
+        }
     }
 
     private void Start()
@@ -106,6 +119,11 @@ public class SettingsManager : MonoBehaviour
         SetScriptsEnabled(false);
         PopulateGraphicsDropdowns();
         UpdateUIFromSettings();
+
+        if (keybindManager != null)
+        {
+            keybindManager.LoadOverrides(temporarySettings.KeybindOverridesJson);
+        }
 
         ShowControlsCategory();
 
@@ -451,6 +469,11 @@ public class SettingsManager : MonoBehaviour
             return;
         }
 
+        if (keybindManager != null)
+        {
+            temporarySettings.KeybindOverridesJson = keybindManager.GetOverridesJson();
+        }
+
         SettingsDataManager.Instance.CurrentSettings.CopyFrom(temporarySettings);
         SettingsDataManager.Instance.SaveSettings();
         ApplyLiveSettings(SettingsDataManager.Instance.CurrentSettings);
@@ -466,6 +489,11 @@ public class SettingsManager : MonoBehaviour
         temporarySettings.ResetToDefaults();
         PopulateGraphicsDropdowns();
         UpdateUIFromSettings();
+
+        if (keybindManager != null)
+        {
+            keybindManager.ResetAllBindings();
+        }
     }
 
     private void OnBackPressed()
@@ -558,6 +586,34 @@ public class SettingsManager : MonoBehaviour
         if (sfxVolumeText != null)
         {
             sfxVolumeText.text = Mathf.RoundToInt(value * 100f).ToString();
+        }
+    }
+
+    private void InitializeDescriptionItems()
+    {
+        SettingsDescriptionItem[] items = GetComponentsInChildren<SettingsDescriptionItem>(true);
+
+        for (int i = 0; i < items.Length; i++)
+        {
+            items[i].Initialize(this);
+        }
+
+        ClearDescriptionText();
+    }
+
+    public void SetDescriptionText(string text)
+    {
+        if (descriptionText != null)
+        {
+            descriptionText.text = string.IsNullOrEmpty(text) ? DefaultDescription : text;
+        }
+    }
+
+    public void ClearDescriptionText()
+    {
+        if (descriptionText != null)
+        {
+            descriptionText.text = DefaultDescription;
         }
     }
 }

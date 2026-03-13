@@ -17,6 +17,9 @@ public class GameSettingsData
     public float MasterVolume = 1f;
     public float MusicVolume = 1f;
     public float SfxVolume = 1f;
+
+    [Header("Keybindings")]
+    public string KeybindOverridesJson = "";
     #endregion
 
     public void CopyFrom(GameSettingsData other)
@@ -34,6 +37,7 @@ public class GameSettingsData
         MasterVolume = other.MasterVolume;
         MusicVolume = other.MusicVolume;
         SfxVolume = other.SfxVolume;
+        KeybindOverridesJson = other.KeybindOverridesJson;
     }
 
     public void ResetToDefaults()
@@ -46,5 +50,6 @@ public class GameSettingsData
         MasterVolume = 1f;
         MusicVolume = 1f;
         SfxVolume = 1f;
+        KeybindOverridesJson = "";
     }
 }

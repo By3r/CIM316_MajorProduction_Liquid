@@ -20,3 +20,10 @@ MonoBehaviour:
     isAsset: 1
     _typeString: _Scripts.Systems.ProceduralGeneration.RoomPrefabDatabase, Assembly-CSharp,
       Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - _obj: {fileID: 0}
+    globalId:
+      globalObjectIdString: GlobalObjectId_V1-2-f678b911da3400f4ea0bc05192d2d9a9-365103894-0
+    isSceneGameObject: 1
+    isAsset: 0
+    _typeString: UnityEngine.GameObject, UnityEngine.CoreModule, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
