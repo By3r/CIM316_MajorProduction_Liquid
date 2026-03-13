@@ -166,11 +166,11 @@ Material:
     - _CullModeForward: 2
     - _Cutoff: 0.5
     - _DepthOffsetEnable: 0
-    - _DetailMetallness: 1
+    - _DetailMetallness: 0
     - _DetailNormalMapScale: 1
-    - _DetailSmoothness: 0.38
-    - _DirtScale: 0.2
-    - _DirtStrength: 0.166
+    - _DetailSmoothness: 0.166
+    - _DirtScale: 0.1
+    - _DirtStrength: 0.154
     - _DirtTintScale: 1
     - _DoubleSidedEnable: 0
     - _DoubleSidedGIMode: 0
@@ -202,7 +202,7 @@ Material:
     - _RefractionModel: 0
     - _RenderQueueType: 1
     - _RequireSplitLighting: 0
-    - _Smoothness: 0.62
+    - _Smoothness: 0.495
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1

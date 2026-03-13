@@ -252,6 +252,9 @@ public class LurkerEnemy : EnemyBase
     {
         if (isDead) return ("Dead", null);
 
+        _observedPlayer = false;
+        _repositioned = false;
+
         bool inBrightLight = InBrightLight;
         bool playerAware = Time.time <= _playerAwareUntilTime;
         bool hasPlayer = HasPlayer;
@@ -314,8 +317,7 @@ public class LurkerEnemy : EnemyBase
             return ("DisappearAfterSteal", new Dictionary<string, object> { { WS_HIDING, true } });
         }
 
-        // 5. Player spotted us. -> Vanish.
-        if (playerAware && !inBrightLight)
+        if (playerAware && !inBrightLight && !_isHiding)
         {
             currentGoalName = "VanishWhenSpotted";
             return ("VanishWhenSpotted", new Dictionary<string, object> { { WS_HIDING, true } });
@@ -485,6 +487,8 @@ public class LurkerEnemy : EnemyBase
     #region Action helpers.
     public void SetHidden(bool hidden)
     {
+        if (_isHiding == hidden) return;
+
         _isHiding = hidden;
 
         if (hidden && autoReappearAfterSeconds > 0f)
@@ -498,6 +502,8 @@ public class LurkerEnemy : EnemyBase
         else
         {
             _hideUntilTime = 0f;
+
+            _playerAwareUntilTime = 0f;
         }
 
         if (disableModelWhileHiding && modelRoot != null)
@@ -515,6 +521,13 @@ public class LurkerEnemy : EnemyBase
     {
         _hasStolen = true;
         _playerAwareUntilTime = Time.time + stealAwarenessSeconds;
+    }
+
+    public void NotifyPlayerAware(float lingerSeconds = 1.5f)
+    {
+        float proposed = Time.time + lingerSeconds;
+        if (proposed > _playerAwareUntilTime)
+            _playerAwareUntilTime = proposed;
     }
 
     public void BeginFlashlightPanic()

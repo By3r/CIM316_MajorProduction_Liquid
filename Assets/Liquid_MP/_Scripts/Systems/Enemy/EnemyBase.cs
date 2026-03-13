@@ -3,17 +3,15 @@ using Liquid.AI.GOAP;
 using Liquid.Audio;
 using Liquid.Damage;
 using UnityEngine;
-using System.Text;
 
 /// <summary>
-/// Base enemy that moves using a grid-based-AStar-pathfinder.
-/// Walls should be tagged "Obstacle".
-/// Uses CharacterController for physics-based movement (wall collision, gravity).
+/// Base class for all grid-pathfinding enemies.
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
 public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
 {
-    #region Variables
+
+    #region Inspector fields.
     [Header("Stats")]
     [SerializeField] protected float maxHealth = 100f;
     [SerializeField] protected float moveSpeed = 3f;
@@ -42,7 +40,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
     public Transform PlayerTarget => playerTarget;
 
     [Header("GOAP")]
-    [Tooltip("How often the GOAP planner reruns (seconds). But remember that lower = more reactive and more CPU. ;;")]
+    [Tooltip("How often the GOAP planner reruns (seconds). Lower = more reactive, more CPU.")]
     [SerializeField] protected float replanInterval = 0.35f;
 
     [Header("Path Failure")]
@@ -64,9 +62,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
     [SerializeField] protected bool logPlanChanges = false;
     [Tooltip("Minimum seconds between repeated logs of the same type.")]
     [SerializeField] protected float logCooldownSeconds = 1f;
-    #endregion
 
-    #region Runtime fields
     protected CharacterController characterController;
     protected Vector3 verticalVelocity;
     protected bool isGrounded;
@@ -93,6 +89,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
     private Dictionary<string, object> _currentGoal;
     private string _currentGoalKey;   // used to detect goal change for inflation reset
     private float _nextReplanTime;
+    private bool _needsReplanNextTick;
 
     // --- Noise ---
     /// <summary>The most recent noise event that reached this enemy.</summary>
@@ -109,31 +106,35 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
     public EnemyState CurrentState => currentState;
     public bool IsDead => isDead;
     public bool DebugHasValidPath => HasValidPath;
+
     #endregion
 
-
-    #region Subclass Interface
-    /// <summary>Return all GoapActions this enemy can use.</summary>
+    #region Subclass interface.
+    /// <summary>Return all GoapActions this enemy can use. Called once in Awake.</summary>
     protected abstract List<GoapAction> BuildActions();
 
     /// <summary>
     /// Write the current world state into the provided dictionary.
+    /// Called every replan tick. Clear the dict first or just overwrite keys.
     /// </summary>
     protected abstract void PopulateWorldState(Dictionary<string, object> state);
 
     /// <summary>
     /// Return the goal the enemy wants to achieve RIGHT NOW.
     /// Return null to pause planning (enemy stays in current state).
+    /// The key string is used to detect goal changes for inflation resets.
     /// </summary>
     protected abstract (string key, Dictionary<string, object> goal) SelectGoal();
 
     /// <summary>
-    /// Use for sensor updates, LOS checks, noise processing, etc....
+    /// Called each frame BEFORE the GOAP tick.
+    /// Use for sensor updates, LOS checks, noise processing, etc.
     /// </summary>
     protected virtual void OnBeforeTick() { }
 
     /// <summary>
-    /// Use for animations, IK, effects, etc..
+    /// Called each frame AFTER the GOAP tick.
+    /// Use for animations, IK, effects, etc.
     /// </summary>
     protected virtual void OnAfterTick() { }
 
@@ -145,13 +146,15 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
 
     /// <summary>
     /// Called when the enemy should be returned to the object pool.
-    /// TODO: Override this in each enemy subclass to return to their pool instead.
+    /// Default implementation destroys after 5 seconds.
+    /// Override this in each enemy subclass to return to your pool instead.
     /// </summary>
     protected virtual void ReturnToPool()
     {
-        Destroy(gameObject, 5f); // gets destroyed instead for now.
+        Destroy(gameObject, 5f);
     }
     #endregion
+
 
     protected virtual void Awake()
     {
@@ -187,15 +190,16 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
     }
 
     #region GOAP loop
+
     private readonly Dictionary<string, object> _worldStateBuffer = new Dictionary<string, object>();
 
     private void GoapTick()
     {
-        // 1st. Decide goal.
+        // --- 1. Decide goal ---
         var (goalKey, goal) = SelectGoal();
         if (goal == null) return;
 
-        // Detect goal change -> reset all action cost inflation
+        // Detect goal change → reset all action cost inflation
         if (goalKey != _currentGoalKey)
         {
             _currentGoalKey = goalKey;
@@ -204,24 +208,26 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
             InvalidatePlan();
         }
 
-        // 2nd. Replan on schedule or when plan is empty.
-        bool needReplan = (_currentPlan == null || _currentPlan.Count == 0) && _activeAction == null;
+        // --- 2. Replan on schedule or when plan is empty ---
+        bool needReplan = (_currentPlan == null || _currentPlan.Count == 0)
+                          && _activeAction == null;
         bool replanDue = Time.time >= _nextReplanTime;
 
-        if (needReplan || replanDue)
+        if (needReplan || replanDue || _needsReplanNextTick)
         {
+            _needsReplanNextTick = false;
             _nextReplanTime = Time.time + replanInterval;
             TryReplan();
         }
 
-        // 3rd. Execute active action.
+        // --- 3. Execute active action ---
         if (_activeAction != null)
         {
-            // Check if world state has changed enough to invalidate this action.
+            // Check if world state has changed enough to invalidate this action
             if (!ActionStillValid(_activeAction))
             {
-                if (logPlanChanges) Debug.Log($"{name} active action '{_activeAction.ActionName}' invalidated by world state change. Replanning.", this);
-
+                if (logPlanChanges)
+                    Debug.Log($"{name} active action '{_activeAction.ActionName}' invalidated by world state change. Replanning.", this);
                 InvalidatePlan();
                 TryReplan();
                 return;
@@ -244,6 +250,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
                 _activeAction.Reset();
                 _activeAction = null;
 
+                // Advance to next action in plan
                 if (_currentPlan != null && _currentPlan.Count > 0)
                     AdvancePlan();
             }
@@ -261,9 +268,8 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
 
             if (logPlanChanges)
             {
-                StringBuilder sb = new StringBuilder();
+                System.Text.StringBuilder sb = new System.Text.StringBuilder();
                 sb.Append($"{name} new plan [{_currentGoalKey}]: ");
-
                 foreach (GoapAction a in plan)
                     sb.Append(a.ActionName).Append(" → ");
                 Debug.Log(sb.ToString(), this);
@@ -292,9 +298,11 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
         if (!_activeAction.CheckProceduralPrecondition(gameObject))
         {
             if (logPlanChanges)
-                Debug.Log($"{name} procedural precondition failed for '{_activeAction.ActionName}'. Replanning.", this);
+                Debug.Log($"{name} procedural precondition failed for '{_activeAction.ActionName}'. "
+                          + "Invalidating plan — will replan next tick.", this);
+
             InvalidatePlan();
-            TryReplan();
+            _needsReplanNextTick = true;
         }
     }
 
@@ -319,7 +327,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
 
     #endregion
 
-    #region Physics {Sprinkle sprinkle stars}
+    #region Physics
     protected void ApplyGravity()
     {
         if (characterController == null) return;
@@ -335,6 +343,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
 
     /// <summary>
     /// Teleports the enemy, bypassing CharacterController.
+    /// Same pattern as PlayerCommands.TeleportPlayer().
     /// </summary>
     public void Teleport(Vector3 position)
     {
@@ -344,7 +353,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
     }
     #endregion
 
-    #region Health
+    #region Health.
     public virtual void TakeDamage(float amount)
     {
         if (isDead) return;
@@ -382,8 +391,9 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
         ReturnToPool();
     }
     #endregion
-    
-    #region Pathfinding
+
+
+    #region Pathfinding.
     protected bool HasValidPath => currentPath != null && currentPathIndex < currentPath.Count;
 
     /// <summary>
@@ -401,21 +411,21 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
     /// </summary>
     public bool TryGoTo(Vector3 destination, GoapAction callingAction = null)
     {
-        // Reached destination?
+        // Already there?
         if (Vector3.Distance(transform.position, destination) <= waypointTolerance)
         {
             _consecutivePathFailures = 0;
-            return false; // Arrived.
+            return false; // arrived
         }
 
         // Already have a valid path heading roughly toward this destination
         if (HasValidPath && !ShouldRecalculatePath(destination))
         {
             FollowPath();
-            return true; // Still moving.
+            return true; // still moving
         }
 
-        // Try the full path.
+        // Try full path
         if (RequestPath(destination))
         {
             _consecutivePathFailures = 0;
@@ -424,8 +434,10 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
             return true;
         }
 
-        // Full path failed —> try the partial path.
-        List<Vector3> partial = GridPathfinder.Instance != null ? GridPathfinder.Instance.FindPartialPath(transform.position, destination, walkableLayers) : null;
+        // Full path failed — try partial path
+        List<Vector3> partial = GridPathfinder.Instance != null
+            ? GridPathfinder.Instance.FindPartialPath(transform.position, destination, walkableLayers)
+            : null;
 
         if (partial != null && partial.Count > 0)
         {
@@ -434,24 +446,23 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
             lastPathTarget = destination;
             _consecutivePathFailures = 0;
             FollowPath();
-
             return true;
         }
 
-        // Both failed.
+        // Both failed
         _consecutivePathFailures++;
 
         if (logPathFailures && Time.time >= _nextPathFailLogTime)
         {
             _nextPathFailLogTime = Time.time + Mathf.Max(0.1f, logCooldownSeconds);
-            Debug.LogWarning($"{name} TryGoTo failed (full + partial) to {destination}. Consecutive failures: {_consecutivePathFailures}", this);
-                            
+            Debug.LogWarning($"{name} TryGoTo failed (full + partial) to {destination}. " +
+                             $"Consecutive failures: {_consecutivePathFailures}", this);
         }
 
-        // Inflate the calling action's cost after enough failures.
+        // Inflate the calling action's cost after enough failures
         if (callingAction != null && _consecutivePathFailures >= pathFailuresBeforeInflation)
         {
-            // Only inflate if this is the same destination that keeps failing.
+            // Only inflate if this is the same destination that keeps failing
             if (_lastFailedDestination == Vector3.zero ||
                 Vector3.Distance(_lastFailedDestination, destination) < 0.5f)
             {
@@ -460,12 +471,13 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
         }
 
         _lastFailedDestination = destination;
-        return true; // still nominally "moving", planner will replan soon.
+        return true; // still nominally "moving" — action stays alive, planner will replan soon
     }
 
     /// <summary>
     /// Raw path request. Returns true if a complete path was found.
-    /// Prefer TryGoTo for action movement.
+    /// Prefer TryGoTo for action movement — this is for internal use and
+    /// special cases (e.g. pre-caching a path).
     /// </summary>
     protected bool RequestPath(Vector3 destination)
     {
@@ -513,6 +525,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
         Vector3 direction = targetPoint - transform.position;
         float distance = direction.magnitude;
 
+        // Advance waypoint if close enough
         if (distance <= waypointTolerance)
         {
             currentPathIndex++;
@@ -532,6 +545,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
 
         float stepDistance = moveSpeed * Time.deltaTime;
 
+        // Obstacle check
         if (Physics.Raycast(transform.position + Vector3.up * 0.5f, direction,
             out RaycastHit hit, stepDistance + 0.2f, obstacleMask, QueryTriggerInteraction.Ignore))
         {
@@ -542,14 +556,18 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
             }
         }
 
+        // Move
         Vector3 moveVector = direction * stepDistance;
         if (!useVerticalMovement)
             moveVector.y = 0f;
 
         characterController.Move(moveVector);
 
-        Vector3 flatDir = useVerticalMovement ? direction: new Vector3(direction.x, 0f, direction.z);
-           
+        // Rotate toward movement direction
+        Vector3 flatDir = useVerticalMovement
+            ? direction
+            : new Vector3(direction.x, 0f, direction.z);
+
         if (flatDir.sqrMagnitude > 0.0001f)
         {
             Vector3 newForward = Vector3.Slerp(transform.forward, flatDir.normalized, turnSpeed * Time.deltaTime);
@@ -574,6 +592,7 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
         return Vector3.Distance(lastPathTarget, newTargetPosition) >= pathRecalcDistanceThreshold;
     }
     #endregion
+
 
     #region State management.
     public virtual void SetState(EnemyState newState)
@@ -602,11 +621,10 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
             Debug.Log($"{name} state: {oldState} → {newState}", this);
         }
     }
-
     #endregion
 
-    #region Line of sight.
-    /// <summary>360° LOS check. Doesn't have FOV restriction.</summary>
+
+    #region Line of sight
     protected bool HasLineOfSightTo(Vector3 worldPosition, float maxDistance)
     {
         Vector3 origin = transform.position + Vector3.up * 1.5f;
@@ -641,11 +659,14 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
         toTarget.Normalize();
         return !Physics.Raycast(origin, toTarget, distance, obstacleMask, QueryTriggerInteraction.Ignore);
     }
+
     #endregion
-    
+
     #region Noise listener.
     /// <summary>
     /// Called by NoiseManager when a noise event reaches this enemy.
+    /// Stores the event for subclasses to read via LastNoiseEvent /
+    /// LastPerceivedLoudness in PopulateWorldState or OnBeforeTick.
     /// </summary>
     public void OnNoiseHeard(NoiseEvent noiseEvent)
     {
@@ -661,11 +682,9 @@ public abstract class EnemyBase : MonoBehaviour, IDamageable, INoiseListener
     protected virtual void OnNoiseReceived(NoiseEvent noiseEvent) { }
     #endregion
 
-
     #region Gizmos
-    [Header("Gizmo Settings")]
-    [SerializeField] protected bool drawStateLabel = true;
-    [SerializeField] protected int stateLabelFontSize = 16;
+    protected bool drawStateLabel = true;
+    protected int stateLabelFontSize = 16;
 
 #if UNITY_EDITOR
     protected virtual void OnDrawGizmos()

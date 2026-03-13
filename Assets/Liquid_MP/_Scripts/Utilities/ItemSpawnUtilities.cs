@@ -12,7 +12,6 @@ namespace _Scripts.ProceduralGeneration.ItemSpawning.Editor
     /// </summary>
     public class ItemSpawnUtilities : EditorWindow
     {
-        private bool _enableGizmos = false;
         private GameObject _targetRoom;
 
         [MenuItem("Tools/LIQUID/Item Spawn Utilities")]
