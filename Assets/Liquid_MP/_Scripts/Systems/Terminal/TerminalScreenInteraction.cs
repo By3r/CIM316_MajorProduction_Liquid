@@ -45,6 +45,14 @@ namespace _Scripts.Systems.Terminal
         [SerializeField] private Sprite _defaultCursorSprite;
         [Tooltip("Pointer cursor sprite shown when hovering a clickable element.")]
         [SerializeField] private Sprite _pointerCursorSprite;
+        [Tooltip("Cursor sprite shown when the terminal has no power cell (X cursor).")]
+        [SerializeField] private Sprite _disabledCursorSprite;
+
+        [Header("Unpowered")]
+        [Tooltip("Message shown when clicking an interactable on an unpowered terminal.")]
+        [SerializeField] private string _unpoweredMessage = "Powercell not charged, cannot access function";
+        [Tooltip("Icon shown in the terminal notification when unpowered (e.g. an X image).")]
+        [SerializeField] private Sprite _unpoweredIcon;
 
         #endregion
 
@@ -246,8 +254,10 @@ namespace _Scripts.Systems.Terminal
                     ExecuteEvents.ExecuteHierarchy(newHandler, _pointerData, ExecuteEvents.pointerEnterHandler);
 
                 _currentHovered = newHandler;
-                UpdateCursorSprite();
             }
+
+            // Update cursor sprite every frame (power state can change while on screen)
+            UpdateCursorSprite();
 
             // Handle mouse clicks
             HandleMouseInput();
@@ -289,6 +299,18 @@ namespace _Scripts.Systems.Terminal
         {
             var mouse = Mouse.current;
             if (mouse == null) return;
+
+            // Block all input when terminal is unpowered — show notification on click
+            var terminal = SafeRoomTerminalUI.Instance;
+            if (terminal != null && !terminal.HasPowerCell)
+            {
+                if (mouse.leftButton.wasPressedThisFrame && _currentHovered != null)
+                {
+                    if (terminal.Notification != null)
+                        terminal.Notification.Show(_unpoweredMessage, _unpoweredIcon);
+                }
+                return;
+            }
 
             // Pointer Down — start press
             if (mouse.leftButton.wasPressedThisFrame && _currentHovered != null)
@@ -377,6 +399,14 @@ namespace _Scripts.Systems.Terminal
 
         private void UpdateCursorSprite()
         {
+            // If terminal has no power, always show disabled cursor
+            var terminal = SafeRoomTerminalUI.Instance;
+            if (terminal != null && !terminal.HasPowerCell && _disabledCursorSprite != null)
+            {
+                SetCursorSprite(_disabledCursorSprite);
+                return;
+            }
+
             bool isClickable = _currentHovered != null
                                && _currentHovered.GetComponent<Selectable>() != null
                                && _currentHovered.GetComponent<Selectable>().interactable;

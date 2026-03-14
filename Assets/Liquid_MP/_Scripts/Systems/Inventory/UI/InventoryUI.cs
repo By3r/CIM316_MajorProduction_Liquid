@@ -47,11 +47,16 @@ namespace _Scripts.Systems.Inventory.UI
         [Header("Settings")]
         [SerializeField] private bool _pauseGameWhenOpen = false;
 
+        [Header("Lock")]
+        [Tooltip("If true, inventory cannot be opened with TAB until the player picks up the coms device.")]
+        [SerializeField] private bool _lockUntilComsPickup = true;
+
         #endregion
 
         #region Private Fields
 
         private bool _isOpen;
+        private bool _inventoryLocked;
         private PlayerInventory _playerInventory;
         private InputAction _toggleAction;
         private InputAction _closeAction;
@@ -96,6 +101,12 @@ namespace _Scripts.Systems.Inventory.UI
             {
                 _playerInventory.OnSlotChanged += HandleSlotChanged;
                 _playerInventory.OnARGramsChanged += HandleARGramsChanged;
+
+                if (_lockUntilComsPickup)
+                {
+                    _inventoryLocked = true;
+                    _playerInventory.OnComsDevicePickedUp.AddListener(HandleComsDevicePickedUp);
+                }
             }
 
             // Find visor controller if not assigned
@@ -159,6 +170,7 @@ namespace _Scripts.Systems.Inventory.UI
             {
                 _playerInventory.OnSlotChanged -= HandleSlotChanged;
                 _playerInventory.OnARGramsChanged -= HandleARGramsChanged;
+                _playerInventory.OnComsDevicePickedUp.RemoveListener(HandleComsDevicePickedUp);
             }
 
             // Unsubscribe from slot events
@@ -183,6 +195,9 @@ namespace _Scripts.Systems.Inventory.UI
 
         private void OnToggleInventory(InputAction.CallbackContext context)
         {
+            // Don't open inventory if locked (before coms device pickup)
+            if (!_isOpen && _inventoryLocked) return;
+
             // Don't open inventory if game is paused
             if (!_isOpen && GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Paused)
                 return;
@@ -316,6 +331,13 @@ namespace _Scripts.Systems.Inventory.UI
         #endregion
 
         #region Event Handlers
+
+        private void HandleComsDevicePickedUp()
+        {
+            _inventoryLocked = false;
+            if (_playerInventory != null)
+                _playerInventory.OnComsDevicePickedUp.RemoveListener(HandleComsDevicePickedUp);
+        }
 
         private void HandleSlotChanged(int slotIndex, InventorySlot slot)
         {
