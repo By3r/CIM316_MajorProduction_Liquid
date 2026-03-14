@@ -1,6 +1,8 @@
 using System;
 using _Scripts.Core.Managers;
+using _Scripts.Systems.Inventory.ItemTypes;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace _Scripts.Systems.Inventory
 {
@@ -31,6 +33,8 @@ namespace _Scripts.Systems.Inventory
 
         public event Action<int, InventorySlot> OnSlotChanged;
         public event Action<int> OnARGramsChanged;
+
+        [field: SerializeField] public UnityEvent OnComsDevicePickedUp { get; private set; }
 
         #endregion
 
@@ -146,6 +150,9 @@ namespace _Scripts.Systems.Inventory
                     quantity -= toAdd;
 
                     OnSlotChanged?.Invoke(i, _slots[i]);
+
+                    if (itemData is ComsDeviceItemData)
+                        OnComsDevicePickedUp?.Invoke();
 
                     if (_showDebugLogs)
                     {

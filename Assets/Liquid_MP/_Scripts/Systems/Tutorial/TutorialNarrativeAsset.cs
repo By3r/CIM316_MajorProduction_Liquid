@@ -28,14 +28,19 @@ namespace _Scripts.Tutorial
 
     /// <summary>
     /// An ordered sequence of NarrativeBeat entries that TutorialPresenter plays through.
+    /// Create via: Assets > Liquid > Tutorial > Narrative Sequence
     /// </summary>
     [CreateAssetMenu(menuName = "Liquid/Tutorial/Narrative Sequence", fileName = "Narrative_")]
     public sealed class TutorialNarrativeAsset : ScriptableObject
     {
         [SerializeField] private List<NarrativeBeat> beats = new();
 
+        [Tooltip("If true, the player cannot move or interact while this narrative is playing. Camera look remains free. Unlocks automatically when the sequence ends.")]
+        [SerializeField] private bool lockPlayerDuringPlayback = false;
+
         public IReadOnlyList<NarrativeBeat> Beats => beats;
         public int Count => beats.Count;
+        public bool LockPlayerDuringPlayback => lockPlayerDuringPlayback;
 
         private void OnValidate()
         {

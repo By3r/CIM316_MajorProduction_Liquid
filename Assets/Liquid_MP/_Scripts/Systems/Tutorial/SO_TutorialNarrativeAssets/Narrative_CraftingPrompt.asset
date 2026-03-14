@@ -10,19 +10,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fc31e614b1789304f9899d89689c7c54, type: 3}
-  m_Name: Narrative_NoiseIntro
+  m_Name: Narrative_CraftingPrompt
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Tutorial.TutorialNarrativeAsset
   beats:
   - speaker: 2
-    text: You no longer are surrounded by silence. Every move you make can be heard
-      by others.
-    autoAdvanceDelay: 4
-    voiceClip: {fileID: 0}
-    keepHologramActive: 1
-  - speaker: 0
-    text: You are able to track the levels of sound you emit through the noise indiciator
-      present by the top left side of the screen.
+    text: You'll need to pick up crafting schematics to craft a container.
     autoAdvanceDelay: 5
+    voiceClip: {fileID: 0}
+    keepHologramActive: 0
+  - speaker: 2
+    text: When picking up schematics, upload them to the terminal through your inventory.
+    autoAdvanceDelay: 7
     voiceClip: {fileID: 0}
     keepHologramActive: 0
   lockPlayerDuringPlayback: 0

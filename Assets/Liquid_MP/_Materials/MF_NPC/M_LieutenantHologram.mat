@@ -111,7 +111,7 @@ Material:
     - _EnvironmentReflections: 1
     - _FlickerIntensity: 0.08
     - _FlickerSpeed: 6
-    - _FresnelIntensity: 1.54
+    - _FresnelIntensity: 0.86
     - _FresnelPower: 0.5
     - _GapSize: 0.08
     - _GlitchAmount: 0.04
@@ -156,10 +156,10 @@ Material:
     - _QueueOffset: 0
     - _ReceiveShadows: 1
     - _RimWidth: 0.35
-    - _ScanlineCount: 65
+    - _ScanlineCount: 225
     - _ScanlineIntensity: 1.201
     - _ScanlineSharpness: 47
-    - _ScanlineSpeed: 1.59
+    - _ScanlineSpeed: 1.07
     - _ScanlineWidth: 0.4
     - _ScrollSpeed: 0.017
     - _Smoothness: 0.5

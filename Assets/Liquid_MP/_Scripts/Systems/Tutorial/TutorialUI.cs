@@ -59,7 +59,6 @@ namespace _Scripts.Tutorial
             }
         }
 
-
         #region Handlers.
         private void HandleBeatPresented(string speakerName, NarrativeBeat beat)
         {
@@ -111,6 +110,11 @@ namespace _Scripts.Tutorial
         {
             _hologramPinnedActive = show;
             SetLieutenantVisible(show);
+        }
+
+        public void SetLieutenantRoot(GameObject root)
+        {
+            lieutenantRoot = root;
         }
 
         public void SetAdvancePromptVisible(bool show)

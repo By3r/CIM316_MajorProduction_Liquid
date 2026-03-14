@@ -31,7 +31,7 @@ namespace PackageDoor
 
         public void openDoor(Collider c)
         {
-            if (c.tag.Equals("GameController"))
+            if (c.tag.Equals("Player"))
             {
                 audioSource.Play();
                 animator.SetTrigger(trDoorOpen);
@@ -40,7 +40,7 @@ namespace PackageDoor
         }
         public void closeDoor(Collider c)
         {
-            if (c.tag.Equals("GameController"))
+            if (c.tag.Equals("Player"))
             {
                 audioSource.Play();
                 animator.SetTrigger(trDoorClose);

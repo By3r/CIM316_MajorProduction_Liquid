@@ -71,7 +71,8 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     keepHologramActive: 0
   - speaker: 0
-    text: Get up anyway.
+    text: Get up and move anyway.
     autoAdvanceDelay: 2
     voiceClip: {fileID: 0}
     keepHologramActive: 0
+  lockPlayerDuringPlayback: 1

@@ -1,8 +1,10 @@
+using _Scripts.Systems.Player;
+using _Scripts.Tutorial;
+using Liquid.Audio;
 using System;
 using System.Collections;
-using _Scripts.Systems.Player;
-using Liquid.Audio;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace Liquid_MP._Scripts.Systems.Coms
 {
@@ -52,6 +54,13 @@ namespace Liquid_MP._Scripts.Systems.Coms
         [SerializeField]
         private CallDataSO[] _callRegistry;
 
+        [Header("Tutorial")]
+        [SerializeField]
+        private CallDataSO _tutorialCall;
+
+        [SerializeField]
+        private TutorialManager _tutorialManager;
+
         [Header("Noise")]
         [Tooltip("How often (seconds) the device emits noise while ringing after the grace period.")]
         [SerializeField]
@@ -89,6 +98,7 @@ namespace Liquid_MP._Scripts.Systems.Coms
         /// <summary>All registered call data assets (for debug console).</summary>
         public CallDataSO[] CallRegistry => _callRegistry;
 
+        [field: SerializeField] public UnityEvent OnAnswerCall { get; private set; }
         #endregion
 
         #region Private Fields
@@ -104,8 +114,16 @@ namespace Liquid_MP._Scripts.Systems.Coms
         /// Triggers an incoming call. Transitions from Idle to Ringing.
         /// If already in a call or ringing, the new call is rejected.
         /// </summary>
-        /// <param name="callData">The call to initiate.</param>
-        /// <returns>True if the call was accepted, false if rejected (already busy).</returns>
+        public void TriggerTutorialCall()
+        {
+            if (_tutorialCall == null)
+            {
+                Debug.LogWarning("[ComsCallManager] TriggerTutorialCall: no tutorial call asset assigned.");
+                return;
+            }
+            TriggerCall(_tutorialCall);
+        }
+
         public bool TriggerCall(CallDataSO callData)
         {
             if (callData == null)
@@ -154,7 +172,11 @@ namespace Liquid_MP._Scripts.Systems.Coms
             Debug.Log($"[ComsCallManager] Call answered from '{CurrentCall.callerName}'.");
             OnCallAnswered?.Invoke();
 
-            // Start dialogue progression
+            if (_tutorialManager != null)
+                _tutorialManager.CompleteCurrentStep();
+
+            OnAnswerCall?.Invoke();
+
             if (CurrentCall.lines != null && CurrentCall.lines.Length > 0)
             {
                 _dialogueCoroutine = StartCoroutine(DialogueCoroutine());
