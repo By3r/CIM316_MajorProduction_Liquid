@@ -22,6 +22,7 @@ MonoBehaviour:
     - db5eb9ab39fd8b144a7d6a4f51f572c1
     - f678b911da3400f4ea0bc05192d2d9a9
     - 89be2929b450786428318d398f2eedfc
+    - dbf17456304c45e49a6e85acad11b9dc
     values:
     - goDatas_byGlobalId:
         keys:
@@ -820,6 +821,14 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 0
           iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+    - goDatas_byGlobalId:
+        keys:
+        - globalObjectIdString: GlobalObjectId_V1-2-dbf17456304c45e49a6e85acad11b9dc-1692183236552066892-1910722712307635677
+        values:
+        - colorIndex: 9
+          iconNameOrGuid: ColorPicker.CycleColor
           isIconRecursive: 0
           isColorRecursive: 0
   bookmarks: []

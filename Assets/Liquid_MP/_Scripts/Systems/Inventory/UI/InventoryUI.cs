@@ -62,6 +62,18 @@ namespace _Scripts.Systems.Inventory.UI
 
         public bool IsOpen => _isOpen;
 
+        /// <summary>
+        /// Fired when the player successfully equips an item from the inventory.
+        /// Passes the item data of the equipped item.
+        /// </summary>
+        public event Action<InventoryItemData> OnItemEquipped;
+
+        /// <summary>Fired when the inventory UI is opened.</summary>
+        public event Action OnInventoryOpened;
+
+        /// <summary>Fired when the inventory UI is closed.</summary>
+        public event Action OnInventoryClosed;
+
         #endregion
 
         #region Unity Lifecycle
@@ -237,6 +249,9 @@ namespace _Scripts.Systems.Inventory.UI
 
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+
+            Debug.Log($"[InventoryUI] OpenInventory() complete. Firing OnInventoryOpened (subscribers: {OnInventoryOpened?.GetInvocationList()?.Length ?? 0})");
+            OnInventoryOpened?.Invoke();
         }
 
         public void CloseInventory()
@@ -273,6 +288,9 @@ namespace _Scripts.Systems.Inventory.UI
 
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
+
+            Debug.Log("[InventoryUI] CloseInventory() complete. Firing OnInventoryClosed.");
+            OnInventoryClosed?.Invoke();
         }
 
         public void RefreshUI()
@@ -390,6 +408,8 @@ namespace _Scripts.Systems.Inventory.UI
             {
                 // Remove from inventory — TryEquip handles returning any swapped item
                 _playerInventory.RemoveItemFromSlot(slotIndex, 1);
+                Debug.Log($"[InventoryUI] Item equipped: '{itemData.displayName}'. Firing OnItemEquipped (subscribers: {OnItemEquipped?.GetInvocationList()?.Length ?? 0})");
+                OnItemEquipped?.Invoke(itemData);
             }
         }
 
