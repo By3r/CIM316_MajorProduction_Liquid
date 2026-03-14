@@ -109,6 +109,8 @@ GameObject:
   - component: {fileID: 7914319380981821806}
   - component: {fileID: -5610753460446336065}
   - component: {fileID: 8687427919099316452}
+  - component: {fileID: 2443457796119832707}
+  - component: {fileID: -8341642679124627844}
   m_Layer: 0
   m_Name: TR_Tri_Small_Intersection
   m_TagString: Untagged
@@ -195,10 +197,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Machines.Elevator
   _powerCellSlot: {fileID: 0}
-  _floorUI: {fileID: 0}
   _controlPanel: {fileID: 0}
   _totalFloors: 30
   _transitionDelay: 2
+  _fadeOutDuration: 0.5
   _audioSource: {fileID: 8687427919099316452}
   _elevatorMoveSound: {fileID: 0}
   _uiOpenSound: {fileID: 0}
@@ -215,7 +217,7 @@ AudioSource:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5905477482315762008}
-  m_Enabled: 1
+  m_Enabled: 0
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
@@ -305,6 +307,47 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!65 &2443457796119832707
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5905477482315762008}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 29.06158, y: 8.163666, z: 28.827147}
+  m_Center: {x: 21.296625, y: 3.5818338, z: -2.8212233}
+--- !u!114 &-8341642679124627844
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5905477482315762008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 745c4dc1546f50641946e846aeb70bcb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoomNoisePreset
+  pickRandomEnvironment: 1
+  useDeterministicSeed: 1
+  randomSeed: 12345
+  randomEnvironments: []
+  fixedEnvironment: {fileID: 11400000, guid: 712326c0c92df85449bf450248dda464, type: 2}
+  roomRadiusMultiplier: 1
+  roomAmbientAdd01: 0
+  boundsCollider: {fileID: 2443457796119832707}
 --- !u!1 &6624937245626370110
 GameObject:
   m_ObjectHideFlags: 0

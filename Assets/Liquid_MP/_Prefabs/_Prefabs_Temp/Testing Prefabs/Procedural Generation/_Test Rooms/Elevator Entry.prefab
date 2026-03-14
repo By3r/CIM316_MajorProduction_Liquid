@@ -63,6 +63,7 @@ MonoBehaviour:
   _openSound: {fileID: 0}
   _closeSound: {fileID: 0}
   _noiseGenerated: 5
+  _showGizmos: 0
 --- !u!65 &6724992551583434894
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -269,6 +270,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &3569219372575535659
 GameObject:
@@ -311,14 +313,14 @@ Light:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3569219372575535659}
   m_Enabled: 1
-  serializedVersion: 11
+  serializedVersion: 12
   m_Type: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_Intensity: 15
   m_Range: 10
   m_SpotAngle: 179
   m_InnerSpotAngle: 28.566391
-  m_CookieSize: 10
+  m_CookieSize2D: {x: 10, y: 10}
   m_Shadows:
     m_Type: 1
     m_Resolution: -1
@@ -443,13 +445,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.ProceduralGeneration.ConnectionSocket
   _socketType: 0
   _isConnected: 0
+  _forwardAngleOffset: 0
+  _boundsCenter: {x: 0, y: 0, z: 0}
+  _boundsSize: {x: 0, y: 0, z: 0}
   _doorPrefab: {fileID: 3598019254118716538, guid: e919e90045d192e4f806ec4a3b195abb, type: 3}
-  _doorSpawnOffset: {x: 0.6, y: -0.2, z: 0}
+  _doorSpawnPoint: {fileID: 0}
   _blockadePrefabs: []
   _spawnBlockadeIfUnconnected: 1
   _showGizmos: 1
-  _socketSize: {x: 1.2, y: 2.3}
-  _showDoorOffsetGizmo: 1
 --- !u!1 &4944952063801998261
 GameObject:
   m_ObjectHideFlags: 0
@@ -3098,6 +3101,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!33 &8764178582555089363
 MeshFilter:
@@ -3139,6 +3143,8 @@ GameObject:
   m_Component:
   - component: {fileID: 2253920969277380558}
   - component: {fileID: 5377091658559413507}
+  - component: {fileID: 2977567495389956979}
+  - component: {fileID: 1428570280538905757}
   m_Layer: 3
   m_Name: Elevator Entry
   m_TagString: Untagged
@@ -3183,20 +3189,52 @@ MonoBehaviour:
   _registerOnStart: 1
   _boundsCenter: {x: 0.00000047683716, y: 0, z: 2.307613}
   _boundsSize: {x: 10.048689, y: 5.4758387, z: 12.624997}
-  _useUniformPadding: 1
-  _uniformPadding: -0.5
-  _axisBasedPadding: {x: 0.5, y: 0.5, z: 0.5}
-  _socketOffsetDistance: -0.2
-  _useTightCollisionBounds: 1
-  _socketCollisionTolerance: 0.5
+  _subBounds: []
   _showGizmos: 1
   _boundsColor: {r: 0, g: 1, b: 0, a: 1}
-  _paddedBoundsColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-  _collisionBoundsColor: {r: 0, g: 1, b: 1, a: 1}
   _cachedSockets:
   - {fileID: 7919572999682021917}
-  _socketPositionsBeforeAdjustment:
-  - {x: 17.324345, y: -0.59253794, z: -2.2750354}
+--- !u!65 &2977567495389956979
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5138822047483153816}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!114 &1428570280538905757
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5138822047483153816}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 745c4dc1546f50641946e846aeb70bcb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoomNoisePreset
+  pickRandomEnvironment: 1
+  useDeterministicSeed: 1
+  randomSeed: 12345
+  randomEnvironments: []
+  fixedEnvironment: {fileID: 11400000, guid: d3bba890d8f1951498b8409bb6f5fb14, type: 2}
+  roomRadiusMultiplier: 1
+  roomAmbientAdd01: 0
+  boundsCollider: {fileID: 2977567495389956979}
 --- !u!1 &6222919537221874208
 GameObject:
   m_ObjectHideFlags: 0
@@ -3260,6 +3298,7 @@ MonoBehaviour:
   _openSound: {fileID: 0}
   _closeSound: {fileID: 0}
   _noiseGenerated: 5
+  _showGizmos: 0
 --- !u!65 &8560924415848799178
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -3466,6 +3505,7 @@ MeshRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1001 &942924370440888760
 PrefabInstance:

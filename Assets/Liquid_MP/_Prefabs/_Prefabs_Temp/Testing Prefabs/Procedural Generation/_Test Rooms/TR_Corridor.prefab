@@ -154,6 +154,8 @@ GameObject:
   - component: {fileID: 4698218814994800923}
   - component: {fileID: 1555489418635002525}
   - component: {fileID: 6025698851119099132}
+  - component: {fileID: 5833338245378997171}
+  - component: {fileID: 7832961217089659201}
   m_Layer: 0
   m_Name: TR_Corridor
   m_TagString: Untagged
@@ -232,7 +234,47 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.ProceduralGeneration.Enemies.RoomEnemySpawner
   _spawnOnAwake: 1
   _spawnDelay: 0
-  _showDebugLogs: 1
+--- !u!114 &5833338245378997171
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1834404637998707887}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 745c4dc1546f50641946e846aeb70bcb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoomNoisePreset
+  pickRandomEnvironment: 1
+  useDeterministicSeed: 1
+  randomSeed: 12345
+  randomEnvironments: []
+  fixedEnvironment: {fileID: 11400000, guid: 712326c0c92df85449bf450248dda464, type: 2}
+  roomRadiusMultiplier: 1
+  roomAmbientAdd01: 0
+  boundsCollider: {fileID: 7832961217089659201}
+--- !u!65 &7832961217089659201
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1834404637998707887}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 24.421476, y: 9.496038, z: 18.310894}
+  m_Center: {x: 11.710738, y: 4.24802, z: 8.655447}
 --- !u!1 &3751591524130515046
 GameObject:
   m_ObjectHideFlags: 0

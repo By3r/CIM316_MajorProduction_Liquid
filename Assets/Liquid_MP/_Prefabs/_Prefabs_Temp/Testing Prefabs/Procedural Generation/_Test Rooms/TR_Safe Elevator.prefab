@@ -649,6 +649,8 @@ GameObject:
   - component: {fileID: 7914319380981821806}
   - component: {fileID: -5610753460446336065}
   - component: {fileID: 8687427919099316452}
+  - component: {fileID: 4414128321034496406}
+  - component: {fileID: 4490304355495043208}
   m_Layer: 0
   m_Name: TR_Safe Elevator
   m_TagString: Untagged
@@ -713,10 +715,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Machines.Elevator
   _powerCellSlot: {fileID: 3266457423041846136}
-  _floorUI: {fileID: 0}
   _controlPanel: {fileID: 6127955077184525720}
   _totalFloors: 30
   _transitionDelay: 2
+  _fadeOutDuration: 0.5
   _audioSource: {fileID: 8687427919099316452}
   _elevatorMoveSound: {fileID: 0}
   _uiOpenSound: {fileID: 0}
@@ -823,6 +825,47 @@ AudioSource:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+--- !u!65 &4414128321034496406
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5905477482315762008}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 1
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 25.27322, y: 11.470085, z: 18.26496}
+  m_Center: {x: 12.13661, y: 5.2350426, z: 2.9892607}
+--- !u!114 &4490304355495043208
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5905477482315762008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 745c4dc1546f50641946e846aeb70bcb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::RoomNoisePreset
+  pickRandomEnvironment: 1
+  useDeterministicSeed: 1
+  randomSeed: 12345
+  randomEnvironments: []
+  fixedEnvironment: {fileID: 11400000, guid: d3bba890d8f1951498b8409bb6f5fb14, type: 2}
+  roomRadiusMultiplier: 1
+  roomAmbientAdd01: 0
+  boundsCollider: {fileID: 4414128321034496406}
 --- !u!1 &6624937245626370110
 GameObject:
   m_ObjectHideFlags: 0
