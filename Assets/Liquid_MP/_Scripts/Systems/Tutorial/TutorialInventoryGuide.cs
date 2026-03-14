@@ -193,10 +193,6 @@ namespace _Scripts.Tutorial
             Debug.Log("[TutorialInventoryGuide] Close task completed. Advancing tutorial.");
 
             _isActive = false;
-
-            // Advance the tutorial to the next step
-            if (_tutorialManager != null)
-                _tutorialManager.CompleteCurrentStep();
         }
 
         private void OnDestroy()
