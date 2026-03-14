@@ -10,23 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fc31e614b1789304f9899d89689c7c54, type: 3}
-  m_Name: Narrative_CraftingPrompt
+  m_Name: Narrative_EquipComm
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Tutorial.TutorialNarrativeAsset
   beats:
-  - speaker: 2
-    text: Pick up crafting schematics to be a great craft-man.
-    autoAdvanceDelay: 6
-    voiceClip: {fileID: 0}
-    keepHologramActive: 0
-  - speaker: 2
-    text: When you pick up schematics, upload them to the terminal through your inventory.
-    autoAdvanceDelay: 8
-    voiceClip: {fileID: 0}
-    keepHologramActive: 0
-  - speaker: 2
-    text: The terminal appears to be running out of power, find powercells to be
-      able to use it.
-    autoAdvanceDelay: 8
+  - speaker: 0
+    text: Press 3 on your keyboard to answer the call.
+    autoAdvanceDelay: 30
     voiceClip: {fileID: 0}
     keepHologramActive: 0
   lockPlayerDuringPlayback: 0

@@ -1,10 +1,9 @@
-using _Scripts.Systems.Player;
 using _Scripts.Tutorial;
-using Liquid.Audio;
 using System;
 using System.Collections;
+using _Scripts.Systems.Player;
+using Liquid.Audio;
 using UnityEngine;
-using UnityEngine.Events;
 
 namespace Liquid_MP._Scripts.Systems.Coms
 {
@@ -61,6 +60,10 @@ namespace Liquid_MP._Scripts.Systems.Coms
         [SerializeField]
         private TutorialManager _tutorialManager;
 
+        [Tooltip("The AudioSource on the scene prop COMS device. Plays the ringtone from the world object before the player picks it up.")]
+        [SerializeField]
+        private AudioSource _scenePropAudioSource;
+
         [Header("Noise")]
         [Tooltip("How often (seconds) the device emits noise while ringing after the grace period.")]
         [SerializeField]
@@ -98,7 +101,6 @@ namespace Liquid_MP._Scripts.Systems.Coms
         /// <summary>All registered call data assets (for debug console).</summary>
         public CallDataSO[] CallRegistry => _callRegistry;
 
-        [field: SerializeField] public UnityEvent OnAnswerCall { get; private set; }
         #endregion
 
         #region Private Fields
@@ -114,6 +116,8 @@ namespace Liquid_MP._Scripts.Systems.Coms
         /// Triggers an incoming call. Transitions from Idle to Ringing.
         /// If already in a call or ringing, the new call is rejected.
         /// </summary>
+        /// <param name="callData">The call to initiate.</param>
+        /// <returns>True if the call was accepted, false if rejected (already busy).</returns>
         public void TriggerTutorialCall()
         {
             if (_tutorialCall == null)
@@ -121,6 +125,14 @@ namespace Liquid_MP._Scripts.Systems.Coms
                 Debug.LogWarning("[ComsCallManager] TriggerTutorialCall: no tutorial call asset assigned.");
                 return;
             }
+
+            if (_scenePropAudioSource != null && _tutorialCall.ringtone != null)
+            {
+                _scenePropAudioSource.clip = _tutorialCall.ringtone;
+                _scenePropAudioSource.loop = true;
+                _scenePropAudioSource.Play();
+            }
+
             TriggerCall(_tutorialCall);
         }
 
@@ -134,7 +146,7 @@ namespace Liquid_MP._Scripts.Systems.Coms
 
             if (CurrentState != ComsCallState.Idle)
             {
-                Debug.LogWarning($"[ComsCallManager] Cannot trigger call '{callData.callerName}' — " +
+                Debug.LogWarning($"[ComsCallManager] Cannot trigger call '{callData.callerName}' â " +
                                  $"already in state {CurrentState}.");
                 return false;
             }
@@ -160,7 +172,7 @@ namespace Liquid_MP._Scripts.Systems.Coms
         {
             if (CurrentState != ComsCallState.Ringing)
             {
-                Debug.LogWarning($"[ComsCallManager] Cannot answer — state is {CurrentState}, not Ringing.");
+                Debug.LogWarning($"[ComsCallManager] Cannot answer â state is {CurrentState}, not Ringing.");
                 return;
             }
 
@@ -170,12 +182,16 @@ namespace Liquid_MP._Scripts.Systems.Coms
             StopNoiseEmission();
 
             Debug.Log($"[ComsCallManager] Call answered from '{CurrentCall.callerName}'.");
+            if (_scenePropAudioSource != null && _scenePropAudioSource.isPlaying)
+            {
+                _scenePropAudioSource.Stop();
+                _scenePropAudioSource.loop = false;
+            }
+
             OnCallAnswered?.Invoke();
 
             if (_tutorialManager != null)
                 _tutorialManager.CompleteCurrentStep();
-
-            OnAnswerCall?.Invoke();
 
             if (CurrentCall.lines != null && CurrentCall.lines.Length > 0)
             {
@@ -183,7 +199,7 @@ namespace Liquid_MP._Scripts.Systems.Coms
             }
             else
             {
-                // No dialogue lines — end call immediately
+                // No dialogue lines â end call immediately
                 Debug.LogWarning("[ComsCallManager] Call has no dialogue lines. Ending immediately.");
                 EndCall();
             }
@@ -249,7 +265,7 @@ namespace Liquid_MP._Scripts.Systems.Coms
                 yield return new WaitForSeconds(duration);
             }
 
-            // All lines finished — end call
+            // All lines finished â end call
             _dialogueCoroutine = null;
             EndCall();
         }

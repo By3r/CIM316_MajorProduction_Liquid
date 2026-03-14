@@ -35,16 +35,14 @@ public class LoadGameSlotUI : MonoBehaviour
         {
             noDataOverlay.SetActive(!hasData);
             noDataOverlay.transform.SetAsLastSibling();
-
-            Debug.Log(
-                $"{name} | noDataOverlay activeSelf = {noDataOverlay.activeSelf}, " +
-                $"activeInHierarchy = {noDataOverlay.activeInHierarchy}"
-            );
         }
 
         if (locationText != null)
         {
-            locationText.text = hasData ? saveData.GetDisplayLocationName() : string.Empty;
+            if (hasData)
+                locationText.text = $"{saveData.PlayerName}\n\n{saveData.GetDisplayLocationName()}";
+            else
+                locationText.text = string.Empty;
         }
 
         if (dateText != null)
