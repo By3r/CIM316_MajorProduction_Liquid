@@ -385,8 +385,8 @@ namespace _Scripts.Systems.Inventory.UI
             // Universal actions
             actions.Add(new ContextMenuAction { Label = "EXAMINE", Callback = HandleExamineRequested });
 
-            // Drop — everything except key items
-            if (itemData.itemType != PhysicalItemType.KeyItem)
+            // Drop — everything except key items and coms device
+            if (itemData.itemType != PhysicalItemType.KeyItem && itemData.itemType != PhysicalItemType.ComsDevice)
                 actions.Add(new ContextMenuAction { Label = "DROP", Callback = HandleDropRequested });
 
             return actions;

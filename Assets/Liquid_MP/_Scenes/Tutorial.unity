@@ -71049,6 +71049,22 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.y
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1662659254044461208, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: _pixels1080p
+      value: 450
+      objectReference: {fileID: 0}
+    - target: {fileID: 1662659254044461208, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: _pixels1440p
+      value: 550
+      objectReference: {fileID: 0}
+    - target: {fileID: 1662659254044461208, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: _pixels2160p
+      value: 600
+      objectReference: {fileID: 0}
+    - target: {fileID: 1662659254044461208, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
+      propertyPath: _resolvedPixelPercent
+      value: 0.3
+      objectReference: {fileID: 0}
     - target: {fileID: 2225396863498009684, guid: 614bb6dc9789ef541ae0bbf80ff74202, type: 3}
       propertyPath: m_LocalPosition.x
       value: 3.76
@@ -78479,6 +78495,18 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5386505470828100367, guid: 461f97804c1242840a763777080c467d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6907238576355138756, guid: 461f97804c1242840a763777080c467d, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6907238576355138756, guid: 461f97804c1242840a763777080c467d, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6907238576355138756, guid: 461f97804c1242840a763777080c467d, type: 3}
+      propertyPath: m_SizeDelta.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7114224111305765677, guid: 461f97804c1242840a763777080c467d, type: 3}
