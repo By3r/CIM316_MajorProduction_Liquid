@@ -79,6 +79,11 @@ namespace _Scripts.Systems.Terminal
         [SerializeField] private Color _inactiveDotColor = new Color(0.25f, 0.19f, 0.00f, 1.00f);
         [SerializeField] private Color _disabledDotColor = new Color(0.60f, 0.13f, 0.13f, 1.00f);
 
+        [Header("Tutorial")]
+        [Tooltip("When true, the terminal operates without GameManager/FloorStateManager. " +
+                 "Elevator panel shows only Floor 1 as breachable once a PowerCell is inserted.")]
+        [SerializeField] private bool _isTutorialMode;
+
         #endregion
 
         #region Private Fields
@@ -168,7 +173,9 @@ namespace _Scripts.Systems.Terminal
                 PlayerInventory.Instance.OnSlotChanged += HandleInventoryChanged;
 
             // Refresh the elevator panel after floor transitions (terminal persists across floors)
-            GameManager.Instance?.EventManager?.Subscribe("OnFloorGenerationComplete", HandleFloorGenerationComplete);
+            // Skip in tutorial mode — no GameManager/EventManager present
+            if (!_isTutorialMode)
+                GameManager.Instance?.EventManager?.Subscribe("OnFloorGenerationComplete", HandleFloorGenerationComplete);
         }
 
         private void Update()
@@ -182,7 +189,8 @@ namespace _Scripts.Systems.Terminal
         {
             if (Instance == this) Instance = null;
 
-            GameManager.Instance?.EventManager?.Unsubscribe("OnFloorGenerationComplete", HandleFloorGenerationComplete);
+            if (!_isTutorialMode)
+                GameManager.Instance?.EventManager?.Unsubscribe("OnFloorGenerationComplete", HandleFloorGenerationComplete);
 
             if (_powerCellSlot != null)
                 _powerCellSlot.OnPowerStateChanged -= OnPowerCellChanged;
@@ -318,24 +326,39 @@ namespace _Scripts.Systems.Terminal
         {
             if (_elevatorPanel == null) return;
 
-            int currentFloor = 1;
-            int highestUnsealed = 1;
+            int currentFloor;
+            int highestUnsealed;
+            int totalFloors;
 
-            var fsm = FloorStateManager.Instance;
-            if (fsm != null && fsm.IsInitialized)
+            if (_isTutorialMode)
             {
-                currentFloor = fsm.CurrentFloorNumber;
-                // All visited floors are unsealed; at minimum the current floor
-                highestUnsealed = currentFloor;
-                foreach (var kvp in fsm.FloorStates)
+                // Tutorial: player is on "floor 0" (lobby/surface), only floor 1 exists
+                currentFloor = 0;
+                highestUnsealed = 0;
+                totalFloors = 1;
+            }
+            else
+            {
+                currentFloor = 1;
+                highestUnsealed = 1;
+                totalFloors = _totalFloors;
+
+                var fsm = FloorStateManager.Instance;
+                if (fsm != null && fsm.IsInitialized)
                 {
-                    if (kvp.Value.isVisited && kvp.Key > highestUnsealed)
-                        highestUnsealed = kvp.Key;
+                    currentFloor = fsm.CurrentFloorNumber;
+                    // All visited floors are unsealed; at minimum the current floor
+                    highestUnsealed = currentFloor;
+                    foreach (var kvp in fsm.FloorStates)
+                    {
+                        if (kvp.Value.isVisited && kvp.Key > highestUnsealed)
+                            highestUnsealed = kvp.Key;
+                    }
                 }
             }
 
             _elevatorPanel.Initialize(
-                _totalFloors,
+                totalFloors,
                 currentFloor,
                 highestUnsealed,
                 _hasPowerCell,
@@ -347,18 +370,29 @@ namespace _Scripts.Systems.Terminal
         {
             if (_elevatorPanel == null) return;
 
-            int currentFloor = 1;
-            int highestUnsealed = 1;
+            int currentFloor;
+            int highestUnsealed;
 
-            var fsm = FloorStateManager.Instance;
-            if (fsm != null && fsm.IsInitialized)
+            if (_isTutorialMode)
             {
-                currentFloor = fsm.CurrentFloorNumber;
-                highestUnsealed = currentFloor;
-                foreach (var kvp in fsm.FloorStates)
+                currentFloor = 0;
+                highestUnsealed = 0;
+            }
+            else
+            {
+                currentFloor = 1;
+                highestUnsealed = 1;
+
+                var fsm = FloorStateManager.Instance;
+                if (fsm != null && fsm.IsInitialized)
                 {
-                    if (kvp.Value.isVisited && kvp.Key > highestUnsealed)
-                        highestUnsealed = kvp.Key;
+                    currentFloor = fsm.CurrentFloorNumber;
+                    highestUnsealed = currentFloor;
+                    foreach (var kvp in fsm.FloorStates)
+                    {
+                        if (kvp.Value.isVisited && kvp.Key > highestUnsealed)
+                            highestUnsealed = kvp.Key;
+                    }
                 }
             }
 

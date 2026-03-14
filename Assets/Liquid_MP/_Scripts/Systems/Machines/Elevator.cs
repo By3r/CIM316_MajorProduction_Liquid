@@ -9,6 +9,7 @@ using _Scripts.Systems.Inventory.Pickups;
 using _Scripts.Systems.Player;
 using _Scripts.Systems.ProceduralGeneration;
 using _Scripts.Systems.Terminal;
+using _Scripts.Tutorial;
 
 namespace _Scripts.Systems.Machines
 {
@@ -30,7 +31,6 @@ namespace _Scripts.Systems.Machines
 
         [Header("References")]
         [SerializeField] private PowerCellSlot _powerCellSlot;
-        [SerializeField] private Transform _controlPanel;
 
         [Header("Floor Settings")]
         [SerializeField] private int _totalFloors = 20;
@@ -48,6 +48,10 @@ namespace _Scripts.Systems.Machines
         [SerializeField] private UnityEvent _onTransitionStarted;
         [SerializeField] private UnityEvent _onTransitionComplete;
 
+        [Header("Tutorial")]
+        [Tooltip("When true, traveling down calls EndTutorial() instead of triggering floor generation.")]
+        [SerializeField] private bool _isTutorialMode;
+
         #endregion
 
         #region Private Fields
@@ -64,7 +68,6 @@ namespace _Scripts.Systems.Machines
 
         public bool IsPowered => _powerCellSlot != null && _powerCellSlot.IsPowered;
         public bool IsTransitioning => _isTransitioning;
-        public Transform ControlPanel => _controlPanel;
 
         public string ControlPanelPrompt
         {
@@ -123,6 +126,14 @@ namespace _Scripts.Systems.Machines
         {
             // Prevent double transitions from rapid clicks or duplicate events
             if (_isTransitioning) return;
+
+            if (_isTutorialMode)
+            {
+                // Tutorial mode: just need power cell to go anywhere
+                if (!IsPowered) return;
+                StartCoroutine(TutorialTransitionCoroutine());
+                return;
+            }
 
             int currentFloor = GetCurrentFloor();
             int highestUnlocked = GetHighestUnlockedFloor();
@@ -231,6 +242,31 @@ namespace _Scripts.Systems.Machines
         }
 
         /// <summary>
+        /// Tutorial-only transition: fade out, play sound, then end the tutorial.
+        /// Skips all FloorStateManager / FloorGenerator / EventManager logic.
+        /// </summary>
+        private IEnumerator TutorialTransitionCoroutine()
+        {
+            _isTransitioning = true;
+            _onTransitionStarted?.Invoke();
+
+            ScreenFade.Instance.FadeOut(_fadeOutDuration);
+            PlaySound(_elevatorMoveSound);
+
+            yield return new WaitForSeconds(_transitionDelay);
+
+            // End the tutorial — handles save flags and scene transition
+            var tutorialManager = FindObjectOfType<TutorialManager>();
+            if (tutorialManager != null)
+                tutorialManager.EndTutorial();
+            else
+                Debug.LogError("[Elevator] Tutorial mode is on but no TutorialManager found in scene!");
+
+            _isTransitioning = false;
+            _onTransitionComplete?.Invoke();
+        }
+
+        /// <summary>
         /// Updates the saved positions of all dropped items before leaving a floor.
         /// Items may have moved due to physics after being dropped.
         /// </summary>
@@ -322,12 +358,6 @@ namespace _Scripts.Systems.Machines
         {
             Gizmos.color = IsPowered ? Color.green : Color.yellow;
             Gizmos.DrawWireCube(transform.position, Vector3.one * 2f);
-
-            if (_controlPanel != null)
-            {
-                Gizmos.color = Color.cyan;
-                Gizmos.DrawWireSphere(_controlPanel.position, 0.3f);
-            }
         }
 
         #endregion

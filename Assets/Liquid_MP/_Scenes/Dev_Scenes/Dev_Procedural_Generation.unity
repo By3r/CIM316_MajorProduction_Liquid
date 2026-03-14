@@ -1181,9 +1181,9 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 1507321550}
   - {fileID: 2091374791}
   - {fileID: 387593803}
-  - {fileID: 1507321550}
   - {fileID: 1466747771}
   - {fileID: 1898024860}
   - {fileID: 1031815056}
@@ -8664,6 +8664,7 @@ MonoBehaviour:
   _activeDotColor: {r: 0.2, g: 1, b: 0.53, a: 1}
   _inactiveDotColor: {r: 0.25, g: 0.19, b: 0, a: 1}
   _disabledDotColor: {r: 0.6, g: 0.13, b: 0.13, a: 1}
+  _isTutorialMode: 0
 --- !u!1 &1434595243
 GameObject:
   m_ObjectHideFlags: 0
@@ -9375,6 +9376,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GridPathfinder
   gridWorldSize: {x: 128.94598, y: 4, z: 164.63657}
   nodeRadius: 0.5
+  useManualGridSize: 0
   obstacleMask:
     serializedVersion: 2
     m_Bits: 512
@@ -10182,51 +10184,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed1dd9c5f7340654d8da10095455e227, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Liquid.Audio.NoiseManager
-  lowBaseRadius: 4
-  mediumBaseRadius: 8
-  highBaseRadius: 12
-  maximumBaseRadius: 18
-  lowIntensity01: 0.25
-  mediumIntensity01: 0.45
-  highIntensity01: 0.7
-  maximumIntensity01: 1
-  footstepsMultiplier: 1
-  sprintMultiplier: 1.3
-  jumpMultiplier: 1.1
-  gunshotMultiplier: 2
-  objectImpactMultiplier: 1.5
-  otherMultiplier: 1
-  occlusionMask:
+  _footstepBase: 1
+  _sprintBase: 2
+  _jumpBase: 1.5
+  _gunshotBase: 4
+  _objectImpactBase: 2.5
+  _commDeviceBase: 2
+  _otherBase: 1
+  _noneRadius: 2
+  _lowRadius: 4
+  _mediumRadius: 8
+  _highRadius: 14
+  _extremeRadius: 22
+  _occlusionMask:
     serializedVersion: 2
     m_Bits: 0
-  occludedLoudnessMultiplier: 0.35
-  useDistanceFalloff: 1
-  falloffCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  showDebugLogs: 1
-  zoneTracker: {fileID: 0}
+  _occludedMultiplier: 0.35
+  _noiseDecaySpeed: 3
+  _showDebugLogs: 0
 --- !u!224 &1588292500 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3394127391126205747, guid: 461f97804c1242840a763777080c467d, type: 3}
@@ -10903,6 +10878,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 118064593}
     m_Modifications:
+    - target: {fileID: 1476003777330488859, guid: 8cc30a3974b42ed4e90fd99f03f611d6, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1476003777330488859, guid: 8cc30a3974b42ed4e90fd99f03f611d6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.043
+      objectReference: {fileID: 0}
+    - target: {fileID: 1476003777330488859, guid: 8cc30a3974b42ed4e90fd99f03f611d6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0.036
+      objectReference: {fileID: 0}
     - target: {fileID: 1840428516458731385, guid: 8cc30a3974b42ed4e90fd99f03f611d6, type: 3}
       propertyPath: _defaultCursorSprite
       value: 
@@ -10911,6 +10898,10 @@ PrefabInstance:
       propertyPath: _pointerCursorSprite
       value: 
       objectReference: {fileID: 21300000, guid: b3bc98669a0f54a4b8a9c7cd2fdbda9a, type: 3}
+    - target: {fileID: 3126658691484138086, guid: 8cc30a3974b42ed4e90fd99f03f611d6, type: 3}
+      propertyPath: m_ProvidesContacts
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4849481375539255851, guid: 8cc30a3974b42ed4e90fd99f03f611d6, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0

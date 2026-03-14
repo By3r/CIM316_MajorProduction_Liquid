@@ -110,13 +110,28 @@ namespace _Scripts.Systems.Terminal
                 if (_mainCamera == null) return;
             }
 
-            // Raycast from crosshair (screen center) forward
+            // Raycast from crosshair (screen center) forward.
+            // Uses RaycastAll so the ScreenQuad is detected even if a wall
+            // collider sits slightly in front of it.
             Ray ray = new Ray(_mainCamera.transform.position, _mainCamera.transform.forward);
+            RaycastHit[] hits = Physics.RaycastAll(ray, _maxDistance);
 
-            if (Physics.Raycast(ray, out RaycastHit hit, _maxDistance)
-                && hit.collider == _screenCollider)
+            RaycastHit screenHit = default;
+            bool foundScreen = false;
+
+            foreach (var h in hits)
             {
-                HandleScreenHit(hit.textureCoord);
+                if (h.collider == _screenCollider)
+                {
+                    screenHit = h;
+                    foundScreen = true;
+                    break;
+                }
+            }
+
+            if (foundScreen)
+            {
+                HandleScreenHit(screenHit.textureCoord);
             }
             else
             {
