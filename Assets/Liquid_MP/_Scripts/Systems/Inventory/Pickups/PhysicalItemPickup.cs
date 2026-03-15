@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace _Scripts.Systems.Inventory.Pickups
 {
@@ -10,6 +11,7 @@ namespace _Scripts.Systems.Inventory.Pickups
         [Header("Item Data")]
         [SerializeField] private InventoryItemData _itemData;
         [SerializeField] private int _quantity = 1;
+        [SerializeField] private UnityEvent onItemPickUp;
 
         public InventoryItemData ItemData => _itemData;
         public int Quantity => _quantity;
@@ -21,6 +23,7 @@ namespace _Scripts.Systems.Inventory.Pickups
             if (inventory.TryAddItem(_itemData, _quantity))
             {
                 OnPickupSuccess();
+                onItemPickUp?.Invoke();
                 return true;
             }
 

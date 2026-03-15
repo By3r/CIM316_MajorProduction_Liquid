@@ -1,8 +1,9 @@
+using _Scripts.Systems.Inventory;
+using _Scripts.Systems.Player;
 using System;
 using System.Collections;
 using UnityEngine;
-using _Scripts.Systems.Inventory;
-using _Scripts.Systems.Player;
+using UnityEngine.Events;
 
 namespace _Scripts.Systems.Machines
 {
@@ -60,7 +61,7 @@ namespace _Scripts.Systems.Machines
         private Quaternion _modelLocalRotation;
         private PlayerInventory _pendingInventory;
         private int _pendingSlotIndex;
-
+        [SerializeField] private UnityEvent onPowerInsert;
         #endregion
 
         #region Properties
@@ -134,6 +135,7 @@ namespace _Scripts.Systems.Machines
                         _insertedPowerCell = inventory.RemoveItemFromSlot(i);
                         SetPowered(true);
                     }
+
                     PlaySound(_insertSound);
                     return true;
                 }
@@ -160,6 +162,7 @@ namespace _Scripts.Systems.Machines
                 if (_powerCellModel != null)
                 {
                     StartCoroutine(PlayScrewOutAnimation());
+                    onPowerInsert?.Invoke();
                 }
                 else
                 {
@@ -169,6 +172,7 @@ namespace _Scripts.Systems.Machines
                     SetPowered(false);
                 }
                 PlaySound(_removeSound);
+
                 return true;
             }
 
