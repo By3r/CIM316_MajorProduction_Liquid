@@ -17,5 +17,5 @@ MonoBehaviour:
     text: Press 3 on your keyboard to answer the call.
     autoAdvanceDelay: 30
     voiceClip: {fileID: 0}
-    keepHologramActive: 0
+    keepHologramActive: 1
   lockPlayerDuringPlayback: 0

@@ -17,16 +17,16 @@ MonoBehaviour:
     text: Pick up crafting schematics to be a great craft-man.
     autoAdvanceDelay: 6
     voiceClip: {fileID: 0}
-    keepHologramActive: 0
+    keepHologramActive: 1
   - speaker: 2
     text: When you pick up schematics, upload them to the terminal through your inventory.
     autoAdvanceDelay: 8
     voiceClip: {fileID: 0}
-    keepHologramActive: 0
+    keepHologramActive: 1
   - speaker: 2
     text: The terminal appears to be running out of power, find powercells to be
       able to use it.
     autoAdvanceDelay: 8
     voiceClip: {fileID: 0}
-    keepHologramActive: 0
+    keepHologramActive: 1
   lockPlayerDuringPlayback: 0

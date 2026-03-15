@@ -7,6 +7,7 @@ using KINEMATION.TacticalShooterPack.Scripts.Player;
 using KINEMATION.TacticalShooterPack.Scripts.Weapon;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 
 namespace _Scripts.Systems.Inventory
 {
@@ -41,6 +42,8 @@ namespace _Scripts.Systems.Inventory
         public event Action<int> OnActiveWeaponSlotChanged;
 
         #endregion
+
+        [SerializeField] private bool isInGame = true;
 
         #region Private Fields
 
@@ -124,6 +127,9 @@ namespace _Scripts.Systems.Inventory
             {
                 _tacticalPlayer.UseEquipmentSystem = true;
             }
+
+            if (SceneManager.GetActiveScene().name == "Game")
+            { isInGame = true; }
         }
 
         private void OnEnable()
@@ -590,9 +596,12 @@ namespace _Scripts.Systems.Inventory
 
             _isInTerminalMode = true;
 
-            // Deactivate COMS if active
-            if (_comsController != null && _comsController.IsActive)
-                _comsController.ToggleComs();
+            if (isInGame)
+            {
+                // Deactivate COMS if active
+                if (_comsController != null && _comsController.IsActive)
+                    _comsController.ToggleComs();
+            }
 
             // Block weapon input on TacticalShooterPlayer
             if (_tacticalPlayer != null)
