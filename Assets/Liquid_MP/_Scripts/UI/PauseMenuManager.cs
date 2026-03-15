@@ -72,14 +72,12 @@ public class PauseMenuManager : MonoBehaviour
     {
         if (Instance != null && Instance != this)
         {
-            Debug.Log("[PauseMenu] Duplicate instance destroyed.");
             Destroy(gameObject);
             return;
         }
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        Debug.Log("[PauseMenu] Awake — instance created, DontDestroyOnLoad set.");
 
         CacheResolutions();
         SetupPauseButtonListeners();
@@ -103,19 +101,12 @@ public class PauseMenuManager : MonoBehaviour
             UpdateButtonHighlightFromEventSystem();
     }
 
-    // -------------------------------------------------------------------------
-    // Input
-    // -------------------------------------------------------------------------
-
     public void OnPauseInput(InputAction.CallbackContext context)
     {
-        Debug.Log($"[PauseMenu] OnPauseInput fired — phase: {context.phase}, isInOptions: {isInOptions}, isPaused: {isPaused}");
-
         if (!context.performed) return;
 
         if (isInOptions)
         {
-            Debug.Log("[PauseMenu] ESC in options → returning to pause root.");
             ShowPausePanel();
         }
         else
@@ -123,10 +114,6 @@ public class PauseMenuManager : MonoBehaviour
             TogglePause();
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Scene
-    // -------------------------------------------------------------------------
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
@@ -141,17 +128,11 @@ public class PauseMenuManager : MonoBehaviour
 
     private bool IsMenuScene() => SceneManager.GetActiveScene().name == menuSceneName;
 
-    // -------------------------------------------------------------------------
-    // Pause / Resume
-    // -------------------------------------------------------------------------
-
     public void TogglePause()
     {
-        Debug.Log($"[PauseMenu] TogglePause called — IsMenuScene: {IsMenuScene()}, isPaused: {isPaused}");
 
         if (IsMenuScene())
         {
-            Debug.LogWarning("[PauseMenu] TogglePause blocked — currently in menu scene.");
             return;
         }
 
@@ -160,11 +141,8 @@ public class PauseMenuManager : MonoBehaviour
 
     public void Pause()
     {
-        Debug.Log("[PauseMenu] Pause()");
-
         if (IsMenuScene() || isPaused)
         {
-            Debug.LogWarning($"[PauseMenu] Pause blocked — IsMenuScene: {IsMenuScene()}, isPaused: {isPaused}");
             return;
         }
 
@@ -174,13 +152,8 @@ public class PauseMenuManager : MonoBehaviour
 
         if (CursorManager.CursorInstance != null)
         {
-            Debug.Log("[PauseMenu] Showing cursor via CursorManager.");
             CursorManager.CursorInstance.ShowCursor();
             CursorManager.CursorInstance.SetDefaultCursor();
-        }
-        else
-        {
-            Debug.LogWarning("[PauseMenu] CursorManager.CursorInstance is null — cursor not shown.");
         }
 
         ShowPausePanel();
@@ -188,11 +161,8 @@ public class PauseMenuManager : MonoBehaviour
 
     public void Resume()
     {
-        Debug.Log("[PauseMenu] Resume()");
-
         if (!isPaused)
         {
-            Debug.LogWarning("[PauseMenu] Resume called but not paused — ignoring.");
             return;
         }
 
@@ -203,12 +173,7 @@ public class PauseMenuManager : MonoBehaviour
 
         if (CursorManager.CursorInstance != null)
         {
-            Debug.Log("[PauseMenu] Hiding cursor via CursorManager.");
             CursorManager.CursorInstance.HideCursor();
-        }
-        else
-        {
-            Debug.LogWarning("[PauseMenu] CursorManager.CursorInstance is null — cursor not hidden.");
         }
 
         HideAllPanels();
@@ -216,25 +181,17 @@ public class PauseMenuManager : MonoBehaviour
 
     private void ForceResume()
     {
-        Debug.Log("[PauseMenu] ForceResume()");
         isPaused = false;
         isInOptions = false;
         Time.timeScale = 1f;
         SetGameplayScriptsEnabled(true);
         HideAllPanels();
     }
-
-    // -------------------------------------------------------------------------
-    // Panels
-    // -------------------------------------------------------------------------
-
     private void ShowPausePanel()
     {
-        Debug.Log("[PauseMenu] ShowPausePanel()");
         isInOptions = false;
 
         if (pauseRootPanel != null) pauseRootPanel.SetActive(true);
-        else Debug.LogWarning("[PauseMenu] pauseRootPanel is null.");
 
         if (optionsPanel != null) optionsPanel.SetActive(false);
 
@@ -243,68 +200,49 @@ public class PauseMenuManager : MonoBehaviour
 
     private void ShowOptionsPanel()
     {
-        Debug.Log("[PauseMenu] ShowOptionsPanel()");
         isInOptions = true;
 
         if (pauseRootPanel != null) pauseRootPanel.SetActive(false);
 
         if (optionsPanel != null) optionsPanel.SetActive(true);
-        else Debug.LogWarning("[PauseMenu] optionsPanel is null.");
 
         OpenOptions();
     }
 
     private void HideAllPanels()
     {
-        Debug.Log("[PauseMenu] HideAllPanels()");
         if (pauseRootPanel != null) pauseRootPanel.SetActive(false);
         if (optionsPanel != null) optionsPanel.SetActive(false);
     }
 
-    // -------------------------------------------------------------------------
-    // Pause Buttons
-    // -------------------------------------------------------------------------
-
     private void SetupPauseButtonListeners()
     {
         if (resumeButton.Button != null) resumeButton.Button.onClick.AddListener(OnResumePressed);
-        else Debug.LogWarning("[PauseMenu] resumeButton.Button is not assigned.");
 
         if (optionsButton.Button != null) optionsButton.Button.onClick.AddListener(OnOptionsPressed);
-        else Debug.LogWarning("[PauseMenu] optionsButton.Button is not assigned.");
 
         if (quitButton.Button != null) quitButton.Button.onClick.AddListener(OnQuitPressed);
-        else Debug.LogWarning("[PauseMenu] quitButton.Button is not assigned.");
 
         AddPausePointerHelper(resumeButton);
         AddPausePointerHelper(optionsButton);
         AddPausePointerHelper(quitButton);
-
-        Debug.Log("[PauseMenu] Pause button listeners set up.");
     }
 
     private void OnResumePressed()
     {
-        Debug.Log("[PauseMenu] Resume button pressed.");
         Resume();
     }
 
     private void OnOptionsPressed()
     {
-        Debug.Log("[PauseMenu] Options button pressed.");
         ShowOptionsPanel();
     }
 
     private void OnQuitPressed()
     {
-        Debug.Log($"[PauseMenu] Quit button pressed — loading: {menuSceneName}");
         ForceResume();
         SceneManager.LoadScene(menuSceneName);
     }
-
-    // -------------------------------------------------------------------------
-    // Button Visuals
-    // -------------------------------------------------------------------------
 
     private void FocusDefaultButton()
     {
@@ -312,13 +250,8 @@ public class PauseMenuManager : MonoBehaviour
 
         if (target?.Button != null)
         {
-            Debug.Log($"[PauseMenu] Focusing button: {target.Button.name}");
             EventSystem.current?.SetSelectedGameObject(target.Button.gameObject);
             highlightedButton = target;
-        }
-        else
-        {
-            Debug.LogWarning("[PauseMenu] FocusDefaultButton — no valid button to focus. EventSystem.current: " + (EventSystem.current != null ? EventSystem.current.name : "NULL"));
         }
 
         RefreshAllButtonVisuals();
@@ -340,7 +273,6 @@ public class PauseMenuManager : MonoBehaviour
 
         if (highlightedButton != newHighlight)
         {
-            Debug.Log($"[PauseMenu] Highlight changed → {(newHighlight?.Button != null ? newHighlight.Button.name : "none")}");
             highlightedButton = newHighlight;
             RefreshAllButtonVisuals();
         }
@@ -381,17 +313,10 @@ public class PauseMenuManager : MonoBehaviour
         EventSystem.current?.SetSelectedGameObject(button.gameObject);
     }
 
-    // -------------------------------------------------------------------------
-    // Options
-    // -------------------------------------------------------------------------
-
     private void OpenOptions()
     {
-        Debug.Log("[PauseMenu] OpenOptions()");
-
         if (SettingsDataManager.Instance == null)
         {
-            Debug.LogError("[PauseMenu] SettingsDataManager.Instance is null — options cannot load.");
             return;
         }
 
@@ -415,8 +340,6 @@ public class PauseMenuManager : MonoBehaviour
 
         if (applyButton != null) applyButton.onClick.AddListener(OnApplyPressed);
         if (backButton != null) backButton.onClick.AddListener(OnBackPressed);
-
-        Debug.Log("[PauseMenu] Options listeners set up.");
     }
 
     private void OnMasterVolumeChanged(float value) { if (temporarySettings == null) return; temporarySettings.MasterVolume = value; UpdateVolumeText(masterVolumeText, value); }
@@ -428,7 +351,6 @@ public class PauseMenuManager : MonoBehaviour
 
     private void OnApplyPressed()
     {
-        Debug.Log("[PauseMenu] Apply pressed.");
         if (SettingsDataManager.Instance == null || temporarySettings == null) return;
 
         SettingsDataManager.Instance.CurrentSettings.CopyFrom(temporarySettings);
@@ -438,7 +360,6 @@ public class PauseMenuManager : MonoBehaviour
 
     private void OnBackPressed()
     {
-        Debug.Log("[PauseMenu] Back pressed — returning to pause root.");
         ShowPausePanel();
     }
 
@@ -475,12 +396,11 @@ public class PauseMenuManager : MonoBehaviour
     private void CacheResolutions()
     {
         availableResolutions = Screen.resolutions;
-        Debug.Log($"[PauseMenu] Cached {availableResolutions.Length} resolutions.");
     }
 
     private void PopulateResolutionDropdown()
     {
-        if (resolutionDropdown == null) { Debug.LogWarning("[PauseMenu] resolutionDropdown is null."); return; }
+        if (resolutionDropdown == null) { return; }
 
         resolutionDropdown.ClearOptions();
         var options = new System.Collections.Generic.List<string>();
@@ -498,7 +418,7 @@ public class PauseMenuManager : MonoBehaviour
 
     private void PopulateQualityDropdown()
     {
-        if (qualityDropdown == null) { Debug.LogWarning("[PauseMenu] qualityDropdown is null."); return; }
+        if (qualityDropdown == null) { return; }
 
         qualityDropdown.ClearOptions();
         qualityDropdown.AddOptions(new System.Collections.Generic.List<string>(QualitySettings.names));
@@ -527,13 +447,11 @@ public class PauseMenuManager : MonoBehaviour
     private void SetGameplayScriptsEnabled(bool state)
     {
         if (scriptsToDisableWhilePaused == null) return;
-        Debug.Log($"[PauseMenu] SetGameplayScriptsEnabled({state}) — {scriptsToDisableWhilePaused.Length} scripts.");
+
         for (int i = 0; i < scriptsToDisableWhilePaused.Length; i++)
         {
             if (scriptsToDisableWhilePaused[i] != null)
                 scriptsToDisableWhilePaused[i].enabled = state;
-            else
-                Debug.LogWarning($"[PauseMenu] scriptsToDisableWhilePaused[{i}] is null.");
         }
     }
 
