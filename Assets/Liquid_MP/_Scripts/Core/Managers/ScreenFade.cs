@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace _Scripts.Core.Managers
@@ -72,10 +73,19 @@ namespace _Scripts.Core.Managers
             if (cg != null) DestroyImmediate(cg);
 
             SetupFadeImage();
+
+            SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            FadeIn(0.5f);
         }
 
         private void OnDestroy()
         {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+
             if (_instance == this)
                 _instance = null;
         }

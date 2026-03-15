@@ -54,6 +54,9 @@ namespace _Scripts.UI.MainMenu
 
         private void Awake()
         {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
             BindButtons();
             CloseAllSubPanels();
             RefreshMenu();

@@ -3,6 +3,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.Rendering.RenderGraphModule;
 using UnityEngine.Rendering.RenderGraphModule.Util;
+using UnityEngine.SceneManagement;
 
 namespace Liquid.Rendering
 {
@@ -33,6 +34,19 @@ namespace Liquid.Rendering
 
         /// <summary>Maximum blur radius in texels. Higher = more spread.</summary>
         public static float BlurRadius { get; set; } = 8f;
+
+        /// <summary>
+        /// Resets all static state when a new scene loads, preventing the effect
+        /// from persisting across scene transitions.
+        /// </summary>
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics()
+        {
+            IsActive = false;
+            BlackAmount = 0f;
+            BlurAmount = 0f;
+            BlurRadius = 8f;
+        }
 
         #endregion
 

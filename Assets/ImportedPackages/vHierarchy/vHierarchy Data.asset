@@ -546,6 +546,7 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-89be2929b450786428318d398f2eedfc-1978549177-0
         - globalObjectIdString: GlobalObjectId_V1-2-89be2929b450786428318d398f2eedfc-27317789-0
         - globalObjectIdString: GlobalObjectId_V1-2-89be2929b450786428318d398f2eedfc-1031815055-0
+        - globalObjectIdString: GlobalObjectId_V1-2-89be2929b450786428318d398f2eedfc-2010144213-0
         values:
         - colorIndex: 7
           iconNameOrGuid: Canvas Icon
@@ -821,6 +822,10 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 0
           iconNameOrGuid: Camera Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 2
+          iconNameOrGuid: P4_DeletedLocal
           isIconRecursive: 0
           isColorRecursive: 0
     - goDatas_byGlobalId:
