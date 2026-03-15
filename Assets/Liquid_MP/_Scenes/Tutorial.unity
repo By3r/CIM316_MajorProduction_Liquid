@@ -37039,18 +37039,6 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 1
           m_CallState: 2
-        - m_Target: {fileID: 1297604387}
-          m_TargetAssemblyTypeName: _Scripts.Tutorial.TutorialUI, Assembly-CSharp
-          m_MethodName: SetLieutenantVisiblePublic
-          m_Mode: 6
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
   - label: Northbridge tells player to craft container
     narrative: {fileID: 11400000, guid: eef8f04a8a5dd754ea9a251d04cfef43, type: 2}
     waitForExternalTrigger: 1
@@ -61591,6 +61579,18 @@ MonoBehaviour:
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 1297604387}
+        m_TargetAssemblyTypeName: _Scripts.Tutorial.TutorialUI, Assembly-CSharp
+        m_MethodName: SetLieutenantVisiblePublic
+        m_Mode: 6
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 1
         m_CallState: 2
 --- !u!1 &2127071954
 GameObject:
@@ -87503,7 +87503,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5089139960426680994, guid: 042ceb2cd5edc87458acac0147fbfd21, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.478
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 5089139960426680994, guid: 042ceb2cd5edc87458acac0147fbfd21, type: 3}
       propertyPath: m_LocalPosition.z
