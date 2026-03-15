@@ -835,6 +835,7 @@ MonoBehaviour:
         - globalObjectIdString: GlobalObjectId_V1-2-dbf17456304c45e49a6e85acad11b9dc-4801903767883800317-1910722712307635677
         - globalObjectIdString: GlobalObjectId_V1-2-dbf17456304c45e49a6e85acad11b9dc-1534798649-0
         - globalObjectIdString: GlobalObjectId_V1-2-dbf17456304c45e49a6e85acad11b9dc-1297604383-0
+        - globalObjectIdString: GlobalObjectId_V1-2-dbf17456304c45e49a6e85acad11b9dc-1329320502-0
         values:
         - colorIndex: 9
           iconNameOrGuid: ColorPicker.CycleColor
@@ -854,6 +855,10 @@ MonoBehaviour:
           isColorRecursive: 0
         - colorIndex: 3
           iconNameOrGuid: Settings Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 1
+          iconNameOrGuid: DebuggerAttached
           isIconRecursive: 0
           isColorRecursive: 0
   bookmarks: []

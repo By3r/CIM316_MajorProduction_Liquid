@@ -18,6 +18,9 @@ namespace _Scripts.Systems.Inventory.Pickups
         [Header("Visual Feedback")]
         [SerializeField] protected GameObject _highlightEffect;
 
+        [Tooltip("Adds a subtle fresnel rim glow + emission pulse to make this item stand out.")]
+        [SerializeField] private bool _showGlow = true;
+
         [Header("Events")]
         [SerializeField] private UnityEvent _onPickedUp;
 
@@ -51,6 +54,12 @@ namespace _Scripts.Systems.Inventory.Pickups
 
             // Check if already collected this floor session
             CheckIfAlreadyCollected();
+
+            // Auto add glow effect if enabled and not already collected
+            if (_showGlow && !_isCollected && GetComponent<PickupGlowEffect>() == null)
+            {
+                gameObject.AddComponent<PickupGlowEffect>();
+            }
         }
 
         protected virtual void CheckIfAlreadyCollected()

@@ -113,6 +113,14 @@ namespace _Scripts.Systems.Inventory
             _slots[1] = new EquipmentSlot { SlotType = EquipmentSlotType.SecondaryWeapon };
             _slots[2] = new EquipmentSlot { SlotType = EquipmentSlotType.SuitAddon };
             _slots[3] = new EquipmentSlot { SlotType = EquipmentSlotType.ComsDevice };
+
+            // Set UseEquipmentSystem in Awake so it is guaranteed to be true
+            // before TacticalShooterPlayer.Start() checks it. Without this,
+            // build script ordering can cause Start() to run too late, leaving
+            // the flag false and spawning weapons from the prefab list instead.
+            var player = GetComponent<TacticalShooterPlayer>();
+            if (player != null)
+                player.UseEquipmentSystem = true;
         }
 
         private void Start()
@@ -121,12 +129,6 @@ namespace _Scripts.Systems.Inventory
             _hitDetector = GetComponent<WeaponHitDetector>();
             _movementController = GetComponent<MovementController>();
             _comsController = GetComponent<ComsDeviceController>();
-
-            // Tell TacticalShooterPlayer to skip its hardcoded weapon spawn
-            if (_tacticalPlayer != null)
-            {
-                _tacticalPlayer.UseEquipmentSystem = true;
-            }
 
             if (SceneManager.GetActiveScene().name == "Game")
             { isInGame = true; }
