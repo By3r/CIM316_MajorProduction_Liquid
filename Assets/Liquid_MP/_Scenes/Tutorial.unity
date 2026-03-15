@@ -10237,8 +10237,8 @@ RectTransform:
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 398453446}
   - {fileID: 2137196861}
+  - {fileID: 398453446}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -10287,9 +10287,9 @@ MonoBehaviour:
   masterVolumeSlider: {fileID: 1329054031}
   musicVolumeSlider: {fileID: 1939230094}
   sfxVolumeSlider: {fileID: 1079992429}
-  masterVolumeText: {fileID: 1433506469}
-  musicVolumeText: {fileID: 15394320}
-  sfxVolumeText: {fileID: 91372038}
+  masterVolumeText: {fileID: 1484712043}
+  musicVolumeText: {fileID: 798494579}
+  sfxVolumeText: {fileID: 1565445795}
   resolutionDropdown: {fileID: 72156085}
   qualityDropdown: {fileID: 2129585394}
   fullscreenToggle: {fileID: 1609168602}
@@ -25066,7 +25066,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: -10, y: 0}
-  m_SizeDelta: {x: 1148, y: 100}
+  m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!114 &798494579
 MonoBehaviour:
@@ -36751,7 +36751,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 250.0932, y: -28.607178}
+  m_AnchoredPosition: {x: 250.0932, y: -28.60715}
   m_SizeDelta: {x: 300.1864, y: 37.2143}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1158911868
@@ -48119,8 +48119,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
-  m_AnchoredPosition: {x: -10, y: -0.000061035156}
-  m_SizeDelta: {x: 100, y: 100}
+  m_AnchoredPosition: {x: -10, y: 0}
+  m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!114 &1484712043
 MonoBehaviour:
@@ -50966,7 +50966,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0.5}
   m_AnchorMax: {x: 1, y: 0.5}
   m_AnchoredPosition: {x: -10, y: 0}
-  m_SizeDelta: {x: 1148, y: 100}
+  m_SizeDelta: {x: 50, y: 50}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!114 &1565445795
 MonoBehaviour:
@@ -69839,7 +69839,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
   m_Color: {r: 0.054901965, g: 0.058823533, b: 0.06666667, a: 1}
-  m_RaycastTarget: 1
+  m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
