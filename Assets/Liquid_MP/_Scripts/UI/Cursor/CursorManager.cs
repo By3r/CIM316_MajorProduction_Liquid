@@ -37,11 +37,13 @@ public class CursorManager : MonoBehaviour
     #region Public Functions
     public void HideCursor()
     {
+        Debug.Log($"[CursorManager] HideCursor() called. Stack: {System.Environment.StackTrace}");
         Cursor.visible = false;
     }
 
     public void ShowCursor()
     {
+        Debug.Log($"[CursorManager] ShowCursor() called. Stack: {System.Environment.StackTrace}");
         Cursor.visible = true;
     }
 

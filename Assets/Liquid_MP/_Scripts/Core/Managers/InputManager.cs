@@ -153,8 +153,6 @@ namespace _Scripts.Core.Managers
 
         private void OnPausePerformed(InputAction.CallbackContext context)
         {
-            if (GameManager.Instance == null) return;
-
             // If debug console is open, close it instead of toggling pause
             var console = Systems.DebugConsole.DebugConsole.Instance;
             if (console != null && console.IsOpen)
@@ -164,20 +162,16 @@ namespace _Scripts.Core.Managers
             }
 
             // If inventory is open, let InventoryUI handle ESC (it closes inventory)
-            // Don't toggle pause while inventory is open
             var inventoryUI = _Scripts.Systems.Inventory.UI.InventoryUI.Instance;
             if (inventoryUI != null && inventoryUI.IsOpen)
             {
                 return;
             }
 
-            if (GameManager.Instance.CurrentState == GameState.Gameplay)
+            // Route through PauseMenuManager so game state, UI, and cursor stay in sync
+            if (PauseMenuManager.Instance != null)
             {
-                GameManager.Instance.SetGameState(GameState.Paused);
-            }
-            else if (GameManager.Instance.CurrentState == GameState.Paused)
-            {
-                GameManager.Instance.SetGameState(GameState.Gameplay);
+                PauseMenuManager.Instance.TogglePause();
             }
         }
 
@@ -207,6 +201,7 @@ namespace _Scripts.Core.Managers
 
         public void LockCursor(bool locked)
         {
+            Debug.Log($"[InputManager] LockCursor({locked}) called. Stack: {System.Environment.StackTrace}");
             Cursor.lockState = locked ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !locked;
         }
@@ -221,6 +216,7 @@ namespace _Scripts.Core.Managers
 
         private void OnApplicationFocus(bool hasFocus)
         {
+            Debug.Log($"[InputManager] OnApplicationFocus({hasFocus}), GameState: {GameManager.Instance?.CurrentState}");
             if (hasFocus && GameManager.Instance != null && GameManager.Instance.CurrentState == GameState.Gameplay)
             {
                 LockCursor(true);

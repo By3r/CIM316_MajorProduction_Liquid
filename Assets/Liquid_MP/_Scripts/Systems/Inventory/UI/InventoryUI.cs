@@ -262,6 +262,7 @@ namespace _Scripts.Systems.Inventory.UI
                 InputManager.Instance.EnablePlayerInput(false);
             }
 
+            Debug.Log("[InventoryUI] OpenInventory() unlocking cursor");
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
 
@@ -301,6 +302,7 @@ namespace _Scripts.Systems.Inventory.UI
                 InputManager.Instance.EnablePlayerInput(true);
             }
 
+            Debug.Log("[InventoryUI] CloseInventory() locking cursor");
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
 

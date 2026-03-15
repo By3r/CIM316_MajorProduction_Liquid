@@ -6,7 +6,7 @@ using Liquid.Audio;
 namespace _Scripts.Systems.Player
 {
     /// <summary>
-    /// Handles player movement including walking, sprinting, crouching, jumping, and gravity.
+    /// Handles player movement including walking, sprinting, crouching, and gravity.
     /// Manages the CharacterController and calculates movement based on input from InputManager.
     /// Exposes movement state properties for TacticalShooterPlayer (animation gait), noise, etc.
     /// Integrates with Neutronic Boots for ceiling walking physics override.
@@ -24,7 +24,6 @@ namespace _Scripts.Systems.Player
         private bool _isGrounded;
         private bool _isSprinting;
         private bool _isCrouching;
-        private bool _isJumping;
         private float _originalHeight;
         private Vector3 _originalCenter;
 
@@ -50,8 +49,10 @@ namespace _Scripts.Systems.Player
         [SerializeField] private float _crouchSpeed = 2.5f;
         [SerializeField] private float _walkToggleSpeed = 2.5f;
 
-        [Header("Jump Settings")]
+        [Header("Neutronic Boots")]
         [SerializeField] private float _jumpForce = 5f;
+
+        [Header("Gravity")]
         [SerializeField] private float _gravity = -9.81f;
 
         [Header("Crouch Settings")]
@@ -77,7 +78,6 @@ namespace _Scripts.Systems.Player
         public bool IsGrounded => _isGrounded;
         public bool IsSprinting => _isSprinting;
         public bool IsCrouching => _isCrouching;
-        public bool IsJumping => _isJumping;
         public Vector3 Velocity => _velocity;
         public float CurrentSpeed => _currentSpeed;
         public float MaxSpeed => _currentTargetSpeed;
@@ -161,7 +161,6 @@ namespace _Scripts.Systems.Player
             bool wasGrounded = _isGrounded;
             _isGrounded = Physics.CheckSphere(_groundCheck.position, _groundDistance, _groundMask);
 
-            if (!wasGrounded && _isGrounded) _isJumping = false;
             if (_isGrounded && _velocity.y < 0) _velocity.y = -2f;
 
             _moveInput = InputManager.Instance.MoveInput;
@@ -188,14 +187,6 @@ namespace _Scripts.Systems.Player
 
             HandleMovementNoise(_currentSpeed);
 
-            bool bootsPreventJump = _neutronicBoots != null && _neutronicBoots.ShouldPreventJump;
-            if (InputManager.Instance.JumpPressed && _isGrounded && !_isCrouching && !bootsPreventJump)
-            {
-                _velocity.y = Mathf.Sqrt(_jumpForce * -2f * _gravity);
-                _isJumping = true;
-                EmitJumpNoise();
-            }
-
             _velocity.y += _gravity * _gravityMultiplier * Time.deltaTime;
             _characterController.Move(_velocity * Time.deltaTime);
         }
@@ -206,15 +197,12 @@ namespace _Scripts.Systems.Player
 
         /// <summary>
         /// Called by NeutronicBoots when a "tap jump" is detected.
-        /// Bypasses the normal jump conditions to execute a jump.
         /// </summary>
         public void ForceJump()
         {
             if (_isGrounded && !_isCrouching)
             {
                 _velocity.y = Mathf.Sqrt(_jumpForce * -2f * _gravity);
-                _isJumping = true;
-
                 EmitJumpNoise();
             }
         }

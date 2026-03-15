@@ -62,6 +62,7 @@ public class PauseMenuManager : MonoBehaviour
 
     private bool isPaused;
     private bool isInOptions;
+    private bool _isTogglingPause;
     private PauseButtonVisuals highlightedButton;
 
     private GameSettingsData temporarySettings;
@@ -130,17 +131,25 @@ public class PauseMenuManager : MonoBehaviour
 
     public void TogglePause()
     {
-
-        if (IsMenuScene())
+        if (_isTogglingPause || IsMenuScene())
         {
             return;
         }
 
-        if (isPaused) Resume(); else Pause();
+        _isTogglingPause = true;
+        try
+        {
+            if (isPaused) Resume(); else Pause();
+        }
+        finally
+        {
+            _isTogglingPause = false;
+        }
     }
 
     public void Pause()
     {
+        Debug.Log($"[PauseMenu] Pause() called. IsMenuScene: {IsMenuScene()}, isPaused: {isPaused}");
         if (IsMenuScene() || isPaused)
         {
             return;
@@ -150,17 +159,21 @@ public class PauseMenuManager : MonoBehaviour
         Time.timeScale = 0f;
         SetGameplayScriptsEnabled(false);
 
+        if (_Scripts.Core.Managers.GameManager.Instance != null)
+            _Scripts.Core.Managers.GameManager.Instance.SetGameState(_Scripts.Core.Managers.GameState.Paused);
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
         if (CursorManager.CursorInstance != null)
-        {
-            CursorManager.CursorInstance.ShowCursor();
             CursorManager.CursorInstance.SetDefaultCursor();
-        }
 
         ShowPausePanel();
     }
 
     public void Resume()
     {
+        Debug.Log($"[PauseMenu] Resume() called. isPaused: {isPaused}");
         if (!isPaused)
         {
             return;
@@ -171,10 +184,11 @@ public class PauseMenuManager : MonoBehaviour
         Time.timeScale = 1f;
         SetGameplayScriptsEnabled(true);
 
-        if (CursorManager.CursorInstance != null)
-        {
-            CursorManager.CursorInstance.HideCursor();
-        }
+        if (_Scripts.Core.Managers.GameManager.Instance != null)
+            _Scripts.Core.Managers.GameManager.Instance.SetGameState(_Scripts.Core.Managers.GameState.Gameplay);
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
 
         HideAllPanels();
     }

@@ -55,14 +55,6 @@ namespace Liquid.Player.Equipment
         public bool IsTransitioning => _isTransitioning;
         public float ActivationProgress => _isHoldingActivation ? Mathf.Clamp01((_activationHoldTimer - _settings.JumpGracePeriod) / (_settings.ActivationHoldTime - _settings.JumpGracePeriod)) : 0f;
         
-        // This property stops the MovementController from jumping on its own, giving this script full control.
-        public bool ShouldPreventJump =>
-            _isOnCeiling || 
-            _isTransitioning ||
-            // Proactively prevent any jump if we are even considering a ceiling walk.
-            (_ceilingDetector.IsCeilingAvailable && InputManager.Instance.IsJumpHeld && _movementController.IsGrounded) ||
-            _isConsideringActivation;
-            
         public bool ShouldOverrideMovement => (_isOnCeiling || _isTransitioning) && !_isDismounting;
         public float CeilingSpeed => _ceilingVelocity.magnitude;
         public float MaxCeilingSpeed => _baseMovementSpeed * (_settings != null ? _settings.CeilingMovementSpeedMultiplier : 1f);

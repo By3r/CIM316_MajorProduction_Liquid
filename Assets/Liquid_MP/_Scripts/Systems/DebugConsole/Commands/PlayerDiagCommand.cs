@@ -337,7 +337,7 @@ namespace _Scripts.Systems.DebugConsole.Commands
 
             if (mc != null)
             {
-                sb.AppendLine($"  Grounded: {mc.IsGrounded}  Sprinting: {mc.IsSprinting}  Crouching: {mc.IsCrouching}  Jumping: {mc.IsJumping}");
+                sb.AppendLine($"  Grounded: {mc.IsGrounded}  Sprinting: {mc.IsSprinting}  Crouching: {mc.IsCrouching}");
                 sb.AppendLine($"  Speed: {mc.CurrentSpeed:F2} / {mc.MaxSpeed:F2}  WalkToggle: {mc.IsWalkingToggled}");
                 sb.AppendLine($"  Velocity: ({mc.Velocity.x:F2}, {mc.Velocity.y:F2}, {mc.Velocity.z:F2})");
 
@@ -385,7 +385,7 @@ namespace _Scripts.Systems.DebugConsole.Commands
                 var look = InputManager.Instance.LookInput;
                 sb.AppendLine($"  Move: ({move.x:F2}, {move.y:F2})  Look: ({look.x:F2}, {look.y:F2})");
                 sb.AppendLine($"  Sprint: {InputManager.Instance.IsSprinting}  Fire: {InputManager.Instance.FirePressed}  Aim: {InputManager.Instance.AimJustPressed}  Reload: {InputManager.Instance.ReloadPressed}");
-                sb.AppendLine($"  Jump: {InputManager.Instance.JumpPressed}  Crouch: {InputManager.Instance.CrouchPressed}  Interact: {InputManager.Instance.InteractPressed}");
+                sb.AppendLine($"  Crouch: {InputManager.Instance.CrouchPressed}  Interact: {InputManager.Instance.InteractPressed}");
                 sb.AppendLine($"  WeaponScroll: {InputManager.Instance.SwitchWeaponInput:F2}  WalkToggle: {InputManager.Instance.WalkTogglePressed}");
             }
             else
@@ -424,7 +424,7 @@ namespace _Scripts.Systems.DebugConsole.Commands
             if (boots != null)
             {
                 sb.AppendLine($"  NeutronicBoots: present  enabled={boots.enabled}");
-                sb.AppendLine($"    OverrideMovement: {boots.ShouldOverrideMovement}  PreventJump: {boots.ShouldPreventJump}");
+                sb.AppendLine($"    OverrideMovement: {boots.ShouldOverrideMovement}");
             }
             else
             {
