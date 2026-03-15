@@ -37173,7 +37173,8 @@ MonoBehaviour:
   _tutorialManager: {fileID: 1297604386}
   _equipMessage: Equip the Communication Device by right clicking on its icon and
     pressing "EQUIP"
-  _closeMessage: Close the inventory with TAB
+  _closeMessage: Close the inventory with TAB and equip the C.O.M.S. by pressing
+    "3"
 --- !u!1 &1299012535
 GameObject:
   m_ObjectHideFlags: 0
