@@ -1,3 +1,4 @@
+using System;
 using _Scripts.Systems.Inventory.ItemTypes;
 using KINEMATION.TacticalShooterPack.Scripts.Animation;
 using KINEMATION.TacticalShooterPack.Scripts.Player;
@@ -78,6 +79,9 @@ namespace _Scripts.Systems.Player
 
         /// <summary>Whether the COMS device is currently toggled on (visible in hand).</summary>
         public bool IsActive => _isActive;
+
+        /// <summary>Fires when the COMS device is activated (pulled out).</summary>
+        public event Action OnComsActivated;
 
         #endregion
 
@@ -262,6 +266,8 @@ namespace _Scripts.Systems.Player
 
             // Set initial screen text
             _comsInstance.SetScreenText(null); // "NO SIGNAL"
+
+            OnComsActivated?.Invoke();
 
             // Auto-answer: if there's an incoming call ringing, answer it now.
             if (ComsCallManager.Instance != null &&

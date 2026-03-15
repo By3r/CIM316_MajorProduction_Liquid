@@ -153,7 +153,7 @@ Light:
   serializedVersion: 12
   m_Type: 2
   m_Color: {r: 0, g: 0.5704228, b: 0.85660374, a: 0.8745098}
-  m_Intensity: 0.05
+  m_Intensity: 0.003
   m_Range: 10
   m_SpotAngle: 30
   m_InnerSpotAngle: 21.80208
@@ -703,6 +703,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4189627560305023617}
     m_Modifications:
+    - target: {fileID: 1884464240700541914, guid: 4c9d0dfaa0152444d88a2629aecaa826, type: 3}
+      propertyPath: m_Intensity
+      value: 0.003
+      objectReference: {fileID: 0}
     - target: {fileID: 3046118379113530910, guid: 4c9d0dfaa0152444d88a2629aecaa826, type: 3}
       propertyPath: m_LocalScale.x
       value: 2
@@ -758,6 +762,10 @@ PrefabInstance:
     - target: {fileID: 3046118379113530910, guid: 4c9d0dfaa0152444d88a2629aecaa826, type: 3}
       propertyPath: m_ConstrainProportionsScale
       value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5584138076562809624, guid: 4c9d0dfaa0152444d88a2629aecaa826, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0.282
       objectReference: {fileID: 0}
     - target: {fileID: 7541926534061095664, guid: 4c9d0dfaa0152444d88a2629aecaa826, type: 3}
       propertyPath: m_Name
@@ -841,6 +849,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -7511558181221131132, guid: bcfc196fad303534c9bbbd055aea65d2, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 309a019999a0441449eaa42fbb1e1cb9, type: 2}
     - target: {fileID: 919132149155446097, guid: bcfc196fad303534c9bbbd055aea65d2, type: 3}
       propertyPath: m_Name
       value: CommunicationDevice

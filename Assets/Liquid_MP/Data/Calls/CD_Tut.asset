@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Coms.CallDataSO
   callerName: Northbridge
   hologramPrefab: {fileID: 7541926534061095664, guid: 4c9d0dfaa0152444d88a2629aecaa826, type: 3}
-  ringtone: {fileID: 8300000, guid: fae646e294e83b8429734823243ff0c9, type: 3}
+  ringtone: {fileID: 8300000, guid: 027d7b01c2027d3459b045cdf71b33a2, type: 3}
   gracePeriod: 5
   lines: []

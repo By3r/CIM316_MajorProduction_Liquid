@@ -204,7 +204,7 @@ namespace _Scripts.UI
         {
             if (_interactionController == null) return;
 
-            bool shouldShowInteraction = _interactionController.IsLookingAtDoor;
+            bool shouldShowInteraction = _interactionController.IsLookingAtInteractable;
 
             if (shouldShowInteraction != _isShowingInteraction)
             {
@@ -303,7 +303,7 @@ namespace _Scripts.UI
         {
             if (_interactionController == null || !_enableInteractionRotation) return;
 
-            bool isLookingAtInteractable = _interactionController.IsLookingAtDoor;
+            bool isLookingAtInteractable = _interactionController.IsLookingAtInteractable;
 
             if (isLookingAtInteractable && 
                 InputManager.Instance != null && 

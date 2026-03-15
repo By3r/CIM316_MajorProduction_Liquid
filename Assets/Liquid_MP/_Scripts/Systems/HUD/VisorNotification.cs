@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
-namespace _Scripts.Systems.Inventory.UI
+namespace _Scripts.Systems.HUD
 {
     /// <summary>
-    /// Generic queued notification system for the inventory UI.
+    /// Generic queued notification system for the visor HUD.
     /// Supports two modes:
     ///   - Simple: auto-dismiss after hold duration (e.g. "You equipped WK11 Viper").
     ///   - Task:   stays visible until CompleteTask() is called, then shows
@@ -19,7 +19,7 @@ namespace _Scripts.Systems.Inventory.UI
     /// Attach to any GameObject. Assign _panel and _messageText in the Inspector.
     /// The panel UI itself is created by the designer — this script only animates it.
     /// </summary>
-    public class InventoryNotification : MonoBehaviour
+    public class VisorNotification : MonoBehaviour
     {
         #region Types
 
@@ -38,6 +38,14 @@ namespace _Scripts.Systems.Inventory.UI
         [Header("References")]
         [SerializeField] private RectTransform _panel;
         [SerializeField] private TMP_Text _messageText;
+
+        [Header("Layout Displacement")]
+        [Tooltip("UI element to push down when a notification is visible (e.g. noise container).")]
+        [SerializeField] private RectTransform _displacedElement;
+        [Tooltip("How many pixels to move the displaced element downward.")]
+        [SerializeField] private float _displacementAmount = 60f;
+        [Tooltip("How fast the displaced element slides to its new position.")]
+        [SerializeField] private float _displacementSpeed = 8f;
 
         [Header("Timing")]
         [SerializeField] private float _expandDuration = 0.15f;
@@ -93,6 +101,10 @@ namespace _Scripts.Systems.Inventory.UI
         private bool _isTaskActive;
         private bool _taskCompleted;
 
+        // Displacement tracking
+        private Vector2 _displacedElementOriginalPos;
+        private bool _displacedElementTracked;
+
         #endregion
 
         #region Properties
@@ -109,7 +121,7 @@ namespace _Scripts.Systems.Inventory.UI
 
         private void Awake()
         {
-            Debug.Log($"[InventoryNotification] Awake() — _panel={_panel}, _messageText={_messageText}");
+            Debug.Log($"[VisorNotification] Awake() — _panel={_panel}, _messageText={_messageText}");
 
             if (_panel != null)
             {
@@ -120,22 +132,40 @@ namespace _Scripts.Systems.Inventory.UI
                 _panel.localScale = Vector3.zero;
                 _canvasGroup.alpha = 0f;
                 _panel.gameObject.SetActive(false);
-                Debug.Log("[InventoryNotification] Panel initialized (scale=0, alpha=0, inactive).");
+                Debug.Log("[VisorNotification] Panel initialized (scale=0, alpha=0, inactive).");
             }
             else
             {
-                Debug.LogError("[InventoryNotification] _panel is NULL! Assign it in the Inspector.");
+                Debug.LogError("[VisorNotification] _panel is NULL! Assign it in the Inspector.");
             }
 
             if (_messageText == null)
-                Debug.LogError("[InventoryNotification] _messageText is NULL! Assign it in the Inspector.");
+                Debug.LogError("[VisorNotification] _messageText is NULL! Assign it in the Inspector.");
 
             _frameWait = new WaitForSecondsRealtime(1f / Mathf.Max(1, _fpsSimulation));
+
+            if (_displacedElement != null)
+            {
+                _displacedElementOriginalPos = _displacedElement.anchoredPosition;
+                _displacedElementTracked = true;
+            }
+        }
+
+        private void Update()
+        {
+            if (!_displacedElementTracked || _displacedElement == null) return;
+
+            Vector2 targetPos = _isShowing
+                ? _displacedElementOriginalPos + new Vector2(0f, -_displacementAmount)
+                : _displacedElementOriginalPos;
+
+            _displacedElement.anchoredPosition = Vector2.Lerp(
+                _displacedElement.anchoredPosition, targetPos, Time.unscaledDeltaTime * _displacementSpeed);
         }
 
         private void OnDisable()
         {
-            Debug.Log("[InventoryNotification] OnDisable() called!");
+            Debug.Log("[VisorNotification] OnDisable() called!");
 
             if (_activeRoutine != null)
             {
@@ -182,7 +212,7 @@ namespace _Scripts.Systems.Inventory.UI
         /// </summary>
         public void ShowTask(string message)
         {
-            Debug.Log($"[InventoryNotification] ShowTask('{message}') — GO active={gameObject.activeSelf}, enabled={enabled}, _isShowing={_isShowing}, queueCount={_queue.Count}");
+            Debug.Log($"[VisorNotification] ShowTask('{message}') — GO active={gameObject.activeSelf}, enabled={enabled}, _isShowing={_isShowing}, queueCount={_queue.Count}");
             _queue.Enqueue(new QueuedNotification
             {
                 Message = message,
@@ -200,7 +230,7 @@ namespace _Scripts.Systems.Inventory.UI
         {
             if (!_isTaskActive)
             {
-                Debug.LogWarning("[InventoryNotification] CompleteTask() called but no task is active.");
+                Debug.LogWarning("[VisorNotification] CompleteTask() called but no task is active.");
                 return;
             }
 
@@ -213,19 +243,19 @@ namespace _Scripts.Systems.Inventory.UI
 
         private void TryProcessNext()
         {
-            Debug.Log($"[InventoryNotification] TryProcessNext() — _isShowing={_isShowing}, queueCount={_queue.Count}, GO active={gameObject.activeSelf}, enabled={enabled}");
+            Debug.Log($"[VisorNotification] TryProcessNext() — _isShowing={_isShowing}, queueCount={_queue.Count}, GO active={gameObject.activeSelf}, enabled={enabled}");
 
             if (_isShowing || _queue.Count == 0)
             {
-                Debug.Log($"[InventoryNotification] TryProcessNext() SKIPPED — _isShowing={_isShowing}, queueEmpty={_queue.Count == 0}");
+                Debug.Log($"[VisorNotification] TryProcessNext() SKIPPED — _isShowing={_isShowing}, queueEmpty={_queue.Count == 0}");
                 return;
             }
 
             QueuedNotification next = _queue.Dequeue();
             _isShowing = true;
 
-            Debug.Log($"[InventoryNotification] Starting {next.Type} notification: '{next.Message}'");
-            Debug.Log($"[InventoryNotification] _panel={_panel}, _panel active={(_panel != null ? _panel.gameObject.activeSelf.ToString() : "NULL")}, _messageText={_messageText}");
+            Debug.Log($"[VisorNotification] Starting {next.Type} notification: '{next.Message}'");
+            Debug.Log($"[VisorNotification] _panel={_panel}, _panel active={(_panel != null ? _panel.gameObject.activeSelf.ToString() : "NULL")}, _messageText={_messageText}");
 
             _activeRoutine = next.Type switch
             {
@@ -264,7 +294,7 @@ namespace _Scripts.Systems.Inventory.UI
 
         private IEnumerator AnimateTaskNotification(string message)
         {
-            Debug.Log($"[InventoryNotification] AnimateTaskNotification STARTED: '{message}'");
+            Debug.Log($"[VisorNotification] AnimateTaskNotification STARTED: '{message}'");
 
             // Setup
             _isTaskActive = true;
@@ -272,7 +302,7 @@ namespace _Scripts.Systems.Inventory.UI
             _messageText.text = message;
             _panel.gameObject.SetActive(true);
 
-            Debug.Log($"[InventoryNotification] Panel activated. Scale={_panel.localScale}, Alpha={(_canvasGroup != null ? _canvasGroup.alpha : -1f)}, Panel active={_panel.gameObject.activeSelf}, Panel activeInHierarchy={_panel.gameObject.activeInHierarchy}");
+            Debug.Log($"[VisorNotification] Panel activated. Scale={_panel.localScale}, Alpha={(_canvasGroup != null ? _canvasGroup.alpha : -1f)}, Panel active={_panel.gameObject.activeSelf}, Panel activeInHierarchy={_panel.gameObject.activeInHierarchy}");
 
             // Log parent hierarchy to check if anything above is inactive
             Transform t = _panel;
@@ -282,15 +312,15 @@ namespace _Scripts.Systems.Inventory.UI
                 hierarchy += $"  {t.name} (active={t.gameObject.activeSelf})\n";
                 t = t.parent;
             }
-            Debug.Log($"[InventoryNotification] Panel hierarchy:\n{hierarchy}");
+            Debug.Log($"[VisorNotification] Panel hierarchy:\n{hierarchy}");
 
             // Expand
             yield return Expand();
-            Debug.Log("[InventoryNotification] Expand complete.");
+            Debug.Log("[VisorNotification] Expand complete.");
 
             // Flash
             yield return Flash();
-            Debug.Log("[InventoryNotification] Flash complete. Now waiting for CompleteTask()...");
+            Debug.Log("[VisorNotification] Flash complete. Now waiting for CompleteTask()...");
 
             // Wait for CompleteTask() signal
             while (!_taskCompleted)

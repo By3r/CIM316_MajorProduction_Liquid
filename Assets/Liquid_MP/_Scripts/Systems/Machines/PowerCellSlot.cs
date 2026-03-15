@@ -134,6 +134,7 @@ namespace _Scripts.Systems.Machines
                         // No animation, remove from inventory and power immediately
                         _insertedPowerCell = inventory.RemoveItemFromSlot(i);
                         SetPowered(true);
+                        onPowerInsert?.Invoke();
                     }
 
                     PlaySound(_insertSound);
@@ -162,7 +163,6 @@ namespace _Scripts.Systems.Machines
                 if (_powerCellModel != null)
                 {
                     StartCoroutine(PlayScrewOutAnimation());
-                    onPowerInsert?.Invoke();
                 }
                 else
                 {
@@ -290,6 +290,7 @@ namespace _Scripts.Systems.Machines
             }
 
             SetPowered(true);
+            onPowerInsert?.Invoke();
             _isAnimating = false;
         }
 

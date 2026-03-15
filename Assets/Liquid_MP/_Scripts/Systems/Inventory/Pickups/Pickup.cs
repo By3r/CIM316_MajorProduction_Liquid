@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using _Scripts.Core.Managers;
 using UnityEngine;
+using UnityEngine.Events;
 
 namespace _Scripts.Systems.Inventory.Pickups
 {
@@ -16,6 +17,9 @@ namespace _Scripts.Systems.Inventory.Pickups
 
         [Header("Visual Feedback")]
         [SerializeField] protected GameObject _highlightEffect;
+
+        [Header("Events")]
+        [SerializeField] private UnityEvent _onPickedUp;
 
         protected bool _isCollected = false;
 
@@ -134,6 +138,7 @@ namespace _Scripts.Systems.Inventory.Pickups
         protected virtual void OnPickupSuccess()
         {
             MarkAsCollected();
+            _onPickedUp?.Invoke();
             gameObject.SetActive(false);
         }
     }
