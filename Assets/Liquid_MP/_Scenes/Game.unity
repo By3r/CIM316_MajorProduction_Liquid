@@ -5546,14 +5546,44 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95c0a4ed1e674ad4b64c04e5ff0d4406, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.UI.PauseMenuUI
-  _freezeGameOnPause: 1
-  _pausePanel: {fileID: 1922885801}
-  _settingsPanel: {fileID: 1919733669}
-  _resumeButton: {fileID: 1152948509}
-  _settingsButton: {fileID: 669667800}
-  _mainMenuButton: {fileID: 1072590787}
-  _quitButton: {fileID: 1033634508}
-  _settingsUI: {fileID: 1919733670}
+  menuSceneName: MainMenu
+  pauseRootPanel: {fileID: 0}
+  optionsPanel: {fileID: 0}
+  resumeButton:
+    Button: {fileID: 0}
+    HighlightObject: {fileID: 0}
+    PressedObject: {fileID: 0}
+    Label: {fileID: 0}
+  optionsButton:
+    Button: {fileID: 0}
+    HighlightObject: {fileID: 0}
+    PressedObject: {fileID: 0}
+    Label: {fileID: 0}
+  quitButton:
+    Button: {fileID: 0}
+    HighlightObject: {fileID: 0}
+    PressedObject: {fileID: 0}
+    Label: {fileID: 0}
+  normalButtonColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
+  highlightButtonColor: {r: 1, g: 1, b: 1, a: 1}
+  defaultSelectedButton:
+    Button: {fileID: 0}
+    HighlightObject: {fileID: 0}
+    PressedObject: {fileID: 0}
+    Label: {fileID: 0}
+  audioMixer: {fileID: 0}
+  masterVolumeSlider: {fileID: 0}
+  musicVolumeSlider: {fileID: 0}
+  sfxVolumeSlider: {fileID: 0}
+  masterVolumeText: {fileID: 0}
+  musicVolumeText: {fileID: 0}
+  sfxVolumeText: {fileID: 0}
+  resolutionDropdown: {fileID: 0}
+  qualityDropdown: {fileID: 0}
+  fullscreenToggle: {fileID: 0}
+  applyButton: {fileID: 0}
+  backButton: {fileID: 0}
+  scriptsToDisableWhilePaused: []
 --- !u!114 &992326240
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7013,6 +7043,7 @@ MonoBehaviour:
   _dropDistance: 1.5
   _dropForce: 2
   _pauseGameWhenOpen: 0
+  _lockUntilComsPickup: 1
 --- !u!114 &1165814862 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 351444131499544678, guid: 461f97804c1242840a763777080c467d, type: 3}
@@ -8664,6 +8695,7 @@ MonoBehaviour:
   _activeDotColor: {r: 0.2, g: 1, b: 0.53, a: 1}
   _inactiveDotColor: {r: 0.25, g: 0.19, b: 0, a: 1}
   _disabledDotColor: {r: 0.6, g: 0.13, b: 0.13, a: 1}
+  _isTutorialMode: 0
 --- !u!1 &1434595243
 GameObject:
   m_ObjectHideFlags: 0
@@ -9375,6 +9407,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::GridPathfinder
   gridWorldSize: {x: 128.94598, y: 4, z: 164.63657}
   nodeRadius: 0.5
+  useManualGridSize: 0
   obstacleMask:
     serializedVersion: 2
     m_Bits: 512
@@ -10182,51 +10215,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ed1dd9c5f7340654d8da10095455e227, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Liquid.Audio.NoiseManager
-  lowBaseRadius: 4
-  mediumBaseRadius: 8
-  highBaseRadius: 12
-  maximumBaseRadius: 18
-  lowIntensity01: 0.25
-  mediumIntensity01: 0.45
-  highIntensity01: 0.7
-  maximumIntensity01: 1
-  footstepsMultiplier: 1
-  sprintMultiplier: 1.3
-  jumpMultiplier: 1.1
-  gunshotMultiplier: 2
-  objectImpactMultiplier: 1.5
-  otherMultiplier: 1
-  occlusionMask:
+  _footstepBase: 1
+  _sprintBase: 2
+  _jumpBase: 1.5
+  _gunshotBase: 4
+  _objectImpactBase: 2.5
+  _commDeviceBase: 2
+  _otherBase: 1
+  _noneRadius: 2
+  _lowRadius: 4
+  _mediumRadius: 8
+  _highRadius: 14
+  _extremeRadius: 22
+  _occlusionMask:
     serializedVersion: 2
     m_Bits: 0
-  occludedLoudnessMultiplier: 0.35
-  useDistanceFalloff: 1
-  falloffCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  showDebugLogs: 1
-  zoneTracker: {fileID: 0}
+  _occludedMultiplier: 0.35
+  _noiseDecaySpeed: 3
+  _showDebugLogs: 0
 --- !u!224 &1588292500 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 3394127391126205747, guid: 461f97804c1242840a763777080c467d, type: 3}
@@ -10490,85 +10496,6 @@ MonoBehaviour:
   _disabledBtnColor: {r: 0.25, g: 0.19, b: 0, a: 1}
   _cellInsertedColor: {r: 0.2, g: 1, b: 0.53, a: 1}
   _cellMissingColor: {r: 0.6, g: 0.13, b: 0.13, a: 1}
---- !u!1 &1620503216
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1620503219}
-  - component: {fileID: 1620503218}
-  - component: {fileID: 1620503220}
-  m_Layer: 0
-  m_Name: EventSystem
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1620503218
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1620503216}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
-  m_FirstSelected: {fileID: 0}
-  m_sendNavigationEvents: 1
-  m_DragThreshold: 10
---- !u!4 &1620503219
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1620503216}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1620503220
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1620503216}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
-  m_SendPointerHoverToParent: 1
-  m_MoveRepeatDelay: 0.5
-  m_MoveRepeatRate: 0.1
-  m_XRTrackingOrigin: {fileID: 0}
-  m_ActionsAsset: {fileID: -944628639613478452, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_PointAction: {fileID: -1654692200621890270, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_MoveAction: {fileID: -8784545083839296357, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_SubmitAction: {fileID: 392368643174621059, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_CancelAction: {fileID: 7727032971491509709, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_LeftClickAction: {fileID: 3001919216989983466, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_MiddleClickAction: {fileID: -2185481485913320682, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_RightClickAction: {fileID: -4090225696740746782, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_ScrollWheelAction: {fileID: 6240969308177333660, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_TrackedDevicePositionAction: {fileID: 6564999863303420839, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_TrackedDeviceOrientationAction: {fileID: 7970375526676320489, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
-  m_DeselectOnBackgroundClick: 1
-  m_PointerBehavior: 0
-  m_CursorLockBehavior: 0
-  m_ScrollDeltaPerTick: 6
 --- !u!4 &1623940450 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6119097683338218367, guid: b36f7958af69c404d83f6e545e3c49ac, type: 3}
@@ -15223,7 +15150,6 @@ GameObject:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1620503219}
   - {fileID: 1910722712307635677}
   - {fileID: 369630123}
   - {fileID: 992326243}

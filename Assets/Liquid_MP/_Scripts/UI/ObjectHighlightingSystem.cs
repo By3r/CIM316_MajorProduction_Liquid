@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Runtime.InteropServices.WindowsRuntime;
 
 namespace _Scripts.UI.Interaction
 {
@@ -518,8 +519,11 @@ namespace _Scripts.UI.Interaction
         /// </summary>
         private Vector2 ScreenToCanvas(Vector2 screenPoint)
         {
+            if (_canvasRect == null) return Vector2.zero;
+
             RectTransformUtility.ScreenPointToLocalPointInRectangle(
                 _canvasRect, screenPoint, null, out Vector2 localPoint);
+
             return localPoint;
         }
 
