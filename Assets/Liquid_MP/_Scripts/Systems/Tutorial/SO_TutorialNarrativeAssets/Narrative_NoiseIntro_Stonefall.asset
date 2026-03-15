@@ -20,12 +20,12 @@ MonoBehaviour:
     voiceClip: {fileID: 0}
     keepHologramActive: 1
   - speaker: 1
-    text: There's something here. I can feel it.
+    text: There's something something behind me. I can feel it.
     autoAdvanceDelay: 1.5
     voiceClip: {fileID: 8300000, guid: e11a3f731847f0448845ec6c60b679ba, type: 3}
     keepHologramActive: 1
   - speaker: 2
-    text: 'Yes. That would be a Lurker. Fascinating thing. '
+    text: Do not be distracted.
     autoAdvanceDelay: 1.5
     voiceClip: {fileID: 8300000, guid: e11a3f731847f0448845ec6c60b679ba, type: 3}
     keepHologramActive: 1
@@ -35,3 +35,4 @@ MonoBehaviour:
     autoAdvanceDelay: 4
     voiceClip: {fileID: 8300000, guid: e11a3f731847f0448845ec6c60b679ba, type: 3}
     keepHologramActive: 1
+  lockPlayerDuringPlayback: 0
