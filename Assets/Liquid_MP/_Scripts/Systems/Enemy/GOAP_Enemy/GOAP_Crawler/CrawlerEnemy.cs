@@ -354,10 +354,10 @@ public class CrawlerEnemy : EnemyBase
         if (HasPlayer) MarkPlayerUnreachable();
     }
 
+#if UNITY_EDITOR
     protected override string GetGizmoLabelText()
-    {
-        return $"{name}\n{CurrentState}\n{currentGoalName}\n{currentActionName}";
-    }
+        => $"{name}\n{CurrentState}\n{currentGoalName}\n{currentActionName}";
+#endif
     #endregion
 
     #region Sensors

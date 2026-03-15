@@ -322,8 +322,10 @@ public class SuffocatorEnemy : EnemyBase
         if (_lastPathWasPlayer) MarkPlayerUnreachable();
     }
 
+#if UNITY_EDITOR
     protected override string GetGizmoLabelText()
         => $"{name}\n{CurrentState}\n{currentGoalName}\n{currentActionName}";
+#endif
 
     #endregion
 

@@ -382,7 +382,10 @@ public class LurkerEnemy : EnemyBase
         gameObject.SetActive(false);
     }
 
-    protected override string GetGizmoLabelText() => $"{name}\n{CurrentState}\n{currentGoalName}\n{currentActionName}";
+#if UNITY_EDITOR
+    protected override string GetGizmoLabelText()
+        => $"{name}\n{CurrentState}\n{currentGoalName}\n{currentActionName}";
+#endif
     #endregion
 
     #region Public Functions.

@@ -168,8 +168,10 @@ public class LiquidEnemy : EnemyBase
         gameObject.SetActive(false);
     }
 
+#if UNITY_EDITOR
     protected override string GetGizmoLabelText()
         => $"{name}\n{CurrentState}\n{currentGoalName}\n{currentActionName}";
+#endif
 
     #endregion
 
