@@ -451,6 +451,12 @@ namespace Haze.Runtime
                 return;
             }
 
+            // Skip overlay cameras to prevent fog depth corruption in camera stacks
+            if (renderingData.cameraData.renderType == CameraRenderType.Overlay)
+            {
+                return;
+            }
+
             var hazeGlobalFog = VolumeManager.instance.stack?.GetComponent<HazeGlobalFogVolumeComponent>();
             if ((hazeGlobalFog == null || !hazeGlobalFog.active || hazeGlobalFog.GlobalDensityMultiplier.value <= 0) &&
                 _visibleDensityVolumes.Count <= 0)

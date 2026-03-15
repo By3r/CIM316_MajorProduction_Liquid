@@ -44,6 +44,28 @@ Shader "Hidden/Haze/Composite"
                 _ScatterBuffer.GetDimensions(bufferWidth, bufferHeight, bufferDepth);
                 float3 uvw = WorldToUV(worldPos, _VolumeNearClipPlane, _VolumeFarClipPlane, lerp(_FroxelVolumeVP, UNITY_MATRIX_V, unity_OrthoParams.w), bufferDepth, unity_OrthoParams.w);
                 uvw.xyz += IGN(input.texcoord.x * _BlitTexture_TexelSize.z, input.texcoord.y * _BlitTexture_TexelSize.w, _Time.y * unity_DeltaTime.w) * 0.01 * _IGNStrength;
+
+                // Depth aware fog sampling: detect geometry edges and bias
+                // toward camera to prevent fog bleeding through walls
+                float2 texelSize = _BlitTexture_TexelSize.xy;
+                float depthL = SampleSceneDepth(input.texcoord - float2(texelSize.x, 0));
+                float depthR = SampleSceneDepth(input.texcoord + float2(texelSize.x, 0));
+                float depthU = SampleSceneDepth(input.texcoord - float2(0, texelSize.y));
+                float depthD = SampleSceneDepth(input.texcoord + float2(0, texelSize.y));
+
+#if UNITY_REVERSED_Z
+                // Reversed Z: smaller value = farther away
+                float minNeighborDepth = min(min(depthL, depthR), min(depthU, depthD));
+                float depthEdge = saturate((depth - minNeighborDepth) * 500.0);
+#else
+                float maxNeighborDepth = max(max(depthL, depthR), max(depthU, depthD));
+                float depthEdge = saturate((maxNeighborDepth - depth) * 500.0);
+#endif
+                // At depth edges (geometry boundaries), apply stronger bias toward camera
+                // Base bias: 0.5 slice. Edge bias: up to 2 slices.
+                float zBias = lerp(0.5, 2.0, depthEdge) / float(bufferDepth);
+                uvw.z = max(0, uvw.z - zBias);
+
 #ifdef TRICUBIC_SAMPLING
                 float4 scatterBuffer = SampleTexture3DBicubic(_ScatterBuffer, uvw, float3(bufferWidth, bufferHeight, bufferDepth));
 #else

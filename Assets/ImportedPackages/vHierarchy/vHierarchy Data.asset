@@ -826,9 +826,19 @@ MonoBehaviour:
     - goDatas_byGlobalId:
         keys:
         - globalObjectIdString: GlobalObjectId_V1-2-dbf17456304c45e49a6e85acad11b9dc-1692183236552066892-1910722712307635677
+        - globalObjectIdString: GlobalObjectId_V1-2-dbf17456304c45e49a6e85acad11b9dc-1514971723-0
+        - globalObjectIdString: GlobalObjectId_V1-2-dbf17456304c45e49a6e85acad11b9dc-4801903767883800317-1910722712307635677
         values:
         - colorIndex: 9
           iconNameOrGuid: ColorPicker.CycleColor
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: ReflectionProbe Icon
+          isIconRecursive: 0
+          isColorRecursive: 0
+        - colorIndex: 0
+          iconNameOrGuid: Camera Icon
           isIconRecursive: 0
           isColorRecursive: 0
   bookmarks: []
@@ -837,3 +847,4 @@ MonoBehaviour:
   - Assets/ImportedPackages/SciFiFacilitySector43/Scenes/SampleScene.unity
   - Assets/Liquid_MP/_Scenes/Tutorial.unity
   - Assets/Liquid_MP/_Scenes/Game.unity
+  - Assets/Liquid_MP/_Scenes/Menu.unity

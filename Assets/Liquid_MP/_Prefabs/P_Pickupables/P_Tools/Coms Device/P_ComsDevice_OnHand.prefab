@@ -248,6 +248,7 @@ GameObject:
   - component: {fileID: 7406157726215384222}
   - component: {fileID: 2926780011854245283}
   - component: {fileID: 3880900373091022816}
+  - component: {fileID: 5171850172055463206}
   m_Layer: 0
   m_Name: FlashLight
   m_TagString: Untagged
@@ -281,13 +282,13 @@ Light:
   serializedVersion: 12
   m_Type: 0
   m_Color: {r: 1, g: 0.8039133, b: 0.39811313, a: 1}
-  m_Intensity: 1
-  m_Range: 10
-  m_SpotAngle: 12.673398
+  m_Intensity: 10
+  m_Range: 50
+  m_SpotAngle: 82.646126
   m_InnerSpotAngle: 8.282171
   m_CookieSize2D: {x: 0.5, y: 0.5}
   m_Shadows:
-    m_Type: 0
+    m_Type: 1
     m_Resolution: -1
     m_CustomResolution: -1
     m_Strength: 1
@@ -385,6 +386,42 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 70.10999}
   m_Center: {x: -2.1723357e-13, y: 0, z: 34.554024}
+--- !u!114 &5171850172055463206
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3568467878769472612}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57f24a4aaa0761b45ba25e7e5108e2c7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BakeryRuntimeAssembly::BakeryPointLight
+  UID: -742803688
+  color: {r: 1, g: 0.8039133, b: 0.39811313, a: 1}
+  intensity: 10
+  shadowSpread: 0.05
+  cutoff: 50
+  realisticFalloff: 1
+  legacySampling: 1
+  samples: 8
+  projMode: 4
+  cookie: {fileID: 2800000, guid: 3a66602b8cc7fdd4ab57d07b4176432b, type: 3}
+  angle: 82.646126
+  innerAngle: 10.021246
+  cubemap: {fileID: 0}
+  iesFile: {fileID: 0}
+  bitmask: 1
+  bakeToIndirect: 0
+  shadowmask: 0
+  shadowmaskFalloff: 0
+  indirectIntensity: 1
+  falloffMinRadius: 0.01
+  shadowmaskGroupID: 0
+  correctCookieDistortion: 0
+  directionMode: 0
+  maskChannel: 0
 --- !u!1 &3678721452715244535
 GameObject:
   m_ObjectHideFlags: 0

@@ -2454,9 +2454,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 388a7ae32138ad3468c40f60dfd6220a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.HUD.VisorPixelationAnimator
-  _pixels1080p: 200
-  _pixels1440p: 280
-  _pixels2160p: 324
+  _pixels1080p: 450
+  _pixels1440p: 550
+  _pixels2160p: 600
   _resolveTime: 0
   _shutdownTime: 0.1
   _chromaR: {x: 0.25, y: 0}
@@ -4289,7 +4289,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4339760242699222901}
   m_LocalRotation: {x: 0.000000104308114, y: -0.000000029802314, z: 0.00000008940696, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -0.00079125166}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 1
   m_Children:
@@ -5107,7 +5107,7 @@ Transform:
   m_GameObject: {fileID: 4801903767883800317}
   serializedVersion: 2
   m_LocalRotation: {x: 0.50000006, y: -0.5, z: 0.5000002, w: 0.49999982}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5148,7 +5148,7 @@ Camera:
     width: 1
     height: 1
   near clip plane: 0.01
-  far clip plane: 1000
+  far clip plane: 100
   field of view: 90
   orthographic: 0
   orthographic size: 5
@@ -8167,11 +8167,11 @@ AudioSource:
   m_GameObject: {fileID: 7911476115181372285}
   m_Enabled: 1
   serializedVersion: 4
-  OutputAudioMixerGroup: {fileID: 0}
+  OutputAudioMixerGroup: {fileID: -3336467976103677905, guid: d6e51d7c761259e48a6e53a34da27dd8, type: 2}
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.3
   m_Pitch: 1
   Loop: 0
   Mute: 0
@@ -8458,6 +8458,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3ed30c712ebe6a94a8a76682688e2044, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Systems.Inventory.PlayerEquipment
+  isInGame: 0
 --- !u!114 &8706439400503778375
 MonoBehaviour:
   m_ObjectHideFlags: 0

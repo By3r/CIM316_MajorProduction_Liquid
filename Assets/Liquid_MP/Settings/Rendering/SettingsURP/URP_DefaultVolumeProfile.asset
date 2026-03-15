@@ -141,13 +141,13 @@ MonoBehaviour:
   active: 1
   _noiseTiling:
     m_OverrideState: 1
-    m_Value: 5
+    m_Value: 8.5
   _noisePanningSpeed:
     m_OverrideState: 1
-    m_Value: {x: 0.01, y: 0, z: 0}
+    m_Value: {x: 0.03, y: 0, z: 0}
   _noiseWeights:
     m_OverrideState: 1
-    m_Value: {x: 1, y: 1, z: 1, w: 1}
+    m_Value: {x: 0.5, y: 1, z: 1, w: 1}
   _multipleScatteringIntensity:
     m_OverrideState: 1
     m_Value: 1
@@ -743,22 +743,22 @@ MonoBehaviour:
   active: 1
   _globalDensityMultiplier:
     m_OverrideState: 1
-    m_Value: 0.18
+    m_Value: 2.49
   _globalDensityThreshold:
     m_OverrideState: 1
-    m_Value: 0.96
+    m_Value: 0.87
   _ambientColor:
     m_OverrideState: 1
-    m_Value: {r: 1, g: 1, b: 1, a: 1}
+    m_Value: {r: 0.38679248, g: 0.38679248, b: 0.38679248, a: 1}
   _mainLightContribution:
     m_OverrideState: 1
     m_Value: {r: 1, g: 1, b: 1, a: 1}
   _heightFogFactor:
     m_OverrideState: 1
-    m_Value: 2.4
+    m_Value: 2
   _maxFogHeight:
     m_OverrideState: 1
-    m_Value: 15
+    m_Value: 5
   _heightFogSmoothness:
     m_OverrideState: 1
     m_Value: 1
@@ -767,16 +767,16 @@ MonoBehaviour:
     m_Value: 0
   _additionalLightContribution:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.18
   _probeVolumeContribution:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 10
   _mainLightScattering:
     m_OverrideState: 1
     m_Value: 1
   _globalMainLightDensityBoost:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 100
   _globalSecondaryLightDensityBoost:
     m_OverrideState: 1
     m_Value: 4

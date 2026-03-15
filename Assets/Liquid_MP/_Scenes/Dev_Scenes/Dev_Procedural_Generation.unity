@@ -94,7 +94,7 @@ LightmapSettings:
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
   m_LightingDataAsset: {fileID: 112000000, guid: 062db944f40edc14d8d092f63b11535e, type: 2}
-  m_LightingSettings: {fileID: 0}
+  m_LightingSettings: {fileID: 888250468}
 --- !u!196 &4
 NavMeshSettings:
   serializedVersion: 2
@@ -4904,6 +4904,73 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!850595691 &888250468
+LightingSettings:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: 
+  serializedVersion: 10
+  m_EnableBakedLightmaps: 1
+  m_EnableRealtimeLightmaps: 0
+  m_RealtimeEnvironmentLighting: 1
+  m_BounceScale: 1
+  m_AlbedoBoost: 1
+  m_IndirectOutputScale: 1
+  m_UsingShadowmask: 1
+  m_BakeBackend: 2
+  m_LightmapMaxSize: 1024
+  m_LightmapSizeFixed: 0
+  m_UseMipmapLimits: 1
+  m_BakeResolution: 40
+  m_Padding: 2
+  m_LightmapCompression: 3
+  m_LightmapPackingMode: 0
+  m_LightmapPackingMethod: 1
+  m_XAtlasPackingAttempts: 16384
+  m_XAtlasBruteForce: 0
+  m_XAtlasBlockAlign: 0
+  m_XAtlasRepackUnderutilizedLightmaps: 1
+  m_AO: 0
+  m_AOMaxDistance: 1
+  m_CompAOExponent: 1
+  m_CompAOExponentDirect: 0
+  m_ExtractAO: 0
+  m_MixedBakeMode: 2
+  m_LightmapsBakeMode: 1
+  m_FilterMode: 1
+  m_LightmapParameters: {fileID: 15204, guid: 0000000000000000f000000000000000, type: 0}
+  m_ExportTrainingData: 0
+  m_EnableWorkerProcessBaking: 1
+  m_TrainingDataDestination: TrainingData
+  m_RealtimeResolution: 2
+  m_ForceWhiteAlbedo: 0
+  m_ForceUpdates: 0
+  m_PVRCulling: 1
+  m_PVRSampling: 1
+  m_PVRDirectSampleCount: 32
+  m_PVRSampleCount: 512
+  m_PVREnvironmentSampleCount: 256
+  m_PVREnvironmentReferencePointCount: 2048
+  m_LightProbeSampleCountMultiplier: 4
+  m_PVRBounces: 2
+  m_PVRMinBounces: 2
+  m_PVREnvironmentImportanceSampling: 1
+  m_PVRFilteringMode: 1
+  m_PVRDenoiserTypeDirect: 1
+  m_PVRDenoiserTypeIndirect: 1
+  m_PVRDenoiserTypeAO: 1
+  m_PVRFilterTypeDirect: 0
+  m_PVRFilterTypeIndirect: 0
+  m_PVRFilterTypeAO: 0
+  m_PVRFilteringGaussRadiusDirect: 1
+  m_PVRFilteringGaussRadiusIndirect: 1
+  m_PVRFilteringGaussRadiusAO: 1
+  m_PVRFilteringAtrousPositionSigmaDirect: 0.5
+  m_PVRFilteringAtrousPositionSigmaIndirect: 2
+  m_PVRFilteringAtrousPositionSigmaAO: 1
+  m_RespectSceneVisibilityWhenBakingGI: 0
 --- !u!1 &892767492
 GameObject:
   m_ObjectHideFlags: 0
@@ -5546,14 +5613,44 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95c0a4ed1e674ad4b64c04e5ff0d4406, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.UI.PauseMenuUI
-  _freezeGameOnPause: 1
-  _pausePanel: {fileID: 1922885801}
-  _settingsPanel: {fileID: 1919733669}
-  _resumeButton: {fileID: 1152948509}
-  _settingsButton: {fileID: 669667800}
-  _mainMenuButton: {fileID: 1072590787}
-  _quitButton: {fileID: 1033634508}
-  _settingsUI: {fileID: 1919733670}
+  menuSceneName: MainMenu
+  pauseRootPanel: {fileID: 0}
+  optionsPanel: {fileID: 0}
+  resumeButton:
+    Button: {fileID: 0}
+    HighlightObject: {fileID: 0}
+    PressedObject: {fileID: 0}
+    Label: {fileID: 0}
+  optionsButton:
+    Button: {fileID: 0}
+    HighlightObject: {fileID: 0}
+    PressedObject: {fileID: 0}
+    Label: {fileID: 0}
+  quitButton:
+    Button: {fileID: 0}
+    HighlightObject: {fileID: 0}
+    PressedObject: {fileID: 0}
+    Label: {fileID: 0}
+  normalButtonColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
+  highlightButtonColor: {r: 1, g: 1, b: 1, a: 1}
+  defaultSelectedButton:
+    Button: {fileID: 0}
+    HighlightObject: {fileID: 0}
+    PressedObject: {fileID: 0}
+    Label: {fileID: 0}
+  audioMixer: {fileID: 0}
+  masterVolumeSlider: {fileID: 0}
+  musicVolumeSlider: {fileID: 0}
+  sfxVolumeSlider: {fileID: 0}
+  masterVolumeText: {fileID: 0}
+  musicVolumeText: {fileID: 0}
+  sfxVolumeText: {fileID: 0}
+  resolutionDropdown: {fileID: 0}
+  qualityDropdown: {fileID: 0}
+  fullscreenToggle: {fileID: 0}
+  applyButton: {fileID: 0}
+  backButton: {fileID: 0}
+  scriptsToDisableWhilePaused: []
 --- !u!114 &992326240
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7013,6 +7110,7 @@ MonoBehaviour:
   _dropDistance: 1.5
   _dropForce: 2
   _pauseGameWhenOpen: 0
+  _lockUntilComsPickup: 1
 --- !u!114 &1165814862 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 351444131499544678, guid: 461f97804c1242840a763777080c467d, type: 3}
