@@ -13,16 +13,16 @@ MonoBehaviour:
   m_Name: Narrative_NoiseIntro
   m_EditorClassIdentifier: Assembly-CSharp::_Scripts.Tutorial.TutorialNarrativeAsset
   beats:
-  - speaker: 2
+  - speaker: 0
     text: You no longer are surrounded by silence. Every move you make can be heard
       by others.
     autoAdvanceDelay: 4
     voiceClip: {fileID: 0}
-    keepHologramActive: 1
+    keepHologramActive: 0
   - speaker: 0
     text: You are able to track the levels of sound you emit through the noise indiciator
       present by the top left side of the screen.
     autoAdvanceDelay: 5
     voiceClip: {fileID: 0}
     keepHologramActive: 0
-  lockPlayerDuringPlayback: 0
+  lockPlayerDuringPlayback: 1
